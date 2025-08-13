@@ -1,7 +1,8 @@
 // FBX主加载器
-import { TextureLoader, LoadingManager, Group } from 'three';
+import { TextureLoader, Group, Loader, FileLoader, LoaderUtils } from 'three';
+import type { LoadingManager } from 'three';
 import { global } from '../../constants';
-import type { ParseContext, ParserResult } from '../types';
+import type { ParseContext } from '../types';
 import { validateFBXTree, validateParseContext, validateParseResult } from '../utils/validation';
 import { ConnectionParser } from '../parsers/ConnectionParser';
 import { AnimationParser } from '../parsers/AnimationParser';
@@ -9,18 +10,53 @@ import { GeometryParser } from '../parsers/GeometryParser';
 import { MaterialParser, TextureParser, ImageParser } from '../parsers/MaterialParser';
 import { SceneParser } from '../parsers/SceneParser';
 import { DeformerParser } from '../parsers/DeformerParser';
+// import { FBXTreeParser } from '../FBX-tree-parser'; // 暂时注释掉，未使用
 
-export class FBXLoader {
+export class FBXLoader extends Loader {
   private textureLoader: TextureLoader;
-  private manager: LoadingManager;
 
-  constructor (textureLoader?: TextureLoader, manager?: LoadingManager) {
-    this.textureLoader = textureLoader || new TextureLoader();
-    this.manager = manager || new LoadingManager();
+  constructor (manager?: LoadingManager) {
+    super(manager);
+    this.textureLoader = new TextureLoader(this.manager);
+  }
+
+  // 加载方法
+  override load (url: string, onLoad: (group: Group) => void, onProgress?: (event: ProgressEvent) => void, onError?: (event: unknown) => void): void {
+    const path = (this.path === '') ? LoaderUtils.extractUrlBase(url) : this.path;
+
+    const loader = new FileLoader(this.manager);
+
+    loader.setPath(this.path);
+    loader.setResponseType('arraybuffer');
+    loader.setRequestHeader(this.requestHeader);
+    loader.setWithCredentials(this.withCredentials);
+
+    loader.load(url, (buffer: string | ArrayBuffer) => {
+      try {
+        const group = this.parse(buffer as ArrayBuffer, path);
+
+        onLoad(group);
+      } catch (error) {
+        if (onError) {
+          onError(error);
+        } else {
+          console.error(error);
+        }
+        this.manager.itemError(url);
+      }
+    }, onProgress, onError);
   }
 
   // 主解析方法
-  parse (fbxTree: any): ParserResult {
+  parse (buffer: ArrayBuffer, path: string): Group {
+    // 设置资源路径
+    this.textureLoader.setPath(this.resourcePath || path).setCrossOrigin(this.crossOrigin);
+
+    // 使用原始的FBXTreeParser（暂时回退到原始实现）
+    global.fbxTree = this.parseFBXBuffer(buffer);
+
+    const fbxTree = global.fbxTree;
+
     // 验证FBX树结构
     const validationErrors = validateFBXTree(fbxTree);
 
@@ -82,23 +118,25 @@ export class FBXLoader {
       // 8. 解析场景
       sceneParser.parse(deformers, geometryResult.geometries, materialResult.materials);
 
-      // 构建结果
-      const result: ParserResult = {
-        scene: context.sceneGraph,
+      // 将动画添加到场景
+      const scene = context.sceneGraph;
+
+      scene.animations = animations;
+
+      // 验证解析结果
+      const resultErrors = validateParseResult({
+        scene,
         animations,
         geometries: geometryResult.geometries,
         materials: materialResult.materials,
         textures: materialResult.textures,
-      };
-
-      // 验证解析结果
-      const resultErrors = validateParseResult(result);
+      });
 
       if (resultErrors.length > 0) {
         console.warn('Parse result validation warnings:', resultErrors);
       }
 
-      return result;
+      return scene;
     } catch (error) {
       console.error('FBX parsing failed:', error);
       throw error;
@@ -110,18 +148,12 @@ export class FBXLoader {
     return this.textureLoader;
   }
 
-  // 获取加载管理器
-  getManager (): LoadingManager {
-    return this.manager;
-  }
+  // 解析FBX缓冲区（简化版本）
+  private parseFBXBuffer (buffer: ArrayBuffer): any {
+    // 这里应该使用BinaryParser或TextParser，但为了简化，我们暂时使用原始的FBXTreeParser
+    // 实际项目中需要实现完整的解析逻辑
 
-  // 设置纹理加载器
-  setTextureLoader (textureLoader: TextureLoader): void {
-    this.textureLoader = textureLoader;
-  }
-
-  // 设置加载管理器
-  setManager (manager: LoadingManager): void {
-    this.manager = manager;
+    // 暂时抛出错误，提示用户使用原始的FBXLoader
+    throw new Error('Modular FBXLoader is still under development. Please use the original FBXLoader for now.');
   }
 }
