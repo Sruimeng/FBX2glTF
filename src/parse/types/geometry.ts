@@ -1,5 +1,5 @@
 // 几何体相关类型定义
-import type { BufferGeometry, Matrix4 } from 'three';
+import type { BufferGeometry } from 'three';
 import type { FBXSkeleton } from '../../constants';
 
 export interface GeoBufferInfo {

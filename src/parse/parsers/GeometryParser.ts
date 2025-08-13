@@ -1,32 +1,13 @@
 // 几何体解析器
-import type { EulerOrder, Matrix4 } from 'three';
 import {
   BufferGeometry,
   Float32BufferAttribute,
   Uint16BufferAttribute,
-  Matrix3,
-  Vector3,
-  Vector2,
-  ShapeUtils,
-  Color,
-  ColorManagement,
-  SRGBColorSpace,
-  Vector4,
 } from 'three';
-import { NURBSCurve } from '../../curves/NURBS-curve';
-import { getEulerOrder, generateTransform, getData } from '../utils';
 import type {
   Deformers,
-  FBXConnectionNode,
-  FBXEulerOrder,
   FBXGeometryNode,
-  FBXLayerElementColor,
-  FBXLayerElementNormal,
-  FBXLayerElementUV,
-  FBXMaterialNode,
-  FBXMorphTarget,
   FBXSkeleton,
-  UserDataTransform,
 } from '../../constants';
 import type {
   GeoBufferInfo,
@@ -232,11 +213,6 @@ export class GeometryParser {
 
       // 处理多边形顶点索引（FBX使用负数表示多边形结束）
       const faceIndices = [];
-      const faceVertexUvs = [];
-      const faceNormals = [];
-      const faceColors = [];
-
-      const currentIndex = 0;
       let currentPolygon = [];
 
       for (let i = 0; i < vertexIndices.length; i++) {

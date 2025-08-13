@@ -1,8 +1,6 @@
 // 变形器解析器
-import { Bone, Matrix4 } from 'three';
+import { Matrix4 } from 'three';
 import type {
-  FBXConnectionNode,
-  FBXMeshNode,
   FBXDeformer,
   FBXSkeleton,
   RawBone,
@@ -50,7 +48,6 @@ export class DeformerParser {
 
   // 解析骨架
   private parseSkeletons (deformers: Record<string, FBXDeformer>, skeletons: Record<number, FBXSkeleton>): void {
-    const connections = this.context.connections;
 
     // 首先找到所有骨架
     const skeletonMap = new Map<number, FBXSkeleton>();
@@ -75,7 +72,6 @@ export class DeformerParser {
 
   // 解析单个骨架
   private parseSkeleton (deformer: FBXDeformer): FBXSkeleton | null {
-    const connections = this.context.connections;
     const deformerId = deformer.id || 0;
 
     // 查找关联的几何体
@@ -91,12 +87,7 @@ export class DeformerParser {
       const weights = deformer.Weights.a;
 
       // 创建变换矩阵
-      let transform = new Matrix4();
       let transformLink = new Matrix4();
-
-      if (deformer.Transform) {
-        transform = this.parseMatrix(deformer.Transform.a);
-      }
 
       if (deformer.TransformLink) {
         transformLink = this.parseMatrix(deformer.TransformLink.a);
@@ -123,7 +114,6 @@ export class DeformerParser {
 
   // 解析变形目标
   private parseMorphTargets (deformers: Record<string, FBXDeformer>, morphTargets: Record<number, FBXMorphTarget>): void {
-    const connections = this.context.connections;
 
     for (const nodeID in deformers) {
       const deformer = deformers[nodeID];
@@ -155,10 +145,8 @@ export class DeformerParser {
     const deformerConnections = connections.get(deformerId);
 
     if (deformerConnections) {
-      for (const connection of deformerConnections.children) {
-        // 这里需要进一步解析子变形器数据
-        // 简化实现，实际需要更复杂的逻辑
-      }
+      // 这里需要进一步解析子变形器数据
+      // 简化实现，实际需要更复杂的逻辑
     }
 
     return {

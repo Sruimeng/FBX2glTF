@@ -1,14 +1,10 @@
 // 几何体处理器
 import {
   BufferGeometry,
-  Matrix4,
   Float32BufferAttribute,
   Uint16BufferAttribute,
-  Vector3,
-  Vector2,
-  Color,
 } from 'three';
-import type { GeoInfo, GeometryData } from '../types';
+import type { GeoInfo } from '../types';
 
 export class GeometryHandler {
   // 处理几何体数据

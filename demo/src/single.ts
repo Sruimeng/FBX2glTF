@@ -3,7 +3,7 @@ import { AnimationMixer, Clock } from 'three';
 import { ACESFilmicToneMapping, EquirectangularReflectionMapping, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
-import { FBXLoader } from '@sruim/fbx2gltf';
+import { FBXLoader, ModularFBXLoader } from '@sruim/fbx2gltf';
 
 let camera: Camera, scene: Scene, renderer: WebGLRenderer;
 let mixer: AnimationMixer;
@@ -60,7 +60,7 @@ export function init () {
 }
 
 function loadFBXModel () {
-  const loader = new FBXLoader().setPath('../assets/models/fbx/');
+  const loader = new ModularFBXLoader().setPath('../assets/models/fbx/');
 
   loader.load('mixamo.fbx', function (fbx: Group) {
     // 缩放模型

@@ -1,5 +1,4 @@
 // 动画解析器
-import type { EulerOrder } from 'three';
 import {
   PropertyBinding,
   Matrix4,
@@ -7,18 +6,16 @@ import {
   Vector3,
   Quaternion,
   VectorKeyframeTrack,
-  MathUtils,
   Euler,
   QuaternionKeyframeTrack,
   NumberKeyframeTrack,
 } from 'three';
-import { convertFBXTimeToSeconds, getEulerOrder } from '../utils';
+import { convertFBXTimeToSeconds } from '../utils';
 import type {
   AnimationCurve,
   CurveNode,
   AnimationNode,
   RawClip,
-  AnimationData,
 } from '../types';
 import type { ParseContext } from '../types/common';
 
@@ -375,7 +372,7 @@ export class AnimationParser {
     curves: { x?: AnimationCurve, y?: AnimationCurve, z?: AnimationCurve },
     preRotation: [number, number, number],
     postRotation: [number, number, number],
-    eulerOrder: EulerOrder
+    eulerOrder: string
   ): QuaternionKeyframeTrack {
     // 简化实现，完整实现需要处理预旋转和后旋转
     const times = this.getTimesForAllAxes(curves);
@@ -386,7 +383,7 @@ export class AnimationParser {
     const euler = new Euler();
 
     for (let i = 0; i < values.length; i += 3) {
-      euler.set(values[i], values[i + 1], values[i + 2], eulerOrder);
+      euler.set(values[i], values[i + 1], values[i + 2], eulerOrder as any);
       quaternion.setFromEuler(euler);
       quaternion.toArray(quaternionValues, (i / 3) * 4);
     }

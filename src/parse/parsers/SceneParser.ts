@@ -1,50 +1,22 @@
 // 场景解析器
-import type { TextureLoader, LoadingManager, EulerOrder, BufferGeometry, MeshStandardMaterialParameters,
-  Matrix4,
-  Object3D } from 'three';
+import type { BufferGeometry, Object3D, Matrix4 } from 'three';
 import {
-  MeshStandardMaterial,
-  RepeatWrapping,
-  ClampToEdgeWrapping,
-  Skeleton,
-  Texture,
-  MeshPhongMaterial,
-  ColorManagement,
-  Color,
-  SRGBColorSpace,
-  EquirectangularReflectionMapping,
   Group,
   Bone,
-  PropertyBinding,
   PerspectiveCamera,
   PointLight,
   DirectionalLight,
-  MathUtils,
   SpotLight,
-  Loader,
   SkinnedMesh,
   Mesh,
-  LineBasicMaterial,
-  Line,
-  Vector3,
-  AmbientLight,
-  MeshPhysicalMaterial,
+  Color,
+  Skeleton,
 } from 'three';
 import type {
   FBXConnectionNode,
-  FBXConnectionReference,
-  FBXMorphTarget,
-  FBXLightNodeAttribute,
-  FBXMaterialNode,
-  FBXMeshNode,
   FBXModelNode,
   FBXSkeleton,
-  FBXTextureNode,
-  FBXVideoNode,
-  IFBXPropertyValue,
-  RawBone,
   UserDataTransform,
-  FBXRawTargets,
 } from '../../constants';
 import { generateTransform, getEulerOrder } from '../utils';
 import type { ParseContext } from '../types/common';
@@ -146,7 +118,7 @@ export class SceneParser {
         object = this.parseLight(modelNode);
 
         break;
-      case 'Mesh':
+      case 'Mesh': {
         const meshObject = this.parseMesh(modelNode, geometryMap, materials, deformers);
 
         if (meshObject) {
@@ -156,6 +128,7 @@ export class SceneParser {
         }
 
         break;
+      }
       case 'Null':
       case 'LimbNode':
         object = new Group();
@@ -240,10 +213,8 @@ export class SceneParser {
     const modelConnections = connections.get(modelNode.id || 0);
 
     if (modelConnections) {
-      for (const connection of modelConnections.children) {
-        // 这里需要根据实际FBX结构查找节点属性
-        // 简化实现，返回null
-      }
+      // 这里需要根据实际FBX结构查找节点属性
+      // 简化实现，返回null
     }
 
     return null;

@@ -12,7 +12,7 @@ import {
   RepeatWrapping,
   ClampToEdgeWrapping,
 } from 'three';
-import type { MaterialData, TextureData } from '../types';
+import type { MaterialData } from '../types';
 
 export class MaterialHandler {
   // 处理材质数据

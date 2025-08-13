@@ -4,13 +4,10 @@ import type {
 } from 'three';
 import {
   AnimationClip,
-  Vector3,
-  Quaternion,
   VectorKeyframeTrack,
   QuaternionKeyframeTrack,
   NumberKeyframeTrack,
 } from 'three';
-import type { AnimationCurve, AnimationNode } from '../types';
 
 export class AnimationHandler {
   // 处理动画片段
@@ -156,16 +153,18 @@ export class AnimationHandler {
     const trackGroups = new Map<string, any[]>();
 
     for (const track of allTracks) {
-      if (!trackGroups.has(track.name)) {
-        trackGroups.set(track.name, []);
+      const trackName = track.name;
+
+      if (!trackGroups.has(trackName)) {
+        trackGroups.set(trackName, []);
       }
-      trackGroups.get(track.name)!.push(track);
+      trackGroups.get(trackName)!.push(track);
     }
 
     // 合并相同名称的轨道
     const mergedTracks: any[] = [];
 
-    for (const [trackName, tracks] of trackGroups) {
+    for (const [, tracks] of trackGroups) {
       if (tracks.length === 1) {
         mergedTracks.push(tracks[0]);
       } else {
