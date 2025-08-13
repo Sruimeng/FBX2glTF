@@ -1,83 +1,83 @@
-import * as THREE from 'three';
-//@ts-expect-error
-import { OrbitControls } from '../assets/jsm/controls/OrbitControls.js';
-//@ts-expect-error  
-import { GLTFLoader } from '../assets/jsm/loaders/GLTFLoader.js';
-//@ts-expect-error
-import { RGBELoader } from '../assets/jsm/loaders/RGBELoader.js';
+import type { Camera, Texture } from 'three';
+import { ACESFilmicToneMapping, EquirectangularReflectionMapping, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
 
-let camera: THREE.Camera, scene: THREE.Scene, renderer: THREE.WebGLRenderer;
+let camera: Camera, scene: Scene, renderer: WebGLRenderer;
 
 init();
 render();
 
-export function init() {
+export function init () {
 
-    const container = document.getElementById('J-container');
+  const container = document.getElementById('J-container');
 
-    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.25, 20);
-    camera.position.set(- 1.8, 0.6, 2.7);
+  camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.25, 20);
+  camera.position.set(- 1.8, 0.6, 2.7);
 
-    scene = new THREE.Scene();
+  scene = new Scene();
 
-    new RGBELoader()
-        .setPath('../assets/textures/equirectangular/')
-        .load('royal_esplanade_1k.hdr', function (texture: THREE.Texture) {
+  new RGBELoader()
+    .setPath('../assets/textures/equirectangular/')
+    .load('royal_esplanade_1k.hdr', function (texture: Texture) {
 
-            texture.mapping = THREE.EquirectangularReflectionMapping;
+      texture.mapping = EquirectangularReflectionMapping;
 
-            scene.background = texture;
-            scene.environment = texture;
+      scene.background = texture;
+      scene.environment = texture;
 
-            render();
+      render();
 
-            // model
+      // model
 
-            const loader = new GLTFLoader().setPath('../assets/models/gltf/');
-            loader.load('BoomBox.glb', function (gltf: any) {
+      const loader = new GLTFLoader().setPath('../assets/models/gltf/');
 
-                scene.add(gltf.scene);
+      loader.load('BoomBox.glb', function (gltf: any) {
 
-                render();
+        scene.add(gltf.scene);
 
-            });
+        render();
 
-        });
+      });
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1;
-    container!.appendChild(renderer.domElement);
+    });
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.addEventListener('change', render); // use if there is no animation loop
-    controls.minDistance = 2;
-    controls.maxDistance = 10;
-    controls.target.set(0, 0, - 0.2);
-    controls.update();
+  renderer = new WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1;
+  container!.appendChild(renderer.domElement);
 
-    window.addEventListener('resize', onWindowResize);
+  const controls = new OrbitControls(camera, renderer.domElement);
+
+  controls.addEventListener('change', render); // use if there is no animation loop
+  controls.minDistance = 2;
+  controls.maxDistance = 10;
+  controls.target.set(0, 0, - 0.2);
+  controls.update();
+
+  window.addEventListener('resize', onWindowResize);
 
 }
 
-function onWindowResize() {
-    //@ts-expect-error
-    camera.aspect = window.innerWidth / window.innerHeight;
-    //@ts-expect-error
-    camera.updateProjectionMatrix();
+function onWindowResize () {
+  //@ts-expect-error
+  camera.aspect = window.innerWidth / window.innerHeight;
+  //@ts-expect-error
+  camera.updateProjectionMatrix();
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(window.innerWidth, window.innerHeight);
 
-    render();
+  render();
 
 }
 
 //
 
-export function render() {
+export function render () {
 
-    renderer.render(scene, camera);
+  renderer.render(scene, camera);
 
 }
