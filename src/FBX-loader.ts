@@ -42,7 +42,7 @@ class FBXLoader extends Loader {
 	 *
 	 * @param {LoadingManager} [manager] - The loading manager.
 	 */
-  constructor (manager: LoadingManager) {
+  constructor (manager?: LoadingManager) {
 
     super(manager);
   }
