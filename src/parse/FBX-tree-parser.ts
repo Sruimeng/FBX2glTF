@@ -50,13 +50,13 @@ export class FBXTreeParser {
 
     if ('Connections' in fbxTree && fbxTree.Connections) {
       let rawConnections: any[] = [];
-      
+
       // 处理不同的Connections类型
       if ('connections' in fbxTree.Connections) {
         rawConnections = (fbxTree.Connections as any).connections;
       } else if (fbxTree.Connections instanceof Map) {
         // 如果是Map类型，需要转换为数组
-        rawConnections = Array.from(fbxTree.Connections.values()).flatMap((conn: any) => 
+        rawConnections = Array.from(fbxTree.Connections.values()).flatMap((conn: any) =>
           conn.children.map((child: any) => [conn.ID, child.ID, child.relationship])
         );
       }
@@ -135,7 +135,7 @@ export class FBXTreeParser {
 
             const image = this.parseImage(videoNodes[ nodeID ]);
             const filename = videoNode.RelativeFilename || videoNode.Filename || '';
-            
+
             if (filename) {
               blobs[ filename ] = image;
             }
@@ -223,7 +223,7 @@ export class FBXTreeParser {
     if (!content) {
       return '';
     }
-    
+
     if (typeof content === 'string') { // ASCII format
 
       return 'data:' + type + ';base64,' + content;
