@@ -149,7 +149,7 @@ export class GeometryParser {
 
     const transformData: UserDataTransform = {};
 
-    if ('RotationOrder' in modelNode) {
+    if ('RotationOrder' in modelNode && modelNode.RotationOrder) {
       const value = modelNode.RotationOrder.value;
 
       if (typeof value === 'number') {
@@ -157,11 +157,11 @@ export class GeometryParser {
       }
 
     }
-    if ('InheritType' in modelNode) {transformData.inheritType = parseInt(modelNode.InheritType.value);}
+    if ('InheritType' in modelNode && modelNode.InheritType) {transformData.inheritType = parseInt(modelNode.InheritType.value);}
 
-    if ('GeometricTranslation' in modelNode) {transformData.translation = modelNode.GeometricTranslation.value;}
-    if ('GeometricRotation' in modelNode) {transformData.rotation = modelNode.GeometricRotation.value;}
-    if ('GeometricScaling' in modelNode) {transformData.scale = modelNode.GeometricScaling.value;}
+    if ('GeometricTranslation' in modelNode && modelNode.GeometricTranslation) {transformData.translation = modelNode.GeometricTranslation.value;}
+    if ('GeometricRotation' in modelNode && modelNode.GeometricRotation) {transformData.rotation = modelNode.GeometricRotation.value;}
+    if ('GeometricScaling' in modelNode && modelNode.GeometricScaling) {transformData.scale = modelNode.GeometricScaling.value;}
 
     const transform = generateTransform(transformData);
 
@@ -939,8 +939,8 @@ export class GeometryParser {
   // Parse mapping and material data in FBXTree.Objects.Geometry.LayerElementMaterial if it exists
   parseMaterialIndices (MaterialNode: FBXMaterialNode) {
 
-    const mappingType = MaterialNode.MappingInformationType;
-    const referenceType = MaterialNode.ReferenceInformationType;
+    const mappingType = MaterialNode.MappingInformationType || '';
+    const referenceType = MaterialNode.ReferenceInformationType || '';
 
     if (mappingType === 'NoMappingInformation') {
 

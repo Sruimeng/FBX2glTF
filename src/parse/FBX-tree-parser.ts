@@ -48,13 +48,20 @@ export class FBXTreeParser {
 
     const fbxTree = global.fbxTree;
 
-    if ('Connections' in fbxTree) {
-      if (!fbxTree.Connections) {
-        throw new Error('FBXLoader');
+    if ('Connections' in fbxTree && fbxTree.Connections) {
+      let rawConnections: any[] = [];
+      
+      // 处理不同的Connections类型
+      if ('connections' in fbxTree.Connections) {
+        rawConnections = (fbxTree.Connections as any).connections;
+      } else if (fbxTree.Connections instanceof Map) {
+        // 如果是Map类型，需要转换为数组
+        rawConnections = Array.from(fbxTree.Connections.values()).flatMap((conn: any) => 
+          conn.children.map((child: any) => [conn.ID, child.ID, child.relationship])
+        );
       }
-      const rawConnections = fbxTree.Connections.connections;
 
-      rawConnections.forEach(rawConnection =>{
+      rawConnections.forEach((rawConnection: any) =>{
 
         const fromID = rawConnection[ 0 ];
         const toID = rawConnection[ 1 ];
@@ -116,10 +123,10 @@ export class FBXTreeParser {
 
         const id = parseInt(nodeID);
 
-        images[ id ] = videoNode.RelativeFilename || videoNode.Filename;
+        images[ id ] = videoNode.RelativeFilename || videoNode.Filename || '';
 
         // raw image data is in videoNode.Content
-        if ('Content' in videoNode) {
+        if ('Content' in videoNode && videoNode.Content) {
 
           const arrayBufferContent = (videoNode.Content instanceof ArrayBuffer) && (videoNode.Content.byteLength > 0);
           const base64Content = (typeof videoNode.Content === 'string') && (videoNode.Content !== '');
@@ -127,8 +134,11 @@ export class FBXTreeParser {
           if (arrayBufferContent || base64Content) {
 
             const image = this.parseImage(videoNodes[ nodeID ]);
-
-            blobs[ videoNode.RelativeFilename || videoNode.Filename ] = image;
+            const filename = videoNode.RelativeFilename || videoNode.Filename || '';
+            
+            if (filename) {
+              blobs[ filename ] = image;
+            }
 
           }
 
@@ -142,10 +152,10 @@ export class FBXTreeParser {
 
       const filename = images[ id ];
 
-      if (blobs[ filename ] !== undefined) {
-        images[ id ] = blobs[ filename ];
-      } else {
-        images[ id ] = images[ id ]?.split('\\').pop() || images[ id ];
+      if (filename && blobs[ filename ] !== undefined) {
+        images[ id ] = blobs[ filename ] || '';
+      } else if (filename) {
+        images[ id ] = filename?.split('\\').pop() || filename;
       }
 
     }
@@ -158,8 +168,8 @@ export class FBXTreeParser {
   parseImage (videoNode: FBXVideoNode) {
 
     const content = videoNode.Content;
-    const fileName = videoNode.RelativeFilename || videoNode.Filename;
-    const extension = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase();
+    const fileName = videoNode.RelativeFilename || videoNode.Filename || '';
+    const extension = fileName ? fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase() : '';
 
     let type;
 
@@ -210,6 +220,10 @@ export class FBXTreeParser {
 
     }
 
+    if (!content) {
+      return '';
+    }
+    
     if (typeof content === 'string') { // ASCII format
 
       return 'data:' + type + ';base64,' + content;
@@ -260,13 +274,13 @@ export class FBXTreeParser {
 
     (texture as any).ID = textureNode.id;
 
-    texture.name = textureNode.attrName;
+    texture.name = textureNode.attrName || '';
 
     const wrapModeU = textureNode.WrapModeU;
     const wrapModeV = textureNode.WrapModeV;
 
-    const valueU = wrapModeU !== undefined ? wrapModeU.value : 0;
-    const valueV = wrapModeV !== undefined ? wrapModeV.value : 0;
+    const valueU = wrapModeU?.value || 0;
+    const valueV = wrapModeV?.value || 0;
 
     // http://download.autodesk.com/us/fbx/SDKdocs/FBX_SDK_Help/files/fbxsdkref/class_k_fbx_texture.html#889640e63e2e681259ea81061b85143a
     // 0: repeat(default), 1: clamp
@@ -274,18 +288,18 @@ export class FBXTreeParser {
     texture.wrapS = valueU === 0 ? RepeatWrapping : ClampToEdgeWrapping;
     texture.wrapT = valueV === 0 ? RepeatWrapping : ClampToEdgeWrapping;
 
-    if ('Scaling' in textureNode) {
+    if ('Scaling' in textureNode && textureNode.Scaling) {
 
-      const values = textureNode.Scaling.value;
+      const values = textureNode.Scaling.value || [1, 1];
 
       texture.repeat.x = values[ 0 ];
       texture.repeat.y = values[ 1 ];
 
     }
 
-    if ('Translation' in textureNode) {
+    if ('Translation' in textureNode && textureNode.Translation) {
 
-      const values = textureNode.Translation.value;
+      const values = textureNode.Translation.value || [0, 0];
 
       texture.offset.x = values[ 0 ];
       texture.offset.y = values[ 1 ];
@@ -299,7 +313,7 @@ export class FBXTreeParser {
   // load a texture specified as a blob or data URI, or via an external URL using TextureLoader
   loadTexture (textureNode: FBXTextureNode, images: Record<string, string>): Texture {
 
-    const extension = (textureNode.FileName.split('.').pop() || '').toLowerCase();
+    const extension = (textureNode.FileName?.split('.').pop() || '').toLowerCase();
 
     let loader = this.manager.getHandler(`.${extension}`);
 
@@ -318,7 +332,7 @@ export class FBXTreeParser {
       throw new Error('Global connections are undefined');
 
     }
-    const children = connections.get(textureNode.id)?.children;
+    const children = textureNode.id !== undefined ? connections.get(textureNode.id)?.children : undefined;
 
     let fileName;
 
@@ -387,9 +401,9 @@ export class FBXTreeParser {
   // FBX format currently only supports Lambert and Phong shading models
   parseMaterial (materialNode: FBXMaterialNode, textureMap: Map<number, Texture>) {
 
-    const ID = materialNode.id;
-    const name = materialNode.attrName;
-    let type: string | IFBXPropertyValue<string> = materialNode.ShadingModel;
+    const ID = materialNode.id || 0;
+    const name = materialNode.attrName || '';
+    let type: string | IFBXPropertyValue<string> = materialNode.ShadingModel || 'lambert';
 
     // Case where FBX wraps shading model in property object.
     if (typeof type === 'object') {
@@ -729,7 +743,7 @@ export class FBXTreeParser {
   // Parse single nodes in global.fbxTree.Objects.Deformer
   // The top level skeleton node has type 'Skin' and sub nodes have type 'Cluster'
   // Each skin node represents a skeleton and each cluster node represents a bone
-  parseSkeleton (relationships: FBXConnectionNode, deformerNodes: Record<number, FBXMeshNode>): FBXSkeleton {
+  parseSkeleton (relationships: FBXConnectionNode, deformerNodes: Record<string, any>): FBXSkeleton {
 
     const rawBones: RawBone[] = [];
 
@@ -775,7 +789,7 @@ export class FBXTreeParser {
   }
 
   // The top level morph deformer node has type "BlendShape" and sub nodes have type "BlendShapeChannel"
-  parseMorphTargets (relationships: FBXConnectionNode, deformerNodes: Record<number, FBXMeshNode>): FBXRawTargets[] | undefined {
+  parseMorphTargets (relationships: FBXConnectionNode, deformerNodes: Record<string, any>): FBXRawTargets[] | undefined {
 
     const rawMorphTargets: FBXRawTargets[] = [];
     const connections = global.connections;
@@ -792,10 +806,10 @@ export class FBXTreeParser {
 
       const rawMorphTarget: FBXRawTargets = {
         geoID: 0,
-        name: morphTargetNode.attrName,
+        name: morphTargetNode.attrName || '',
         initialWeight: morphTargetNode.DeformPercent,
-        id: morphTargetNode.id,
-        fullWeights: morphTargetNode.FullWeights.a,
+        id: morphTargetNode.id || 0,
+        fullWeights: morphTargetNode.FullWeights?.a || [],
 
       };
 
@@ -919,7 +933,7 @@ export class FBXTreeParser {
       const node = modelNodes[ nodeID ];
       const relationships = connections.get(id) || { parents: [], children: [] };
 
-      let model: Object3D | null = this.buildSkeleton(relationships, skeletons, id, node.attrName);
+      let model: Object3D | null = this.buildSkeleton(relationships, skeletons, id, node.attrName || '');
 
       if (!model) {
 
@@ -1446,9 +1460,9 @@ export class FBXTreeParser {
 
     const transformData: UserDataTransform = {};
 
-    if ('InheritType' in modelNode) {transformData.inheritType = parseInt(modelNode.InheritType.value);}
+    if ('InheritType' in modelNode && modelNode.InheritType) {transformData.inheritType = parseInt(modelNode.InheritType.value);}
 
-    if ('RotationOrder' in modelNode) {
+    if ('RotationOrder' in modelNode && modelNode.RotationOrder) {
       const value = modelNode.RotationOrder.value;
 
       if (typeof value !== 'number') {
@@ -1459,21 +1473,21 @@ export class FBXTreeParser {
       transformData.eulerOrder = getEulerOrder(0) as EulerOrder;
     }
 
-    if ('Lcl_Translation' in modelNode) {
+    if ('Lcl_Translation' in modelNode && modelNode.Lcl_Translation) {
       transformData.translation = modelNode.Lcl_Translation.value;
     }
 
-    if ('PreRotation' in modelNode) {transformData.preRotation = modelNode.PreRotation.value;}
-    if ('Lcl_Rotation' in modelNode) {transformData.rotation = modelNode.Lcl_Rotation.value;}
-    if ('PostRotation' in modelNode) {transformData.postRotation = modelNode.PostRotation.value;}
+    if ('PreRotation' in modelNode && modelNode.PreRotation) {transformData.preRotation = modelNode.PreRotation.value;}
+    if ('Lcl_Rotation' in modelNode && modelNode.Lcl_Rotation) {transformData.rotation = modelNode.Lcl_Rotation.value;}
+    if ('PostRotation' in modelNode && modelNode.PostRotation) {transformData.postRotation = modelNode.PostRotation.value;}
 
-    if ('Lcl_Scaling' in modelNode) {transformData.scale = modelNode.Lcl_Scaling.value;}
+    if ('Lcl_Scaling' in modelNode && modelNode.Lcl_Scaling) {transformData.scale = modelNode.Lcl_Scaling.value;}
 
-    if ('ScalingOffset' in modelNode) {transformData.scalingOffset = modelNode.ScalingOffset.value;}
-    if ('ScalingPivot' in modelNode) {transformData.scalingPivot = modelNode.ScalingPivot.value;}
+    if ('ScalingOffset' in modelNode && modelNode.ScalingOffset) {transformData.scalingOffset = modelNode.ScalingOffset.value;}
+    if ('ScalingPivot' in modelNode && modelNode.ScalingPivot) {transformData.scalingPivot = modelNode.ScalingPivot.value;}
 
-    if ('RotationOffset' in modelNode) {transformData.rotationOffset = modelNode.RotationOffset.value;}
-    if ('RotationPivot' in modelNode) {transformData.rotationPivot = modelNode.RotationPivot.value;}
+    if ('RotationOffset' in modelNode && modelNode.RotationOffset) {transformData.rotationOffset = modelNode.RotationOffset.value;}
+    if ('RotationPivot' in modelNode && modelNode.RotationPivot) {transformData.rotationPivot = modelNode.RotationPivot.value;}
 
     model.userData.transformData = transformData;
 
@@ -1500,7 +1514,7 @@ export class FBXTreeParser {
           }
           const lookAtTarget = modelNode[ child.ID ];
 
-          if ('Lcl_Translation' in lookAtTarget) {
+          if ('Lcl_Translation' in lookAtTarget && lookAtTarget.Lcl_Translation) {
 
             const pos = lookAtTarget.Lcl_Translation.value;
 
@@ -1630,7 +1644,7 @@ export class FBXTreeParser {
 
         // Parse ambient color - if it's not set to black (default), create an ambient light
 
-        const ambientColor = fbxTree.GlobalSettings.AmbientColor.value;
+        const ambientColor = fbxTree.GlobalSettings.AmbientColor?.value || [0, 0, 0];
         const r = ambientColor[ 0 ];
         const g = ambientColor[ 1 ];
         const b = ambientColor[ 2 ];
@@ -1647,7 +1661,7 @@ export class FBXTreeParser {
 
       if ('UnitScaleFactor' in fbxTree.GlobalSettings) {
 
-        global.sceneGraph.userData.unitScaleFactor = fbxTree.GlobalSettings.UnitScaleFactor.value;
+        global.sceneGraph.userData.unitScaleFactor = fbxTree.GlobalSettings.UnitScaleFactor?.value || 1;
 
       }
 

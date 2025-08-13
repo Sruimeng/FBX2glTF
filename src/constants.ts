@@ -18,160 +18,162 @@ export interface IFBXTree {
   References?: FBXProperty,
   Definitions?: FBXDefinitions,
   Objects?: FBXObjects,
-  Connections?: FBXConnectionDocment,
+  Connections?: FBXConnectionDocment | Map<number, FBXConnectionNode>,
   [key: string]: any,
 }
 
 export interface FBXProperty {
   singleProperty: boolean,
-  propertyList: object[],
+  propertyList: any[],
   name: string,
+  value?: any,
   [key: string]: any,
 }
 
 export interface FBXHeaderExtension {
-  singleProperty: boolean,
-  FBXHeaderVersion: number,
-  FBXVersion: number,
-  EncryptionType: number,
-  CreationTimeStamp: FBXTimeStamp,
-  Creator: string,
-  SceneInfo: FBXSceneInfo,
-  propertyList: any[],
-  name: string,
+  singleProperty?: boolean,
+  FBXHeaderVersion?: number,
+  FBXVersion?: number,
+  EncryptionType?: number,
+  CreationTimeStamp?: FBXTimeStamp,
+  Creator?: string,
+  SceneInfo?: FBXSceneInfo,
+  propertyList?: any[],
+  name?: string,
 }
 
-export interface FBXConnectionDocment extends FBXPropertyTemplate {
-  connections: [number, number, string][],
-
+export interface FBXConnectionDocment {
+  singleProperty: boolean,
+  connections: Array<[string, number, number, ...string[]]>,
+  propertyList: any[],
+  name: string,
 }
 
 export interface FBXTimeStamp {
-  singleProperty: boolean,
-  Version: number,
-  Year: number,
-  Month: number,
-  Day: number,
-  Hour: number,
-  Minute: number,
-  Second: number,
-  Millisecond: number,
-  propertyList: any[],
-  name: string,
+  singleProperty?: boolean,
+  Version?: number,
+  Year?: number,
+  Month?: number,
+  Day?: number,
+  Hour?: number,
+  Minute?: number,
+  Second?: number,
+  Millisecond?: number,
+  propertyList?: any[],
+  name?: string,
 }
 
 export interface FBXSceneInfo {
-  singleProperty: boolean,
-  Type: string,
-  Version: number,
-  MetaData: FBXMetaData,
-  DocumentUrl: FBXTypedProperty,
-  SrcDocumentUrl: FBXTypedProperty,
-  Original: FBXTypedProperty,
-  LastSaved: FBXTypedProperty,
-  propertyList: string[],
-  name: string,
-  attrName: string,
+  singleProperty?: boolean,
+  Type?: string,
+  Version?: number,
+  MetaData?: FBXMetaData,
+  DocumentUrl?: FBXTypedProperty,
+  SrcDocumentUrl?: FBXTypedProperty,
+  Original?: FBXTypedProperty,
+  LastSaved?: FBXTypedProperty,
+  propertyList?: string[],
+  name?: string,
+  attrName?: string,
   [key: string]: any,
 }
 
 export interface FBXMetaData {
-  singleProperty: boolean,
-  Version: number,
-  Title: string,
-  Subject: string,
-  Author: string,
-  Keywords: string,
-  Revision: string,
-  Comment: string,
-  propertyList: any[],
-  name: string,
+  singleProperty?: boolean,
+  Version?: number,
+  Title?: string,
+  Subject?: string,
+  Author?: string,
+  Keywords?: string,
+  Revision?: string,
+  Comment?: string,
+  propertyList?: any[],
+  name?: string,
 }
 
 export interface FBXTypedProperty {
-  type: string,
+  type?: string,
   type2?: string,
-  flag: string,
+  flag?: string,
   value?: any,
 }
 
 export interface FBXGlobalSettings {
-  singleProperty: boolean,
-  Version: number,
-  UpAxis: FBXTypedProperty,
-  UpAxisSign: FBXTypedProperty,
-  FrontAxis: FBXTypedProperty,
-  FrontAxisSign: FBXTypedProperty,
-  CoordAxis: FBXTypedProperty,
-  CoordAxisSign: FBXTypedProperty,
-  OriginalUpAxis: FBXTypedProperty,
-  OriginalUpAxisSign: FBXTypedProperty,
-  UnitScaleFactor: FBXTypedProperty,
-  OriginalUnitScaleFactor: FBXTypedProperty,
-  AmbientColor: FBXTypedProperty,
-  DefaultCamera: FBXTypedProperty,
-  TimeMode: FBXTypedProperty,
-  TimeProtocol: FBXTypedProperty,
-  SnapOnFrameMode: FBXTypedProperty,
-  TimeSpanStart: FBXTypedProperty,
-  TimeSpanStop: FBXTypedProperty,
-  CustomFrameRate: FBXTypedProperty,
-  TimeMarker: FBXTypedProperty,
-  CurrentTimeMarker: FBXTypedProperty,
-  propertyList: any[],
-  name: string,
+  singleProperty?: boolean,
+  Version?: number,
+  UpAxis?: FBXTypedProperty,
+  UpAxisSign?: FBXTypedProperty,
+  FrontAxis?: FBXTypedProperty,
+  FrontAxisSign?: FBXTypedProperty,
+  CoordAxis?: FBXTypedProperty,
+  CoordAxisSign?: FBXTypedProperty,
+  OriginalUpAxis?: FBXTypedProperty,
+  OriginalUpAxisSign?: FBXTypedProperty,
+  UnitScaleFactor?: FBXTypedProperty,
+  OriginalUnitScaleFactor?: FBXTypedProperty,
+  AmbientColor?: FBXTypedProperty,
+  DefaultCamera?: FBXTypedProperty,
+  TimeMode?: FBXTypedProperty,
+  TimeProtocol?: FBXTypedProperty,
+  SnapOnFrameMode?: FBXTypedProperty,
+  TimeSpanStart?: FBXTypedProperty,
+  TimeSpanStop?: FBXTypedProperty,
+  CustomFrameRate?: FBXTypedProperty,
+  TimeMarker?: FBXTypedProperty,
+  CurrentTimeMarker?: FBXTypedProperty,
+  propertyList?: any[],
+  name?: string,
+  Properties70?: FBXProperties70,
 }
 
 export interface FBXDocuments {
-  singleProperty: boolean,
-  Count: number,
-  Document: {
-    [id: string]: FBXDocument,
-  },
-  propertyList: any[],
-  name: string,
+  singleProperty?: boolean,
+  Count?: number,
+  Document?: Record<string, FBXDocument>,
+  propertyList?: any[],
+  name?: string,
 }
 
 export interface FBXDocument {
-  singleProperty: boolean,
-  SourceObject: FBXTypedProperty,
-  ActiveAnimStackName: FBXTypedProperty,
-  propertyList: any[],
-  name: string,
-  RootNode: number,
-  id: number,
-  attrType: string,
+  singleProperty?: boolean,
+  SourceObject?: FBXTypedProperty,
+  ActiveAnimStackName?: FBXTypedProperty,
+  propertyList?: any[],
+  name?: string,
+  RootNode?: number,
+  id?: number,
+  attrType?: string,
+  Properties70?: FBXProperties70,
 }
 
 export interface FBXDefinitions {
-  singleProperty: boolean,
-  Version: number,
-  Count: number,
-  ObjectType: {
-    [key: string]: FBXObjectType,
-  },
-  propertyList: string[],
-  name: string,
+  singleProperty?: boolean,
+  Version?: number,
+  Count?: number,
+  ObjectType?: Record<string, FBXObjectType>,
+  propertyList?: string[],
+  name?: string,
 }
 
 export interface FBXObjectType {
-  singleProperty: boolean,
-  Count: number,
+  singleProperty?: boolean,
+  Count?: number,
   PropertyTemplate?: FBXPropertyTemplate,
-  propertyList: string[],
-  name: string,
+  propertyList?: string[],
+  name?: string,
   undefined?: FBXObjectType,
 }
 
 export interface FBXPropertyTemplate {
-  singleProperty: boolean,
-  Description: FBXTypedProperty,
-  LocalStart: FBXTypedProperty,
-  LocalStop: FBXTypedProperty,
-  ReferenceStart: FBXTypedProperty,
-  ReferenceStop: FBXTypedProperty,
-  propertyList: string[],
-  name: string,
+  singleProperty?: boolean,
+  Description?: FBXTypedProperty,
+  LocalStart?: FBXTypedProperty,
+  LocalStop?: FBXTypedProperty,
+  ReferenceStart?: FBXTypedProperty,
+  ReferenceStop?: FBXTypedProperty,
+  propertyList?: string[],
+  name?: string,
+  Properties70?: FBXProperties70,
 }
 export interface FBXRawTargets {
   geoID?: number,
@@ -237,6 +239,42 @@ export interface FBXAnimationCurveNode extends FBXTreeNode {
   KeyValueFloat: FBXTreeNodeDetails,
 }
 
+export interface FBXAnimationStack extends FBXTreeNode {
+  Properties70?: FBXProperties70,
+}
+
+export interface FBXAnimationLayer extends FBXTreeNode {
+  Properties70?: FBXProperties70,
+}
+
+export interface FBXAnimationCurve extends FBXTreeNode {
+  KeyTime: FBXTreeNodeDetails,
+  KeyValueFloat: FBXTreeNodeDetails,
+  KeyAttrFlags: FBXTreeNodeDetails,
+  KeyAttrDataFloat: FBXTreeNodeDetails,
+}
+
+export interface FBXDeformer extends FBXTreeNode {
+  Indexes?: FBXTreeNodeDetails,
+  Weights?: FBXTreeNodeDetails,
+  Transform?: FBXTreeNodeDetails,
+  TransformLink?: FBXTreeNodeDetails,
+}
+
+export interface FBXProperties70 {
+  singleProperty: boolean,
+  P: FBXProperty70[],
+  propertyList: any[],
+  name: string,
+}
+
+export interface FBXProperty70 {
+  type: string,
+  type2: string,
+  flag: string,
+  value: any,
+}
+
 export interface FBXLightNodeAttribute extends FBXNodeAttribute {
   CastShadows?: FBXTreeNode,
   LightType?: FBXTreeNode,
@@ -251,16 +289,17 @@ export interface FBXLightNodeAttribute extends FBXNodeAttribute {
 
 export interface FBXObjects {
   singleProperty: boolean,
-  Geometry?: {
-    [id: string]: FBXGeometryNode,
-  },
+  Geometry?: Record<string, FBXGeometryNode>,
   Model?: Record<string, FBXModelNode>,
   Material?: Record<string, FBXMaterialNode>,
-  Pose?: Record<string, FBXPoseNode>,
+  Texture?: Record<string, FBXTextureNode>,
   Video?: Record<string, FBXVideoNode>,
   NodeAttribute?: Record<string, FBXNodeAttribute>,
+  AnimationStack?: Record<string, FBXAnimationStack>,
+  AnimationLayer?: Record<string, FBXAnimationLayer>,
   AnimationCurveNode?: Record<string, FBXAnimationCurveNode>,
-  AnimationCurve?: Record<string, FBXAnimationCurveNode>,
+  AnimationCurve?: Record<string, FBXAnimationCurve>,
+  Deformer?: Record<string, FBXDeformer>,
   [key: string]: any,
   propertyList: any[],
   name: string,
@@ -271,13 +310,13 @@ export interface FBXGeometryNode {
   Form?: string,
   KnotVector?: FBXTreeNodeDetails,
   Points?: FBXTreeNodeDetails,
-  LayerElementColor: any,
+  LayerElementColor?: any,
   attrName: string,
   singleProperty: boolean,
-  Vertices: FBXProperty,
+  Vertices?: FBXProperty,
   Indexes?: FBXProperty,
-  PolygonVertexIndex: FBXProperty,
-  GeometryVersion: number,
+  PolygonVertexIndex?: FBXProperty,
+  GeometryVersion?: number,
   LayerElementNormal?: {
     [id: string]: FBXLayerElement,
   },
@@ -294,11 +333,12 @@ export interface FBXGeometryNode {
     [id: string]: FBXLayerElement,
   },
   LayerElementMaterial?: {
-    [id: string]: FBXMaterialNode,
+    [id: string]: FBXLayerElement,
   },
   Layer?: {
     [id: string]: FBXLayer,
   },
+  Properties70?: FBXProperties70,
   propertyList: any[],
   id: number,
   attrType: string,
@@ -399,13 +439,14 @@ export interface FBXConnectionNode {
 export interface FBXTreeNode {
   value?: FBXEulerOrder | string | number,
   ID?: number,
-  id: number,
-  attrName: string,
-  attrType: string,
-  name: string,
-  propertyList?: string[],
+  id?: number,
+  attrName?: string,
+  attrType?: string,
+  name?: string,
+  propertyList?: any[],
   singleProperty?: boolean,
   version?: number,
+  Properties70?: FBXProperties70,
 }
 
 export interface FBXConnectionReference {
@@ -431,127 +472,117 @@ export interface FBXMeshNode extends FBXTreeNode {
 }
 
 export interface FBXModelNode extends FBXTreeNode {
-  LookAtProperty?: string,
-  GeometricTranslation: FBXTypedProperty,
-  GeometricRotation: FBXTypedProperty,
-  GeometricScaling: FBXTypedProperty,
-  singleProperty: boolean,
-  ScalingOffset: FBXTypedProperty,
-  RotationOffset: FBXTypedProperty,
-  Lcl_Rotation: FBXTypedProperty,
-  PostRotation: FBXTypedProperty,
-  Version: number,
-  RotationPivot: FBXTypedProperty,
-  ScalingPivot: FBXTypedProperty,
-  RotationActive: FBXTypedProperty,
-  InheritType: FBXTypedProperty,
-  ScalingMax: FBXTypedProperty,
-  DefaultAttributeIndex: FBXTypedProperty,
-  currentUVSet: FBXTypedProperty,
-  RotationOrder: FBXTreeNode,
-  Shading: boolean,
-  Lcl_Translation: FBXTypedProperty,
-  Lcl_Scaling: FBXTypedProperty,
-  filmboxTypeID: FBXTypedProperty,
-  lockInfluenceWeights: FBXTypedProperty,
-  PreRotation: FBXTypedProperty,
-  Culling: string,
+  LookAtProperty?: FBXTypedProperty,
+  GeometricTranslation?: FBXTypedProperty,
+  GeometricRotation?: FBXTypedProperty,
+  GeometricScaling?: FBXTypedProperty,
+  singleProperty?: boolean,
+  ScalingOffset?: FBXTypedProperty,
+  RotationOffset?: FBXTypedProperty,
+  Lcl_Rotation?: FBXTypedProperty,
+  PostRotation?: FBXTypedProperty,
+  Version?: number,
+  RotationPivot?: FBXTypedProperty,
+  ScalingPivot?: FBXTypedProperty,
+  RotationActive?: FBXTypedProperty,
+  InheritType?: FBXTypedProperty,
+  ScalingMax?: FBXTypedProperty,
+  DefaultAttributeIndex?: FBXTypedProperty,
+  currentUVSet?: FBXTypedProperty,
+  RotationOrder?: FBXTreeNode,
+  Shading?: boolean,
+  Lcl_Translation?: FBXTypedProperty,
+  Lcl_Scaling?: FBXTypedProperty,
+  filmboxTypeID?: FBXTypedProperty,
+  lockInfluenceWeights?: FBXTypedProperty,
+  PreRotation?: FBXTypedProperty,
+  Culling?: string,
+  Properties70?: FBXProperties70,
 }
 
 /**
  * FBX文件中纹理节点的接口定义
  */
 export interface FBXTextureNode {
-  WrapModeU: {
-    value: number,
-  },
-  Scaling: FBXTypedProperty,
-  WrapModeV: {
-    value: number,
-  }, // Added back the WrapModeV property
-  Translation: FBXTypedProperty,
+  WrapModeU?: FBXTypedProperty,
+  Scaling?: FBXTypedProperty,
+  WrapModeV?: FBXTypedProperty,
+  Translation?: FBXTypedProperty,
   /** 纹理文件的完整路径 */
-  FileName: string,
+  FileName?: string,
 
   /** 媒体文件名 */
-  Media: string,
+  Media?: string,
 
   /** 相对路径的文件名 */
-  RelativeFilename: string,
+  RelativeFilename?: string,
 
   /** 纹理名称，通常描述纹理用途 */
-  TextureName: string,
+  TextureName?: string,
 
   /** 纹理类型 */
-  Type: string,
+  Type?: string,
 
   /** 使用材质的标志 */
-  UseMaterial: {
-    type: string,
-    type2: string,
-    flag: string,
-    value: number,
-  },
+  UseMaterial?: FBXTypedProperty,
 
   /** 版本号 */
-  Version: number,
+  Version?: number,
 
   /** 属性名称 */
-  attrName: string,
+  attrName?: string,
 
   /** 属性类型 */
-  attrType: string,
+  attrType?: string,
 
   /** 唯一标识符 */
-  id: number,
+  id?: number,
 
   /** 节点名称 */
-  name: string,
+  name?: string,
 
   /** 属性列表，通常包含 [id, 名称, 类型] */
-  propertyList: Array<number | string>,
+  propertyList?: Array<number | string>,
 
   /** 是否为单一属性 */
-  singleProperty: boolean,
+  singleProperty?: boolean,
+
+  Properties70?: FBXProperties70,
 }
 
 export interface FBXVideoNode {
-// 主要属性
-  Content: ArrayBuffer,
-  Filename: string,
-  RelativeFilename: string,
-  Path: string,
+  // 主要属性
+  Content?: ArrayBuffer,
+  Filename?: string,
+  RelativeFilename?: string,
+  Path?: string,
 
   // 类型标识
-  Type: string,
-  type: string,
-  type2: string,
-  attrType: string,
+  Type?: string,
+  type?: string,
+  type2?: string,
+  attrType?: string,
 
   // 标志和值
-  flag: string,
-  value: string,
-  UseMipMap: number,
+  flag?: string,
+  value?: string,
+  UseMipMap?: number,
 
   // 标识信息
-  id: number,
-  name: string,
-  attrName: string,
+  id?: number,
+  name?: string,
+  attrName?: string,
 
   // 属性列表，通常包含 [id, 文件名, 类型]
-  propertyList: Array<string | number>,
+  propertyList?: Array<string | number>,
 
   // 是否为单一属性
-  singleProperty: boolean,
+  singleProperty?: boolean,
+
+  Properties70?: FBXProperties70,
 }
 
-export interface FBXConnectionDocment {
-  from: number,
-  to: number,
-  relationship?: number,
-}
-
-// FBX连接类型
+// FBX连接类型枚举
 export enum FBXConnectionType {
   OBJECT_OBJECT = 'OO', // 对象到对象的连接
   OBJECT_PROPERTY = 'OP' // 对象到属性的连接
@@ -575,78 +606,80 @@ export interface IFBXPropertyValue<T> {
  * FBX文件中材质节点的接口定义
  */
 export interface FBXMaterialNode {
-  MappingInformationType: string,
-  ReferenceInformationType: string,
-  Materials: any,
-  Diffuse: IFBXPropertyValue<number[]>,
-  DisplacementFactor: IFBXPropertyValue<number[] | number>,
-  Emissive: IFBXPropertyValue<number[]>,
-  TransparencyFactor: IFBXPropertyValue<string>,
-  Opacity: IFBXPropertyValue<string>,
-  TransparentColor: IFBXPropertyValue<string[]>,
-  Specular: IFBXPropertyValue<number[]>,
+  MappingInformationType?: string,
+  ReferenceInformationType?: string,
+  Materials?: any,
+  Diffuse?: IFBXPropertyValue<number[]>,
+  DisplacementFactor?: IFBXPropertyValue<number[] | number>,
+  Emissive?: IFBXPropertyValue<number[]>,
+  TransparencyFactor?: IFBXPropertyValue<string>,
+  Opacity?: IFBXPropertyValue<string>,
+  TransparentColor?: IFBXPropertyValue<string[]>,
+  Specular?: IFBXPropertyValue<number[]>,
   /** 唯一标识符 */
-  id: number,
+  id?: number,
 
   /** 属性名称 */
-  attrName: string,
+  attrName?: string,
 
   /** 属性类型 */
-  attrType: string,
+  attrType?: string,
 
   /** 是否为单一属性 */
-  singleProperty: boolean,
+  singleProperty?: boolean,
 
   /** 节点名称 */
-  name: string,
+  name?: string,
 
   /** 版本号 */
-  Version: number,
+  Version?: number,
 
   /** 着色模型类型 */
-  ShadingModel: IFBXPropertyValue<string>,
+  ShadingModel?: IFBXPropertyValue<string>,
 
   /** 是否多层 */
-  MultiLayer: number,
+  MultiLayer?: number,
 
   /** 漫反射颜色 */
-  DiffuseColor: IFBXPropertyValue<number[]>,
+  DiffuseColor?: IFBXPropertyValue<number[]>,
 
   /** 自发光颜色 */
-  EmissiveColor: IFBXPropertyValue<number[]>,
+  EmissiveColor?: IFBXPropertyValue<number[]>,
 
   /** 自发光因子 */
-  EmissiveFactor: IFBXPropertyValue<string>,
+  EmissiveFactor?: IFBXPropertyValue<string>,
 
   /** 环境光颜色 */
-  AmbientColor: IFBXPropertyValue<number[]>,
+  AmbientColor?: IFBXPropertyValue<number[]>,
 
   /** 环境光因子 */
-  AmbientFactor: IFBXPropertyValue<number>,
+  AmbientFactor?: IFBXPropertyValue<number>,
 
   /** 凹凸因子 */
-  BumpFactor: IFBXPropertyValue<number>,
+  BumpFactor?: IFBXPropertyValue<number>,
 
   /** 镜面颜色 */
-  SpecularColor: IFBXPropertyValue<number[]>,
+  SpecularColor?: IFBXPropertyValue<number[]>,
 
   /** 镜面因子 */
-  SpecularFactor: IFBXPropertyValue<number>,
+  SpecularFactor?: IFBXPropertyValue<number>,
 
   /** 光泽度 */
-  Shininess: IFBXPropertyValue<number>,
+  Shininess?: IFBXPropertyValue<number>,
 
   /** 光泽度指数 */
-  ShininessExponent: IFBXPropertyValue<number>,
+  ShininessExponent?: IFBXPropertyValue<number>,
 
   /** 反射颜色 */
-  ReflectionColor: IFBXPropertyValue<number[]>,
+  ReflectionColor?: IFBXPropertyValue<number[]>,
 
   /** 反射因子 */
-  ReflectionFactor: IFBXPropertyValue<number>,
+  ReflectionFactor?: IFBXPropertyValue<number>,
 
   /** 属性列表，通常包含 [id, 名称, 类型] */
-  propertyList: Array<number | string>,
+  propertyList?: Array<number | string>,
+
+  Properties70?: FBXProperties70,
 }
 
 export enum FBXEulerOrder {

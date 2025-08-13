@@ -108,12 +108,12 @@ export class AnimationParser {
 
       const rawCurveNode = rawCurveNodes[ nodeID ];
 
-      if (rawCurveNode.attrName.match(/S|R|T|DeformPercent/) !== null) {
+      if (rawCurveNode.attrName && rawCurveNode.attrName.match(/S|R|T|DeformPercent/) !== null) {
 
         const curveNode: CurveNode = {
 
-          id: rawCurveNode.id,
-          attr: rawCurveNode.attrName,
+          id: rawCurveNode.id || 0,
+          attr: rawCurveNode.attrName || '',
           curves: {},
 
         };
@@ -150,7 +150,7 @@ export class AnimationParser {
 
       const animationCurve: AnimationCurve = {
 
-        id: rawCurves[ nodeID ].id,
+        id: rawCurves[ nodeID ].id || 0,
         times: rawCurves[ nodeID ].KeyTime.a.map(convertFBXTimeToSeconds),
         values: rawCurves[ nodeID ].KeyValueFloat.a,
 
@@ -251,7 +251,7 @@ export class AnimationParser {
 
                   const node: AnimationNode = {
                     modelName: rawModel.attrName ? PropertyBinding.sanitizeNodeName(rawModel.attrName) : '',
-                    ID: rawModel.id,
+                    ID: rawModel.id || 0,
                     initialPosition: [0, 0, 0],
                     initialRotation: [0, 0, 0],
                     initialScale: [1, 1, 1],
@@ -273,8 +273,8 @@ export class AnimationParser {
 
                   // if the animated model is pre rotated, we'll have to apply the pre rotations to every
                   // animation value as well
-                  if ('PreRotation' in rawModel) {node.preRotation = rawModel.PreRotation.value;}
-                  if ('PostRotation' in rawModel) {node.postRotation = rawModel.PostRotation.value;}
+                  if ('PreRotation' in rawModel && rawModel.PreRotation) {node.preRotation = rawModel.PreRotation.value;}
+                  if ('PostRotation' in rawModel && rawModel.PostRotation) {node.postRotation = rawModel.PostRotation.value;}
                   layerCurveNodes[ i ] = node;
 
                 }
@@ -328,7 +328,7 @@ export class AnimationParser {
 
                 const node: AnimationNode = {
                   modelName: rawModel.attrName ? PropertyBinding.sanitizeNodeName(rawModel.attrName) : '',
-                  morphName: objects.Deformer[deformerID].attrName,
+                  morphName: objects.Deformer?.[deformerID]?.attrName || '',
                   ID: 0,
                   initialPosition: [],
                   initialRotation: [],
@@ -414,7 +414,7 @@ export class AnimationParser {
 
       rawClips[ nodeID ] = {
 
-        name: rawStacks[ nodeID ].attrName,
+        name: rawStacks[ nodeID ].attrName || '',
         layer: layer,
 
       };

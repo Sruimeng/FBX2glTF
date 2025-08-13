@@ -495,7 +495,7 @@ class BinaryParser {
 
       const node = this.parseNode(reader, version);
 
-      if (node !== null) {allNodes.add(node.name, node);}
+      if (node !== null && node.name !== undefined) {allNodes.add(node.name, node);}
 
     }
 
@@ -576,9 +576,9 @@ class BinaryParser {
     node.propertyList = propertyList; // raw property list used by parent
 
     if (typeof id === 'number') {node.id = id;}
-    if (attrName !== '') {node.attrName = attrName;}
-    if (attrType !== '') {node.attrType = attrType;}
-    if (name !== '') {node.name = name;}
+    if (typeof attrName === 'string' && attrName !== '') {node.attrName = attrName;}
+    if (typeof attrType === 'string' && attrType !== '') {node.attrType = attrType;}
+    if (typeof name === 'string' && name !== '') {node.name = name;}
 
     return node;
 
@@ -791,7 +791,7 @@ class BinaryParser {
 }
 
 class BinaryReader {
-  dv: DataView<any>;
+  dv: DataView;
   offset: number;
   littleEndian: any;
   _textDecoder: TextDecoder;
