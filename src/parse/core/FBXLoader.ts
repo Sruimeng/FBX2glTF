@@ -1,7 +1,7 @@
 // FBX主加载器
 import { TextureLoader, Group, Loader, FileLoader, LoaderUtils } from 'three';
 import type { LoadingManager } from 'three';
-import { global } from '../../constants';
+import { global, type IFBXTree } from '../../constants';
 import type { ParseContext } from '../types';
 import { validateFBXTree, validateParseContext, validateParseResult } from '../utils/validation';
 import { ConnectionParser } from '../parsers/ConnectionParser';
@@ -11,6 +11,16 @@ import { MaterialParser, TextureParser, ImageParser } from '../parsers/MaterialP
 import { SceneParser } from '../parsers/SceneParser';
 import { DeformerParser } from '../parsers/DeformerParser';
 // import { FBXTreeParser } from '../FBX-tree-parser'; // 暂时注释掉，未使用
+
+// 从原始FBX-loader导入解析器类和工具函数
+import {
+  BinaryParser,
+  TextParser,
+  isFbxFormatBinary,
+  isFbxFormatASCII,
+  getFbxVersion,
+  convertArrayBufferToString,
+} from '../../FBX-loader';
 
 export class FBXLoader extends Loader {
   private textureLoader: TextureLoader;
@@ -148,12 +158,24 @@ export class FBXLoader extends Loader {
     return this.textureLoader;
   }
 
-  // 解析FBX缓冲区（简化版本）
-  private parseFBXBuffer (buffer: ArrayBuffer): any {
-    // 这里应该使用BinaryParser或TextParser，但为了简化，我们暂时使用原始的FBXTreeParser
-    // 实际项目中需要实现完整的解析逻辑
+  // 解析FBX缓冲区
+  private parseFBXBuffer (buffer: ArrayBuffer): IFBXTree {
+    // 检查是否为二进制格式
+    if (isFbxFormatBinary(buffer)) {
+      return new BinaryParser().parse(buffer);
+    }
 
-    // 暂时抛出错误，提示用户使用原始的FBXLoader
-    throw new Error('Modular FBXLoader is still under development. Please use the original FBXLoader for now.');
+    // 处理ASCII格式
+    const FBXText = convertArrayBufferToString(buffer);
+
+    if (!isFbxFormatASCII(FBXText)) {
+      throw new Error('FBXLoader: Unknown format.');
+    }
+
+    if (getFbxVersion(FBXText) < 7000) {
+      throw new Error(`FBXLoader: FBX version not supported, FileVersion: ${getFbxVersion(FBXText)}`);
+    }
+
+    return new TextParser().parse(FBXText);
   }
 }

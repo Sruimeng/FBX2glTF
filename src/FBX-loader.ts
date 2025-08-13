@@ -1164,4 +1164,14 @@ function append (a: any[], b: any[]) {
 
 }
 
-export { FBXLoader };
+export {
+  FBXLoader,
+  BinaryParser,
+  TextParser,
+  isFbxFormatBinary,
+  isFbxFormatASCII,
+  getFbxVersion,
+  convertArrayBufferToString,
+  parseNumberArray,
+  append,
+};
