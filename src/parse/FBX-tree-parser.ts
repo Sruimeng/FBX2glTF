@@ -1,7 +1,7 @@
 import type { TextureLoader, LoadingManager, EulerOrder, BufferGeometry, MeshStandardMaterialParameters } from 'three';
 import { MeshStandardMaterial, RepeatWrapping, ClampToEdgeWrapping, Skeleton, Texture, MeshPhongMaterial, ColorManagement, Color, SRGBColorSpace, EquirectangularReflectionMapping, Matrix4, Group, Bone, PropertyBinding, Object3D, PerspectiveCamera, PointLight, DirectionalLight, MathUtils, SpotLight, Loader, SkinnedMesh, Mesh, LineBasicMaterial, Line, Vector3, AmbientLight, MeshPhysicalMaterial } from 'three';
-import type { FBXConnectionNode, FBXConnectionReference, FBXMorphTarget, FBXLightNodeAttribute, FBXMaterialNode, FBXMeshNode, FBXModelNode, FBXSkeleton, FBXTextureNode, FBXVideoNode, IFBXPropertyValue, RawBone, UserDataTransform, FBXRawTargets, FBXEulerOrder } from '../constants';
-import { global } from '../constants';
+import type { FBXConnectionNode, FBXConnectionReference, FBXMorphTarget, FBXLightNodeAttribute, FBXMaterialNode, FBXMeshNode, FBXModelNode, FBXSkeleton, FBXTextureNode, FBXVideoNode, IFBXPropertyValue, RawBone, UserDataTransform, FBXRawTargets, FBXEulerOrder } from './types';
+import { global } from './types';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './FBX-geometry-parser';
 import { generateTransform, getEulerOrder } from './utils';
@@ -747,7 +747,7 @@ export class FBXTreeParser {
 
     const rawBones: RawBone[] = [];
 
-    relationships.children.forEach(function (child) {
+    relationships.children.forEach(function (child: any) {
 
       const boneNode = deformerNodes[ child.ID ];
 
@@ -992,7 +992,7 @@ export class FBXTreeParser {
     let bone: Bone | null = null;
     const buildSkeletons = skeletons;
 
-    relationships.parents.forEach(parent => {
+    relationships.parents.forEach((parent: any) => {
 
       Object.entries(buildSkeletons).forEach(([ID, skeleton]) => {
 
