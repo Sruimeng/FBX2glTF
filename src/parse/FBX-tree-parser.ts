@@ -1469,9 +1469,11 @@ export class FBXTreeParser {
         throw new Error('THREE.FBXLoader: Invalid rotation order value');
       }
       const eulerOrderStr = getEulerOrder(value);
+
       transformData.eulerOrder = parseInt(eulerOrderStr) as FBXEulerOrder;
     } else {
       const eulerOrderStr = getEulerOrder(0);
+
       transformData.eulerOrder = parseInt(eulerOrderStr) as FBXEulerOrder;
     }
 

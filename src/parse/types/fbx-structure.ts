@@ -1,5 +1,5 @@
-import type { Matrix4, Bone } from 'three';
-import { Group, Euler } from 'three';
+import type { Matrix4, Bone, Euler } from 'three';
+import { Group } from 'three';
 
 /**
  * FBX 基础结构类型定义
@@ -260,7 +260,6 @@ export interface FBXProperty70 {
   value: any,
 }
 
-
 // FBX 节点属性
 export interface FBXNodeAttribute extends FBXTreeNode {
   CameraProjectionType?: FBXTreeNode,
@@ -335,7 +334,7 @@ export enum FBXEulerOrder {
 }
 
 // EulerOrder 类型兼容性定义
-export type EulerOrder = FBXEulerOrder | Euler['order']
+export type EulerOrder = FBXEulerOrder | Euler['order'];
 
 // FBX 节点类型枚举
 export enum FBXNodeType {

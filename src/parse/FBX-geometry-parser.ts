@@ -154,6 +154,7 @@ export class GeometryParser {
 
       if (typeof value === 'number') {
         const eulerOrderStr = getEulerOrder(modelNode.RotationOrder.value as FBXEulerOrder);
+
         transformData.eulerOrder = parseInt(eulerOrderStr) as FBXEulerOrder;
       }
 
@@ -487,6 +488,7 @@ export class GeometryParser {
       if (geoInfo.material && geoInfo.material.mappingType !== 'AllSame') {
 
         const materialData = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.material) as number[];
+
         materialIndex = materialData[0];
 
         if (materialIndex < 0) {
@@ -511,6 +513,7 @@ export class GeometryParser {
           }
 
           const uvData = data as number[];
+
           faceUVs[i].push(uvData[0]);
           faceUVs[i].push(uvData[1]);
 

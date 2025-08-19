@@ -22,7 +22,7 @@ export function convertFBXTimeToSeconds (time: number): number {
 }
 
 // 获取数据
-export function getData (polygonVertexIndex: number, polygonIndex: number, vertexIndex: number, infoObject: any): number| number[] {
+export function getData (polygonVertexIndex: number, polygonIndex: number, vertexIndex: number, infoObject: any): number | number[] {
   let index: number | number[];
 
   switch (infoObject.mappingType) {

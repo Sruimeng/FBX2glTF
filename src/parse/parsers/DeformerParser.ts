@@ -6,7 +6,7 @@ import type {
   RawBone,
   FBXMorphTarget,
   FBXRawTargets,
-  ParseContext
+  ParseContext,
 } from '../types';
 
 export interface Deformers {

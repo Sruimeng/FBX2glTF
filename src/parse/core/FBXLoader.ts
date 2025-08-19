@@ -1,7 +1,7 @@
 // FBX主加载器
 import { TextureLoader, Group, Loader, FileLoader, LoaderUtils } from 'three';
 import type { LoadingManager } from 'three';
-import { type ParseContext,type IFBXTree, global } from '../types';
+import { type ParseContext, type IFBXTree, global } from '../types';
 import { validateFBXTree, validateParseContext, validateParseResult } from '../utils';
 import { ConnectionParser } from '../parsers';
 import { AnimationParser } from '../parsers';
