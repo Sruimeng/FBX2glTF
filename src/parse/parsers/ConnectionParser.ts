@@ -1,6 +1,5 @@
 // 连接关系解析器
-import type { FBXConnectionNode, FBXConnectionReference, FBXConnectionDocment } from '../types';
-import type { ParseContext } from '../types/common';
+import type { ParseContext,FBXConnectionNode, FBXConnectionReference, FBXConnectionDocment } from '../types';
 
 export class ConnectionParser {
   private context: ParseContext;
@@ -53,15 +52,15 @@ export class ConnectionParser {
     connection: [string, number, number, ...string[]],
     connectionMap: Map<number, FBXConnectionNode>
   ): void {
-    const [, fromId, toId, ...relationshipParts] = connection;
+    const [fromId, toId, ...relationshipParts] = connection;
     const relationship = relationshipParts.join('') || '';
-
+    const fromIdNum = parseInt(fromId);
     // 确保连接映射中存在from和to的节点
-    this.ensureNodeExists(fromId, connectionMap);
+    this.ensureNodeExists(fromIdNum, connectionMap);
     this.ensureNodeExists(toId, connectionMap);
 
     // 添加连接关系
-    const fromNode = connectionMap.get(fromId)!;
+    const fromNode = connectionMap.get(fromIdNum)!;
     const toNode = connectionMap.get(toId)!;
 
     // 创建连接引用，包含关系类型
@@ -71,12 +70,12 @@ export class ConnectionParser {
     };
 
     const parentReference: FBXConnectionReference = {
-      ID: fromId,
+      ID: fromIdNum,
       relationship: relationship || undefined,
     };
 
-    fromNode.children.push(childReference);
-    toNode.parents.push(parentReference);
+    fromNode.parents.push(parentReference);
+    toNode.children.push(childReference);
   }
 
   // 确保节点存在于连接映射中
