@@ -125,7 +125,7 @@ export class GeometryParser {
     if (materialInfo.referenceType === 'IndexToDirect') {
       materialInfo.buffer = materialElement.Materials.a;
     } else {
-      materialInfo.buffer = materialElement.Materials.a;
+      materialInfo.buffer = materialElement.a;
     }
 
     return materialInfo;
