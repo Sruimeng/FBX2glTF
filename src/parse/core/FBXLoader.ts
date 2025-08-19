@@ -3,13 +3,13 @@ import { TextureLoader, Group, Loader, FileLoader, LoaderUtils } from 'three';
 import type { LoadingManager } from 'three';
 import { global, type IFBXTree } from '../../constants';
 import type { ParseContext } from '../types';
-import { validateFBXTree, validateParseContext, validateParseResult } from '../utils/validation';
-import { ConnectionParser } from '../parsers/ConnectionParser';
-import { AnimationParser } from '../parsers/AnimationParser';
-import { GeometryParser } from '../parsers/GeometryParser';
-import { MaterialParser, TextureParser, ImageParser } from '../parsers/MaterialParser';
-import { SceneParser } from '../parsers/SceneParser';
-import { DeformerParser } from '../parsers/DeformerParser';
+import { validateFBXTree, validateParseContext, validateParseResult } from '../utils';
+import { ConnectionParser } from '../parsers';
+import { AnimationParser } from '../parsers';
+import { GeometryParser } from '../parsers';
+import { MaterialParser, TextureParser, ImageParser } from '../parsers';
+import { SceneParser } from '../parsers';
+import { DeformerParser } from '../parsers';
 // import { FBXTreeParser } from '../FBX-tree-parser'; // 暂时注释掉，未使用
 
 // 从原始FBX-loader导入解析器类和工具函数
