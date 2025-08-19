@@ -83,12 +83,12 @@ export class GeometryParser {
 
     // 解析材质
     if (geometryNode.LayerElementMaterial) {
-      geoInfo.material = this.parseMaterialElement(geometryNode.LayerElementMaterial);
+      geoInfo.material = this.parseMaterialElement(geometryNode.LayerElementMaterial[0]);
     }
 
     // 解析法线
     if (geometryNode.LayerElementNormal) {
-      geoInfo.normal = this.parseNormalElement(geometryNode.LayerElementNormal);
+      geoInfo.normal = this.parseNormalElement(geometryNode.LayerElementNormal[0]);
     }
 
     // 解析UV

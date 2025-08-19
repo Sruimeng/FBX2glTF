@@ -323,14 +323,6 @@ export interface FBXLightNodeAttribute extends FBXNodeAttribute {
   FarAttenuationEnd?: FBXTreeNode,
 }
 
-
-
-// FBX 连接类型枚举
-export enum FBXConnectionType {
-  OBJECT_OBJECT = 'OO', // 对象到对象的连接
-  OBJECT_PROPERTY = 'OP' // 对象到属性的连接
-}
-
 // FBX 欧拉角顺序枚举
 export enum FBXEulerOrder {
   'ZYX' = 0, // -> XYZ extrinsic

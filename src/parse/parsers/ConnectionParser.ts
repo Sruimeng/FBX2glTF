@@ -23,20 +23,14 @@ export class ConnectionParser {
     for (let i = 0; i < connections.length; ++i) {
       const connection = connections[i];
 
-      if (connection[0] === 'OO') {
-        // 对象到对象的连接
-        this.parseObjectConnection(connection, connectionMap);
-      } else if (connection[0] === 'OP') {
-        // 对象到属性的连接
-        this.parsePropertyConnection(connection, connectionMap);
-      }
+      this.parseConnection(connection, connectionMap);
     }
 
     return connectionMap;
   }
 
-  // 解析对象连接
-  private parseObjectConnection (
+  // 解析连接
+  private parseConnection (
     connection: [string, number, number, ...string[]],
     connectionMap: Map<number, FBXConnectionNode>
   ): void {
@@ -63,50 +57,10 @@ export class ConnectionParser {
 
     fromNode.children.push({
       ID: to,
-      relationship: 'OO',
     });
 
     toNode.parents.push({
       ID: from,
-      relationship: 'OO',
-    });
-  }
-
-  // 解析属性连接
-  private parsePropertyConnection (
-    connection: [string, number, number, ...string[]],
-    connectionMap: Map<number, FBXConnectionNode>
-  ): void {
-    const from = connection[1];
-    const to = connection[2];
-    const property = connection[3];
-
-    // 确保连接映射中存在from和to的节点
-    if (!connectionMap.has(from)) {
-      connectionMap.set(from, {
-        parents: [],
-        children: [],
-      });
-    }
-    if (!connectionMap.has(to)) {
-      connectionMap.set(to, {
-        parents: [],
-        children: [],
-      });
-    }
-
-    // 添加连接关系
-    const fromNode = connectionMap.get(from)!;
-    const toNode = connectionMap.get(to)!;
-
-    fromNode.children.push({
-      ID: to,
-      relationship: property,
-    });
-
-    toNode.parents.push({
-      ID: from,
-      relationship: property,
     });
   }
 
