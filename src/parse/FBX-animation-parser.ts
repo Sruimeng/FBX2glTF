@@ -1,7 +1,7 @@
 import type { EulerOrder } from 'three';
 import { PropertyBinding, Matrix4, AnimationClip, Vector3, Quaternion, VectorKeyframeTrack, MathUtils, Euler, QuaternionKeyframeTrack, NumberKeyframeTrack } from 'three';
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
-import { global } from '../constants';
+import { global } from './types';
 
 interface AnimationCurve {
   id: number,

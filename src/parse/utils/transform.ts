@@ -1,5 +1,5 @@
 // 变换工具函数
-import type { FBXTransformData } from '../../constants';
+import type { FBXTransformData } from '../types';
 import type { EulerOrder } from 'three';
 import { Matrix4, Euler, Vector3, MathUtils } from 'three';
 

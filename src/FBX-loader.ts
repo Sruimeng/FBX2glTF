@@ -9,7 +9,7 @@ import {
 
 import * as fflate from 'fflate';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
-import { global, type FBXConnectionNode, type FBXDefinitions, type FBXDocuments, type FBXGlobalSettings, type FBXHeaderExtension, type FBXObjects, type FBXProperty, type FBXTreeNode, type IFBXTree } from './constants';
+import { global, type FBXConnectionNode, type FBXDefinitions, type FBXDocuments, type FBXGlobalSettings, type FBXHeaderExtension, type FBXObjects, type FBXProperty, type FBXTreeNode, type IFBXTree } from './parse/types';
 
 /**
  * A loader for the FBX format.
@@ -761,7 +761,7 @@ class BinaryParser {
         }
 
         const data = fflate.unzlibSync(new Uint8Array(reader.getArrayBuffer(compressedLength)), {});
-        const reader2 = new BinaryReader(data.buffer);
+        const reader2 = new BinaryReader(data.buffer as ArrayBuffer, reader.littleEndian);
 
         switch (type) {
 

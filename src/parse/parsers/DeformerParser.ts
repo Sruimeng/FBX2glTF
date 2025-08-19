@@ -6,8 +6,8 @@ import type {
   RawBone,
   FBXMorphTarget,
   FBXRawTargets,
-} from '../../constants';
-import type { ParseContext } from '../types/common';
+  ParseContext
+} from '../types';
 
 export interface Deformers {
   skeletons: Record<number, FBXSkeleton>,

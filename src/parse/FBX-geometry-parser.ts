@@ -2,8 +2,8 @@ import type { EulerOrder, Matrix4 } from 'three';
 import { BufferGeometry, Float32BufferAttribute, Uint16BufferAttribute, Matrix3, Vector3, Vector2, ShapeUtils, Color, ColorManagement, SRGBColorSpace, Vector4 } from 'three';
 import { NURBSCurve } from '../curves/NURBS-curve';
 import { getEulerOrder, generateTransform, getData } from './utils';
-import type { Deformers, FBXConnectionNode, FBXEulerOrder, FBXGeometryNode, FBXLayerElementColor, FBXLayerElementNormal, FBXLayerElementUV, FBXMaterialNode, FBXMorphTarget, FBXSkeleton, UserDataTransform } from '../constants';
-import { global } from '../constants';
+import type { Deformers, FBXConnectionNode, FBXEulerOrder, FBXGeometryNode, FBXLayerElementColor, FBXLayerElementNormal, FBXLayerElementUV, FBXMaterialNode, FBXMorphTarget, FBXSkeleton, UserDataTransform, FBXTransformData } from './types';
+import { global } from '../';
 
 interface GeoBufferInfo { dataSize: number, buffer: number[], indices: number[], mappingType: string, referenceType: string }
 interface GeoInfo {
@@ -153,7 +153,8 @@ export class GeometryParser {
       const value = modelNode.RotationOrder.value;
 
       if (typeof value === 'number') {
-        transformData.eulerOrder = getEulerOrder(modelNode.RotationOrder.value as FBXEulerOrder) as EulerOrder;
+        const eulerOrderStr = getEulerOrder(modelNode.RotationOrder.value as FBXEulerOrder);
+        transformData.eulerOrder = parseInt(eulerOrderStr) as FBXEulerOrder;
       }
 
     }
@@ -163,7 +164,7 @@ export class GeometryParser {
     if ('GeometricRotation' in modelNode && modelNode.GeometricRotation) {transformData.rotation = modelNode.GeometricRotation.value;}
     if ('GeometricScaling' in modelNode && modelNode.GeometricScaling) {transformData.scale = modelNode.GeometricScaling.value;}
 
-    const transform = generateTransform(transformData);
+    const transform = generateTransform(transformData as FBXTransformData);
 
     return this.genGeometry(geoNode, skeleton, morphTargets, transform);
 
@@ -375,7 +376,7 @@ export class GeometryParser {
 
     geoInfo.vertexIndices?.forEach((vertexIndex: number, polygonVertexIndex: number) =>{
 
-      let materialIndex: number | undefined;
+      let materialIndex: number = 0;
       let endOfFace = false;
 
       // Face index and vertex index arrays are combined in a single array
@@ -399,9 +400,9 @@ export class GeometryParser {
 
       if (geoInfo.color) {
 
-        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.color);
+        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.color) as number;
 
-        faceColors.push(data[ 0 ], data[ 1 ], data[ 2 ]);
+        faceColors.push(data);
 
       }
 
@@ -477,15 +478,16 @@ export class GeometryParser {
 
       if (geoInfo.normal) {
 
-        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.normal);
+        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.normal) as number;
 
-        faceNormals.push(data[ 0 ], data[ 1 ], data[ 2 ]);
+        faceNormals.push(data);
 
       }
 
       if (geoInfo.material && geoInfo.material.mappingType !== 'AllSame') {
 
-        materialIndex = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.material)[ 0 ];
+        const materialData = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.material) as number[];
+        materialIndex = materialData[0];
 
         if (materialIndex < 0) {
 
@@ -508,8 +510,9 @@ export class GeometryParser {
 
           }
 
-          faceUVs[ i ].push(data[ 0 ]);
-          faceUVs[ i ].push(data[ 1 ]);
+          const uvData = data as number[];
+          faceUVs[i].push(uvData[0]);
+          faceUVs[i].push(uvData[1]);
 
         });
 

@@ -17,6 +17,7 @@ import type {
   FBXModelNode,
   FBXSkeleton,
   UserDataTransform,
+  FBXTransformData,
 } from '../../constants';
 import { generateTransform, getEulerOrder } from '../utils';
 import type { ParseContext } from '../types/common';
@@ -144,7 +145,7 @@ export class SceneParser {
 
       // 设置变换
       const transformData = this.parseTransformData(modelNode);
-      const transformMatrix = generateTransform(transformData);
+      const transformMatrix = generateTransform(transformData as FBXTransformData);
 
       object.matrix.copy(transformMatrix);
       object.matrix.decompose(object.position, object.quaternion, object.scale);

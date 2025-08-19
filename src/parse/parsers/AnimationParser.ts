@@ -17,7 +17,7 @@ import type {
   AnimationNode,
   RawClip,
 } from '../types';
-import type { ParseContext } from '../types/common';
+import type { ParseContext } from '../types';
 
 export class AnimationParser {
   private context: ParseContext;
@@ -150,7 +150,7 @@ export class AnimationParser {
       if (connection !== undefined) {
         const children = connection.children;
 
-        children.forEach((child, i) => {
+        children.forEach((child: any, i: any) => {
           if (curveNodesMap.has(child.ID)) {
             const curveNode = curveNodesMap.get(child.ID);
 
@@ -161,7 +161,7 @@ export class AnimationParser {
                 curveNode.curves.z !== undefined) {
 
               if (layerCurveNodes[i] === undefined) {
-                const modelID = connections.get(child.ID)?.parents.filter(parent => {
+                const modelID = connections.get(child.ID)?.parents.filter((parent: any) => {
                   return parent.relationship !== undefined;
                 })[0].ID;
 

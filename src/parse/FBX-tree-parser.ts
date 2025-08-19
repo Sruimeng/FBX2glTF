@@ -1,6 +1,6 @@
 import type { TextureLoader, LoadingManager, EulerOrder, BufferGeometry, MeshStandardMaterialParameters } from 'three';
 import { MeshStandardMaterial, RepeatWrapping, ClampToEdgeWrapping, Skeleton, Texture, MeshPhongMaterial, ColorManagement, Color, SRGBColorSpace, EquirectangularReflectionMapping, Matrix4, Group, Bone, PropertyBinding, Object3D, PerspectiveCamera, PointLight, DirectionalLight, MathUtils, SpotLight, Loader, SkinnedMesh, Mesh, LineBasicMaterial, Line, Vector3, AmbientLight, MeshPhysicalMaterial } from 'three';
-import type { FBXConnectionNode, FBXConnectionReference, FBXMorphTarget, FBXLightNodeAttribute, FBXMaterialNode, FBXMeshNode, FBXModelNode, FBXSkeleton, FBXTextureNode, FBXVideoNode, IFBXPropertyValue, RawBone, UserDataTransform, FBXRawTargets } from '../constants';
+import type { FBXConnectionNode, FBXConnectionReference, FBXMorphTarget, FBXLightNodeAttribute, FBXMaterialNode, FBXMeshNode, FBXModelNode, FBXSkeleton, FBXTextureNode, FBXVideoNode, IFBXPropertyValue, RawBone, UserDataTransform, FBXRawTargets, FBXEulerOrder } from '../constants';
 import { global } from '../constants';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './FBX-geometry-parser';
@@ -1468,9 +1468,11 @@ export class FBXTreeParser {
       if (typeof value !== 'number') {
         throw new Error('THREE.FBXLoader: Invalid rotation order value');
       }
-      transformData.eulerOrder = getEulerOrder(value) as EulerOrder;
+      const eulerOrderStr = getEulerOrder(value);
+      transformData.eulerOrder = parseInt(eulerOrderStr) as FBXEulerOrder;
     } else {
-      transformData.eulerOrder = getEulerOrder(0) as EulerOrder;
+      const eulerOrderStr = getEulerOrder(0);
+      transformData.eulerOrder = parseInt(eulerOrderStr) as FBXEulerOrder;
     }
 
     if ('Lcl_Translation' in modelNode && modelNode.Lcl_Translation) {

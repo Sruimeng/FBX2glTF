@@ -1,5 +1,5 @@
 // 数学工具函数
-import { FBXEulerOrder } from '../../constants';
+import { FBXEulerOrder } from '../types';
 
 // 获取欧拉角顺序
 export function getEulerOrder (order: FBXEulerOrder): string {
@@ -22,8 +22,8 @@ export function convertFBXTimeToSeconds (time: number): number {
 }
 
 // 获取数据
-export function getData (polygonVertexIndex: number, polygonIndex: number, vertexIndex: number, infoObject: any) {
-  let index: number;
+export function getData (polygonVertexIndex: number, polygonIndex: number, vertexIndex: number, infoObject: any): number| number[] {
+  let index: number | number[];
 
   switch (infoObject.mappingType) {
     case 'ByPolygonVertex':
@@ -48,7 +48,7 @@ export function getData (polygonVertexIndex: number, polygonIndex: number, verte
   }
 
   if (infoObject.referenceType === 'IndexToDirect') {
-    index = infoObject.indices[index];
+    index = infoObject.indices[index as number];
   }
 
   return index;

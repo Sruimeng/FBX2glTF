@@ -1,5 +1,5 @@
 // 连接关系解析器
-import type { FBXConnectionNode, FBXConnectionReference } from '../../constants';
+import type { FBXConnectionNode, FBXConnectionReference } from '../types';
 import type { ParseContext } from '../types/common';
 
 export class ConnectionParser {
@@ -130,6 +130,6 @@ export class ConnectionParser {
 
     if (!node) {return [];}
 
-    return node.children.filter(child => child.relationship === relationship);
+    return node.children.filter((child: FBXConnectionReference) => child.relationship === relationship);
   }
 }

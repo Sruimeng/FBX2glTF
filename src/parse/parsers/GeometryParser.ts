@@ -8,7 +8,7 @@ import type {
   Deformers,
   FBXGeometryNode,
   FBXSkeleton,
-} from '../../constants';
+} from '../types';
 import type {
   GeoBufferInfo,
   GeoInfo,

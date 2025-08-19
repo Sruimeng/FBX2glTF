@@ -12,7 +12,7 @@ import type {
   FBXMaterialNode,
   FBXTextureNode,
   FBXVideoNode,
-} from '../../constants';
+} from '../types';
 import type {
   MaterialData,
   TextureData,

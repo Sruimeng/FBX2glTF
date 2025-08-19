@@ -1,6 +1,6 @@
 // 通用类型定义
 import type { Group, TextureLoader, LoadingManager } from 'three';
-import type { IFBXTree, FBXConnectionNode } from '../../constants';
+import { FBXConnectionNode, IFBXTree } from './fbx-structure';
 
 export interface ParserOptions {
   textureLoader: TextureLoader,

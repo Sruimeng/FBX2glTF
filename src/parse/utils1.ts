@@ -2,8 +2,8 @@
 
 import type { EulerTuple, EulerOrder } from 'three';
 import { Euler, Vector3, Matrix4, MathUtils } from 'three';
-import type { FBXTransformData } from '../constants';
-import { FBXEulerOrder } from '../constants';
+import type { FBXTransformData } from './types';
+import { FBXEulerOrder } from './types';
 
 // ref: http://help.autodesk.com/view/FBX/2017/ENU/?guid=__cpp_ref_class_fbx_euler_html
 export function getEulerOrder (order: FBXEulerOrder): string {
@@ -24,7 +24,7 @@ export function getEulerOrder (order: FBXEulerOrder): string {
 
 const tempEuler = new Euler();
 const tempVec = new Vector3();
-const dataArray: any[] = []; // corrected type annotation
+const dataArray: number[] = []; // corrected type annotation
 
 // generate transformation from FBX transform data
 // ref: https://help.autodesk.com/view/FBX/2017/ENU/?guid=__files_GUID_10CDD63C_79C1_4F2D_BB28_AD2BE65A02ED_htm
