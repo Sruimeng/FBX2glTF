@@ -1,0 +1,61 @@
+{
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["eslint", "prettier"],
+      "format_on_save": "language_server",
+      "prettier": {
+        "allowed": false
+      }
+    },
+    "JavaScript": {
+      "language_servers": ["vtsls", "eslint", "prettier"],
+      "format_on_save": "language_server",
+      "prettier": {
+        "allowed": false
+      }
+    }
+  },
+  "lsp": {
+    "eslint": {
+      "enable_lsp_tasks": true,
+      "initialization_options": {
+        "validate": "on",
+        "run": "onSave",
+        "options": {
+          "fix": true,
+          "configFile": ".eslintrc.js"
+        },
+        "codeActionOnSave": {
+          "enable": true,
+          "mode": "all"
+        },
+        "settings": {
+          "typescript": {
+            "preferences": {
+              "quoteStyle": "single"
+            }
+          },
+          "javascript": {
+            "preferences": {
+              "quoteStyle": "single"
+            }
+          }
+        }
+      }
+    },
+    "vtsls": {
+      "settings": {
+        "typescript": {
+          "preferences": {
+            "quoteStyle": "single"
+          }
+        },
+        "javascript": {
+          "preferences": {
+            "quoteStyle": "single"
+          }
+        }
+      }
+    }
+  }
+}

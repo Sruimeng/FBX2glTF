@@ -1,5 +1,5 @@
 // 连接关系解析器
-import type { ParseContext,FBXConnectionNode, FBXConnectionReference, FBXConnectionDocment } from '../types';
+import type { ParseContext, FBXConnectionNode, FBXConnectionReference, FBXConnectionDocment } from '../types';
 
 export class ConnectionParser {
   private context: ParseContext;
@@ -33,11 +33,13 @@ export class ConnectionParser {
     if (connections instanceof Map) {
       // 处理Map类型的连接
       const results: Array<[string, number, number, ...string[]]> = [];
+
       for (const [parentId, conn] of connections) {
         for (const child of conn.children) {
           results.push(['C', parentId, child.ID, child.relationship?.toString() || ''] as [string, number, number, ...string[]]);
         }
       }
+
       return results;
     } else if ('connections' in connections) {
       // 处理标准FBX连接文档
@@ -55,6 +57,7 @@ export class ConnectionParser {
     const [fromId, toId, ...relationshipParts] = connection;
     const relationship = relationshipParts.join('') || '';
     const fromIdNum = parseInt(fromId);
+
     // 确保连接映射中存在from和to的节点
     this.ensureNodeExists(fromIdNum, connectionMap);
     this.ensureNodeExists(toId, connectionMap);
