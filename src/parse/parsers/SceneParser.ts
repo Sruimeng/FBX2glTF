@@ -18,7 +18,7 @@ import type {
   FBXSkeleton,
   UserDataTransform,
   FBXTransformData,
-} from '../../constants';
+} from '../types';
 import { generateTransform, getEulerOrder } from '../utils';
 import type { ParseContext } from '../types';
 
@@ -66,7 +66,7 @@ export class SceneParser {
       const modelConnections = connections.get(parseInt(nodeID));
 
       if (modelConnections) {
-        const hasParent = modelConnections.parents.some(parent => {
+        const hasParent = modelConnections.parents.some((parent: { ID: number }) => {
           const parentNode = modelNodes[parent.ID.toString()];
 
           return parentNode && parentNode.attrType === 'Model';

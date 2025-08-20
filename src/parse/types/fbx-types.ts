@@ -15,6 +15,22 @@ export interface IFBXTree {
   [key: string]: any,
 }
 
+export interface FBXTransformData {
+  postRotation?: number[],
+  scalingOffset?: number[],
+  scalingPivot?: number[],
+  rotationOffset?: number[],
+  rotationPivot?: number[],
+  parentMatrixWorld?: Matrix4,
+  parentMatrix?: Matrix4,
+  eulerOrder?: string,
+  inheritType?: number,
+  translation?: number[],
+  rotation?: number[],
+  scale?: number[],
+  preRotation?: number[],
+}
+
 // FBX 属性
 export interface FBXProperty {
   singleProperty: boolean,

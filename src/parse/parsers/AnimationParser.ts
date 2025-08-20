@@ -535,6 +535,7 @@ export class AnimationParser {
 
       if (!isDuplicate) {
         optimizedTimes.push(times[i]);
+        // @ts-expect-error
         optimizedValues.push(...Array.from(values.slice(i * valueSize, (i + 1) * valueSize)));
       }
     }

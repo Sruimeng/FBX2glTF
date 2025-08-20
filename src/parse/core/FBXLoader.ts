@@ -3,23 +3,8 @@ import { TextureLoader, Group, Loader, FileLoader, LoaderUtils } from 'three';
 import type { LoadingManager } from 'three';
 import type { ParseContext, ParserResult } from '../types';
 import { global } from '../types';
-import { validateFBXTree, validateParseContext, validateParseResult } from '../utils';
-import { ConnectionParser } from '../parsers';
-import { AnimationParser } from '../parsers';
-import { GeometryParser } from '../parsers';
-import { MaterialParser, TextureParser, ImageParser } from '../parsers';
-import { SceneParser } from '../parsers';
-import { DeformerParser } from '../parsers';
-
-// 从原始FBX-loader导入解析器类和工具函数
-import {
-  BinaryParser,
-  TextParser,
-  isFbxFormatBinary,
-  isFbxFormatASCII,
-  getFbxVersion,
-  convertArrayBufferToString,
-} from '../../FBX-loader';
+import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary, validateFBXTree, validateParseContext, validateParseResult } from '../utils';
+import { DeformerParser, SceneParser, ConnectionParser, AnimationParser, GeometryParser, MaterialParser, TextureParser, ImageParser, BinaryParser, TextParser } from '../parsers';
 
 export class FBXLoader extends Loader {
   private textureLoader: TextureLoader;
