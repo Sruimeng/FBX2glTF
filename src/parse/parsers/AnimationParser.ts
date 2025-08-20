@@ -183,7 +183,7 @@ export class AnimationParser {
                   };
 
                   sceneGraph.traverse(child => {
-                    if ((child).ID === rawModel.id) {
+                    if ((child as any).ID === rawModel.id) {
                       node.transform = child.matrix;
                       if (child.userData.transformData) {
                         node.eulerOrder = child.userData.transformData.eulerOrder;

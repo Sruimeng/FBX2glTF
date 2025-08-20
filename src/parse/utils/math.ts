@@ -7,6 +7,7 @@ export function getEulerOrder (order: FBXEulerOrder): string {
 
   if (order === FBXEulerOrder.SphericXYZ) {
     console.warn('THREE.FBXLoader: unsupported Euler Order: Spherical XYZ. Animations and rotations may be incorrect.');
+
     return FBXEulerOrder[0];
   }
 
@@ -27,15 +28,19 @@ export function getData (polygonVertexIndex: number, polygonIndex: number, verte
   switch (infoObject.mappingType) {
     case 'ByPolygonVertex':
       index = polygonVertexIndex;
+
       break;
     case 'ByPolygon':
       index = polygonIndex;
+
       break;
     case 'ByVertice':
       index = vertexIndex;
+
       break;
     case 'AllSame':
       index = infoObject.indices[0];
+
       break;
     default:
       console.warn('THREE.FBXLoader: unknown attribute mapping type ' + infoObject.mappingType);
@@ -49,10 +54,11 @@ export function getData (polygonVertexIndex: number, polygonIndex: number, verte
   return index;
 }
 
-// 从原始文件迁移的 slice 函数
+// slice 函数
 export function slice (a: number[], b: number[], from: number, to: number): number[] {
   for (let i = from, j = 0; i < to; i++, j++) {
     a[j] = b[i];
   }
+
   return a;
 }

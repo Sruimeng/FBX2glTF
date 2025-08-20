@@ -11,31 +11,31 @@ export interface FBXDocumentOptions {
 
 // 解析器选项
 export interface ParserOptions {
-  textureLoader: TextureLoader;
-  manager: LoadingManager;
+  textureLoader: TextureLoader,
+  manager: LoadingManager,
 }
 
 // 解析上下文
 export interface ParseContext {
-  fbxTree: IFBXTree;
-  connections: Map<number, FBXConnectionNode>;
-  sceneGraph: Group;
+  fbxTree: IFBXTree,
+  connections: Map<number, FBXConnectionNode>,
+  sceneGraph: Group,
 }
 
 // 解析结果
 export interface ParserResult {
-  scene: Group;
-  animations: any[];
-  geometries: Map<number, any>;
-  materials: Map<number, any>;
-  textures: Map<number, any>;
+  scene: Group,
+  animations: any[],
+  geometries: Map<number, any>,
+  materials: Map<number, any>,
+  textures: Map<number, any>,
 }
 
 // 验证错误
 export interface ValidationError {
-  code: string;
-  message: string;
-  details?: any;
+  code: string,
+  message: string,
+  details?: any,
 }
 
 // FBX 映射信息类型
