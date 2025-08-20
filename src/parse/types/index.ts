@@ -1,6 +1,4 @@
-// 类型定义入口文件
-export * from './animation';
-export * from './geometry';
-export * from './material';
-export * from './common';
-export * from './fbx-structure';
+// 统一类型定义入口
+export * from './fbx-types';
+export * from './parser-types';
+export * from './common-types';

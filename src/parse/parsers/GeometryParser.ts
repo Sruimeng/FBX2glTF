@@ -1,4 +1,4 @@
-// 几何体解析器
+// 几何体解析器（合并了Handler功能）
 import {
   BufferGeometry,
   Float32BufferAttribute,
@@ -6,7 +6,6 @@ import {
 } from 'three';
 import type {
   Deformers,
-  FBXGeometryNode,
   FBXSkeleton,
 } from '../types';
 import type {
@@ -15,7 +14,7 @@ import type {
   GeometryData,
   GeometryParseResult,
 } from '../types';
-import type { ParseContext } from '../types/common';
+import type { ParseContext } from '../types';
 
 export class GeometryParser {
   private context: ParseContext;
@@ -68,7 +67,7 @@ export class GeometryParser {
   }
 
   // 解析几何体节点
-  private parseGeometryNode (geometryNode: FBXGeometryNode, deformers: Deformers): GeoInfo | null {
+  private parseGeometryNode (geometryNode: any, deformers: Deformers): GeoInfo | null {
     const geoInfo: GeoInfo = {};
 
     // 解析顶点位置
@@ -340,5 +339,36 @@ export class GeometryParser {
 
     geometry.setAttribute('skinIndex', new Float32BufferAttribute(boneIndices, 4));
     geometry.setAttribute('skinWeight', new Float32BufferAttribute(boneWeights, 4));
+  }
+
+  // 优化几何体（原Handler功能）
+  public optimizeGeometry (geometry: BufferGeometry): BufferGeometry {
+    // 合并顶点
+    geometry.deleteAttribute('normal');
+    geometry.deleteAttribute('uv');
+    geometry.deleteAttribute('color');
+    geometry.deleteAttribute('skinIndex');
+    geometry.deleteAttribute('skinWeight');
+
+    geometry.computeVertexNormals();
+
+    return geometry;
+  }
+
+  // 验证几何体（原Handler功能）
+  public validateGeometry (geometry: BufferGeometry): boolean {
+    if (!geometry.attributes.position) {
+      console.warn('Geometry has no position attribute');
+
+      return false;
+    }
+
+    if (geometry.attributes.position.count < 3) {
+      console.warn('Geometry has less than 3 vertices');
+
+      return false;
+    }
+
+    return true;
   }
 }

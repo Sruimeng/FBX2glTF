@@ -1,5 +1,5 @@
 // 验证工具函数
-import type { ValidationError } from '../types/common';
+import type { ValidationError } from '../types';
 
 // 验证FBX树结构
 export function validateFBXTree (fbxTree: any): ValidationError[] {

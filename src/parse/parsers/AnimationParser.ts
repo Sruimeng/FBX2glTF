@@ -40,7 +40,7 @@ export class AnimationParser {
       }
     }
 
-    return animationClips;
+    return this.processAnimationClips(animationClips);
   }
 
   // 解析动画片段
@@ -183,7 +183,7 @@ export class AnimationParser {
                   };
 
                   sceneGraph.traverse(child => {
-                    if ((child as any).ID === rawModel.id) {
+                    if ((child).ID === rawModel.id) {
                       node.transform = child.matrix;
                       if (child.userData.transformData) {
                         node.eulerOrder = child.userData.transformData.eulerOrder;
@@ -374,7 +374,6 @@ export class AnimationParser {
     postRotation: [number, number, number],
     eulerOrder: string
   ): QuaternionKeyframeTrack {
-    // 简化实现，完整实现需要处理预旋转和后旋转
     const times = this.getTimesForAllAxes(curves);
     const values = this.getKeyframeTrackValues(times, curves, [0, 0, 0]);
 
@@ -501,5 +500,123 @@ export class AnimationParser {
     });
 
     return values;
+  }
+
+  // 处理动画片段（原Handler功能）
+  private processAnimationClips (clips: AnimationClip[]): AnimationClip[] {
+    return clips.map(clip => this.optimizeAnimationClip(clip));
+  }
+
+  // 优化动画片段
+  private optimizeAnimationClip (clip: AnimationClip): AnimationClip {
+    // 优化轨道
+    const optimizedTracks = clip.tracks.map(track => this.optimizeTrack(track));
+
+    return new AnimationClip(clip.name, clip.duration, optimizedTracks);
+  }
+
+  // 优化动画轨道
+  private optimizeTrack (track: any): any {
+    // 移除重复的关键帧
+    const times = track.times;
+    const values = track.values;
+    const valueSize = this.getValueSize(track);
+
+    const optimizedTimes: number[] = [];
+    const optimizedValues: number[] = [];
+
+    for (let i = 0; i < times.length; i++) {
+      const isDuplicate = i > 0 &&
+        times[i] === times[i - 1] &&
+        this.arraysEqual(
+          Array.from(values.slice(i * valueSize, (i + 1) * valueSize)),
+          Array.from(values.slice((i - 1) * valueSize, i * valueSize))
+        );
+
+      if (!isDuplicate) {
+        optimizedTimes.push(times[i]);
+        optimizedValues.push(...Array.from(values.slice(i * valueSize, (i + 1) * valueSize)));
+      }
+    }
+
+    // 创建新的轨道实例
+    if (track instanceof VectorKeyframeTrack) {
+      return new VectorKeyframeTrack(track.name, optimizedTimes, optimizedValues);
+    } else if (track instanceof QuaternionKeyframeTrack) {
+      return new QuaternionKeyframeTrack(track.name, optimizedTimes, optimizedValues);
+    } else if (track instanceof NumberKeyframeTrack) {
+      return new NumberKeyframeTrack(track.name, optimizedTimes, optimizedValues);
+    } else {
+      // 默认返回原轨道
+      return track;
+    }
+  }
+
+  // 获取轨道值大小
+  private getValueSize (track: any): number {
+    if (track instanceof VectorKeyframeTrack) {
+      return 3;
+    } else if (track instanceof QuaternionKeyframeTrack) {
+      return 4;
+    } else if (track instanceof NumberKeyframeTrack) {
+      return 1;
+    }
+
+    return 1;
+  }
+
+  // 检查数组是否相等
+  private arraysEqual (a: number[], b: number[]): boolean {
+    if (a.length !== b.length) {return false;}
+
+    for (let i = 0; i < a.length; i++) {
+      if (Math.abs(a[i] - b[i]) > 1e-6) {return false;}
+    }
+
+    return true;
+  }
+
+  // 验证动画片段
+  public validateAnimationClip (clip: AnimationClip): boolean {
+    if (!clip.tracks || clip.tracks.length === 0) {
+      console.warn(`Animation clip "${clip.name}" has no tracks`);
+
+      return false;
+    }
+
+    for (const track of clip.tracks) {
+      if (!track.times || track.times.length === 0) {
+        console.warn(`Track "${track.name}" has no keyframes`);
+
+        return false;
+      }
+
+      if (!track.values || track.values.length === 0) {
+        console.warn(`Track "${track.name}" has no values`);
+
+        return false;
+      }
+
+      if (track.times.length * (track as any).valueSize !== track.values.length) {
+        console.warn(`Track "${track.name}" has mismatched times and values length`);
+
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // 计算动画片段持续时间
+  public calculateClipDuration (clip: AnimationClip): number {
+    let maxDuration = 0;
+
+    for (const track of clip.tracks) {
+      const trackDuration = track.times[track.times.length - 1];
+
+      maxDuration = Math.max(maxDuration, trackDuration);
+    }
+
+    return maxDuration;
   }
 }

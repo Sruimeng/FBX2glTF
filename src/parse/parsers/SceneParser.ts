@@ -20,7 +20,7 @@ import type {
   FBXTransformData,
 } from '../../constants';
 import { generateTransform, getEulerOrder } from '../utils';
-import type { ParseContext } from '../types/common';
+import type { ParseContext } from '../types';
 
 export class SceneParser {
   private context: ParseContext;
