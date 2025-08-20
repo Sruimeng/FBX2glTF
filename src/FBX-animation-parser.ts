@@ -259,7 +259,7 @@ export class AnimationParser {
 
                   sceneGraph.traverse(child => {
 
-                    if ((child as any).ID === rawModel.id) {
+                    if ((child).ID === rawModel.id) {
 
                       node.transform = child.matrix;
 
@@ -594,7 +594,7 @@ export class AnimationParser {
     }) || [];
     const object = sceneGraph.getObjectByName(rawTracks.modelName);
 
-    const morphNum = (object as any).morphTargetDictionary[ rawTracks.morphName ?? '' ];
+    const morphNum = (object).morphTargetDictionary[ rawTracks.morphName ?? '' ];
 
     return new NumberKeyframeTrack(rawTracks.modelName + '.morphTargetInfluences[' + morphNum + ']', curves.times, values);
 

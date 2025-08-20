@@ -8,7 +8,7 @@ import {
   TextureLoader } from 'three';
 
 import * as fflate from 'fflate';
-import { FBXTreeParser } from './parse/FBX-tree-parser';
+import { FBXTreeParser } from './FBX-tree-parser';
 import { global, type FBXConnectionNode, type FBXDefinitions, type FBXDocuments, type FBXGlobalSettings, type FBXHeaderExtension, type FBXObjects, type FBXProperty, type FBXTreeNode, type IFBXTree } from './parse/types';
 
 /**

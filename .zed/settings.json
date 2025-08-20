@@ -8,7 +8,7 @@
       }
     },
     "JavaScript": {
-      "language_servers": ["vtsls", "eslint", "prettier"],
+      "language_servers": ["eslint", "prettier"],
       "format_on_save": "language_server",
       "prettier": {
         "allowed": false
