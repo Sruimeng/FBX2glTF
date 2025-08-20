@@ -68,12 +68,12 @@ export class ConnectionParser {
 
     // 创建连接引用，包含关系类型
     const childReference: FBXConnectionReference = {
-      ID: toId,
+      ID: fromIdNum,
       relationship: relationship || undefined,
     };
 
     const parentReference: FBXConnectionReference = {
-      ID: fromIdNum,
+      ID: toId,
       relationship: relationship || undefined,
     };
 
@@ -89,117 +89,5 @@ export class ConnectionParser {
         children: [],
       });
     }
-  }
-
-  // 获取对象的子对象
-  getChildren (objectId: number): FBXConnectionReference[] {
-    const node = this.context.connections.get(objectId);
-
-    return node ? node.children : [];
-  }
-
-  // 获取对象的父对象
-  getParents (objectId: number): FBXConnectionReference[] {
-    const node = this.context.connections.get(objectId);
-
-    return node ? node.parents : [];
-  }
-
-  // 查找特定类型的连接
-  findConnectionsByType (objectId: number, relationship: string): FBXConnectionReference[] {
-    const node = this.context.connections.get(objectId);
-
-    if (!node) {
-      return [];
-    }
-
-    return node.children.filter(child => child.relationship === relationship);
-  }
-
-  // 查找所有具有特定关系类型的连接
-  findAllConnectionsByType (relationship: string): Array<{ from: number, to: number }> {
-    const results: Array<{ from: number, to: number }> = [];
-
-    for (const [fromId, node] of this.context.connections) {
-      for (const child of node.children) {
-        if (child.relationship === relationship) {
-          results.push({ from: fromId, to: child.ID });
-        }
-      }
-    }
-
-    return results;
-  }
-
-  // 检查两个对象之间是否存在连接
-  hasConnection (fromId: number, toId: number, relationship?: string): boolean {
-    const fromNode = this.context.connections.get(fromId);
-
-    if (!fromNode) {
-      return false;
-    }
-
-    return fromNode.children.some(child =>
-      child.ID === toId && (!relationship || child.relationship === relationship)
-    );
-  }
-
-  // 获取对象的所有直接和间接子对象
-  getAllChildren (objectId: number): FBXConnectionReference[] {
-    const allChildren: FBXConnectionReference[] = [];
-    const visited = new Set<number>();
-
-    const traverse = (id: number) => {
-      if (visited.has(id)) {
-        return;
-      }
-
-      visited.add(id);
-      const children = this.getChildren(id);
-
-      for (const child of children) {
-        allChildren.push(child);
-        traverse(child.ID);
-      }
-    };
-
-    traverse(objectId);
-
-    return allChildren;
-  }
-
-  // 获取对象的所有直接和间接父对象
-  getAllParents (objectId: number): FBXConnectionReference[] {
-    const allParents: FBXConnectionReference[] = [];
-    const visited = new Set<number>();
-
-    const traverse = (id: number) => {
-      if (visited.has(id)) {
-        return;
-      }
-
-      visited.add(id);
-      const parents = this.getParents(id);
-
-      for (const parent of parents) {
-        allParents.push(parent);
-        traverse(parent.ID);
-      }
-    };
-
-    traverse(objectId);
-
-    return allParents;
-  }
-
-  // 获取连接关系信息
-  getConnectionInfo (fromId: number, toId: number): FBXConnectionReference | null {
-    const fromNode = this.context.connections.get(fromId);
-
-    if (!fromNode) {
-      return null;
-    }
-
-    return fromNode.children.find(child => child.ID === toId) || null;
   }
 }
