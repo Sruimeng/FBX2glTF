@@ -572,7 +572,9 @@ export class TextureParser {
     }
   }
 }
-
+/**
+ * 负责与外部文件系统交互，解析FBX中的图像数据
+ */
 export class ImageParser {
   private context: ParseContext;
 
@@ -580,30 +582,64 @@ export class ImageParser {
     this.context = context;
   }
 
-  // 解析图像
-  parse (): Map<number, any> {
-    const images = new Map<number, any>();
+  /**
+   * 解析FBX图像数据
+   * 处理FBXTree.Objects.Video中的嵌入图像数据
+   * 这些图像通过FBXTree.Connections连接到FBXTree.Objects.Textures中的纹理
+   *
+   * @returns Map<number, string|Blob> - 图像ID到图像数据或文件名的映射
+   */
+  parse (): Map<number, string | Blob> {
+    const images = new Map<number, string | Blob>();
+    const blobs = new Map<string, string | Blob>();
     const fbxTree = this.context.fbxTree;
 
-    if (!fbxTree) {
-      throw new Error('FBXTree is not defined');
+    if (!fbxTree || !fbxTree.Objects) {
+      return images;
     }
 
-    const objects = fbxTree.Objects;
-
-    if (!objects) {
-      throw new Error('FBXTree.Objects is undefined');
-    }
-
-    const videoNodes = objects.Video;
+    const videoNodes = fbxTree.Objects.Video;
 
     if (videoNodes) {
       for (const nodeID in videoNodes) {
         const videoNode = videoNodes[nodeID];
-        const imageData = this.parseVideoNode(videoNode);
+        const id = parseInt(nodeID);
 
-        if (imageData) {
-          images.set(parseInt(nodeID), imageData);
+        // 优先使用相对文件名，否则使用完整文件名
+        const filename = videoNode.RelativeFilename || videoNode.Filename;
+
+        if (!filename) {
+          console.warn(`FBXLoader: Video node ${id} has no filename, skipping`);
+          continue;
+        }
+
+        images.set(id, filename);
+
+        // 检查是否有嵌入的二进制内容
+        if ('Content' in videoNode) {
+          const hasArrayBufferContent = videoNode.Content instanceof ArrayBuffer && videoNode.Content.byteLength > 0;
+          const hasBase64Content = typeof videoNode.Content === 'string' && videoNode.Content !== '';
+
+          if (hasArrayBufferContent || hasBase64Content) {
+            const processedImage = this.parseVideoNode(videoNode);
+
+            if (processedImage) {
+              blobs.set(filename, processedImage);
+            }
+          }
+        }
+      }
+
+      for (const [id, filename] of images) {
+        const blobImage = blobs.get(filename as string);
+
+        if (blobImage !== undefined) {
+          images.set(id, blobImage);
+        } else {
+          // 如果没有嵌入内容，返回文件名的最后一部分（去掉路径）
+          const cleanFilename = (filename as string).split('\\').pop();
+
+          images.set(id, cleanFilename || filename as string);
         }
       }
     }
@@ -611,18 +647,87 @@ export class ImageParser {
     return images;
   }
 
-  // 解析视频节点
-  private parseVideoNode (videoNode: FBXVideoNode): any {
-    if (videoNode.Content) {
-      // 如果有二进制内容
-      return videoNode.Content;
-    } else if (videoNode.RelativeFilename) {
-      // 如果有相对文件名，返回文件名供外部加载
-      return videoNode.RelativeFilename;
-    } else if (videoNode.Filename) {
-      // 如果有完整文件名
-      return videoNode.Filename;
+  /**
+   * 解析嵌入的图像数据
+   * 处理FBXTree.Video.Content中的二进制或Base64数据
+   *
+   * @param videoNode - FBX视频节点，包含图像内容
+   * @returns 处理后的图像数据URL或null（如果处理失败）
+   */
+  private parseVideoNode (videoNode: FBXVideoNode): string | null {
+    const content = videoNode.Content;
+    const fileName = videoNode.RelativeFilename || videoNode.Filename;
+
+    if (!fileName || !content) {
+      console.warn(`FBXLoader: Video node missing filename or content for ${fileName || 'unknown'}`);
+
+      return null;
     }
+
+    const extension = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase();
+    let mimeType: string | null = null;
+
+    // 根据文件扩展名确定MIME类型
+    switch (extension) {
+      case 'bmp':
+        mimeType = 'image/bmp';
+
+        break;
+      case 'jpg':
+      case 'jpeg':
+        mimeType = 'image/jpeg';
+
+        break;
+      case 'png':
+        mimeType = 'image/png';
+
+        break;
+      case 'tif':
+        mimeType = 'image/tiff';
+
+        break;
+      case 'tga':
+        mimeType = 'image/tga';
+
+        break;
+      case 'webp':
+        mimeType = 'image/webp';
+
+        break;
+      default:
+        console.warn('FBXLoader: Image type "' + extension + '" is not supported.');
+
+        return null;
+    }
+
+    // 处理Base64字符串格式内容
+    if (content instanceof String) {
+      if (!content.trim()) {
+        console.warn(`FBXLoader: Empty Base64 content for ${fileName}`);
+
+        return null;
+      }
+
+      return `data:${mimeType};base64,${content}`;
+      // 处理ArrayBuffer二进制格式内容
+    } else if (content instanceof ArrayBuffer) {
+      if (content.byteLength === 0) {
+        console.warn(`FBXLoader: Empty ArrayBuffer content for ${fileName}`);
+
+        return null;
+      }
+      try {
+        const array = new Uint8Array(content);
+
+        return URL.createObjectURL(new Blob([array], { type: mimeType }));
+      } catch (error) {
+        console.warn(`FBXLoader: Failed to create Blob for ${fileName}:`, error);
+
+        return null;
+      }
+    }
+
+    console.warn(`FBXLoader: Unsupported content type for ${fileName}`);
 
     return null;
   }
