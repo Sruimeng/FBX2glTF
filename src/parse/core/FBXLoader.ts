@@ -1,9 +1,9 @@
 // FBX 主加载器（简化版）
-import { TextureLoader, Group, Loader, FileLoader, LoaderUtils } from 'three';
+import { TextureLoader, Group, Loader } from 'three';
 import type { LoadingManager } from 'three';
 import type { ParseContext, ParserResult } from '../types';
 import { global } from '../types';
-import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary, validateFBXTree, validateParseContext, validateParseResult } from '../utils';
+import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary, loadBinaryFromUrl, LoaderUtils, validateFBXTree, validateParseContext, validateParseResult } from '../utils';
 import { DeformerParser, SceneParser, ConnectionParser, AnimationParser, GeometryParser, MaterialParser, TextureParser, ImageParser, BinaryParser, TextParser } from '../parsers';
 
 export class FBXLoader extends Loader {
@@ -15,30 +15,14 @@ export class FBXLoader extends Loader {
   }
 
   // 加载方法
-  override load (url: string, onLoad: (group: Group) => void, onProgress?: (event: ProgressEvent) => void, onError?: (event: unknown) => void): void {
+  override async load (url: string, onLoad: (group: Group) => void, onProgress?: (event: ProgressEvent) => void, onError?: (event: unknown) => void): Promise<void> {
     const path = (this.path === '') ? LoaderUtils.extractUrlBase(url) : this.path;
+    const result = await loadBinaryFromUrl(path + url);
+    const group = this.parse(result.data, path);
 
-    const loader = new FileLoader(this.manager);
+    onLoad(group);
+    console.info('FBX loaded successfully', group);
 
-    loader.setPath(this.path);
-    loader.setResponseType('arraybuffer');
-    loader.setRequestHeader(this.requestHeader);
-    loader.setWithCredentials(this.withCredentials);
-
-    loader.load(url, (buffer: string | ArrayBuffer) => {
-      try {
-        const group = this.parse(buffer as ArrayBuffer, path);
-
-        onLoad(group);
-      } catch (error) {
-        if (onError) {
-          onError(error);
-        } else {
-          console.error(error);
-        }
-        this.manager.itemError(url);
-      }
-    }, onProgress, onError);
   }
 
   // 主解析方法
