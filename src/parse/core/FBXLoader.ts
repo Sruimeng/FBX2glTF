@@ -3,8 +3,8 @@ import { TextureLoader, Group, Loader } from 'three';
 import type { LoadingManager } from 'three';
 import type { ParseContext, ParserResult } from '../types';
 import { global } from '../types';
-import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary, loadBinaryFromUrl, LoaderUtils, validateFBXTree, validateParseContext, validateParseResult } from '../utils';
 import { DeformerParser, SceneParser, ConnectionParser, AnimationParser, GeometryParser, MaterialParser, TextureParser, ImageParser, BinaryParser, TextParser } from '../parsers';
+import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary, LoaderUtils, validateFBXTree, validateParseContext, validateParseResult } from '../utils';
 
 export class FBXLoader extends Loader {
   private textureLoader: TextureLoader;
@@ -17,7 +17,7 @@ export class FBXLoader extends Loader {
   // 加载方法
   override async load (url: string, onLoad: (group: Group) => void, onProgress?: (event: ProgressEvent) => void, onError?: (event: unknown) => void): Promise<void> {
     const path = (this.path === '') ? LoaderUtils.extractUrlBase(url) : this.path;
-    const result = await loadBinaryFromUrl(path + url);
+    const result = await LoaderUtils.loadBinaryFromUrl(path + url);
     const group = this.parse(result.data, path);
 
     onLoad(group);

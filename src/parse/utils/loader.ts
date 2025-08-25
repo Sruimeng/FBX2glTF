@@ -161,26 +161,13 @@ class SimpleCache {
 const cache = new SimpleCache();
 
 /**
- * 格式化文件大小
- */
-export function formatFileSize (bytes: number): string {
-  if (bytes === 0) {return '0 Bytes';}
-
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-/**
  * 验证文件大小
  */
 function validateFileSize (size: number, maxSize: number): void {
   if (size > maxSize) {
     throw new BinaryLoaderError(
       BinaryLoaderErrorType.FILE_TOO_LARGE_ERROR,
-      `文件大小 (${formatFileSize(size)}) 超过最大限制 (${formatFileSize(maxSize)})`
+      `文件大小 (${LoaderUtils.formatFileSize(size)}) 超过最大限制 (${LoaderUtils.formatFileSize(maxSize)})`
     );
   }
 }
@@ -210,386 +197,395 @@ function validateFileType (mimeType: string, acceptedTypes: string[]): void {
 }
 
 /**
- * 生成缓存键
- */
-function getCacheKey (source: FileSource): string {
-  switch (source.type) {
-    case 'url':
-      return `url:${source.url}`;
-    case 'file':
-      return `file:${source.file.name}:${source.file.size}:${source.file.lastModified}`;
-    case 'blob':
-      return `blob:${source.blob.size}:${source.blob.type}`;
-  }
-}
-
-/**
- * 从 URL 加载二进制文件
- */
-async function loadFromUrl (
-  url: string,
-  options: BinaryLoadOptions,
-  progressCallback?: ProgressCallback
-): Promise<BinaryLoadResult> {
-  const startTime = Date.now();
-  const timeout = options.timeout ?? 30000;
-  const maxFileSize = options.maxFileSize ?? 100 * 1024 * 1024;
-  const acceptedTypes = options.acceptedTypes ?? [];
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'Range': 'bytes=0-' },
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new BinaryLoaderError(
-        BinaryLoaderErrorType.NETWORK_ERROR,
-        `HTTP ${response.status}: ${response.statusText}`
-      );
-    }
-
-    const contentLength = response.headers.get('Content-Length');
-    const total = contentLength ? parseInt(contentLength, 10) : 0;
-    const mimeType = response.headers.get('Content-Type') || undefined;
-
-    if (total > 0) {
-      validateFileSize(total, maxFileSize);
-    }
-
-    if (mimeType && acceptedTypes.length > 0) {
-      validateFileType(mimeType, acceptedTypes);
-    }
-
-    if (!response.body) {
-      throw new BinaryLoaderError(
-        BinaryLoaderErrorType.READ_ERROR,
-        '无法获取响应体数据'
-      );
-    }
-
-    const reader = response.body.getReader();
-    const chunks: Uint8Array[] = [];
-    let loaded = 0;
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const { done, value } = await reader.read();
-
-      if (done) {break;}
-
-      if (value) {
-        chunks.push(value);
-        loaded += value.length;
-
-        if (progressCallback && options.enableProgress) {
-          progressCallback({
-            loaded,
-            total: total || loaded,
-            percentage: total > 0 ? Math.min(100, (loaded / total) * 100) : 100,
-            status: 'loading',
-          });
-        }
-      }
-    }
-
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const resultArray = new Uint8Array(totalLength);
-    let offset = 0;
-
-    for (const chunk of chunks) {
-      resultArray.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    const fileName = extractFileNameFromUrl(url);
-
-    return {
-      data: resultArray.buffer,
-      size: totalLength,
-      mimeType,
-      fileName,
-      loadTime: Date.now() - startTime,
-    };
-
-  } catch (error) {
-    if (error instanceof BinaryLoaderError) {
-      throw error;
-    }
-
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new BinaryLoaderError(
-        BinaryLoaderErrorType.TIMEOUT_ERROR,
-        `请求超时 (${timeout}ms)`
-      );
-    }
-
-    throw new BinaryLoaderError(
-      BinaryLoaderErrorType.NETWORK_ERROR,
-      `网络错误: ${error instanceof Error ? error.message : '未知错误'}`,
-      error as Error
-    );
-  }
-}
-
-/**
- * 从 File 对象加载二进制文件
- */
-async function loadFromFile (
-  file: File,
-  options: BinaryLoadOptions,
-  progressCallback?: ProgressCallback
-): Promise<BinaryLoadResult> {
-  const startTime = Date.now();
-  const maxFileSize = options.maxFileSize ?? 100 * 1024 * 1024;
-  const acceptedTypes = options.acceptedTypes ?? [];
-
-  validateFileSize(file.size, maxFileSize);
-
-  if (file.type && acceptedTypes.length > 0) {
-    validateFileType(file.type, acceptedTypes);
-  }
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = event => {
-      try {
-        const arrayBuffer = event.target?.result as ArrayBuffer;
-
-        resolve({
-          data: arrayBuffer,
-          size: file.size,
-          mimeType: file.type || undefined,
-          fileName: file.name,
-          loadTime: Date.now() - startTime,
-        });
-      } catch (error) {
-        reject(new BinaryLoaderError(
-          BinaryLoaderErrorType.READ_ERROR,
-          '读取文件数据失败',
-          error as Error
-        ));
-      }
-    };
-
-    reader.onerror = event => {
-      reject(new BinaryLoaderError(
-        BinaryLoaderErrorType.READ_ERROR,
-        '文件读取错误',
-        event.target?.error || undefined
-      ));
-    };
-
-    reader.readAsArrayBuffer(file);
-  });
-}
-
-/**
- * 从 Blob 对象加载二进制文件
- */
-async function loadFromBlob (
-  blob: Blob,
-  options: BinaryLoadOptions,
-  progressCallback?: ProgressCallback
-): Promise<BinaryLoadResult> {
-  const startTime = Date.now();
-  const maxFileSize = options.maxFileSize ?? 100 * 1024 * 1024;
-  const acceptedTypes = options.acceptedTypes ?? [];
-
-  validateFileSize(blob.size, maxFileSize);
-
-  if (blob.type && acceptedTypes.length > 0) {
-    validateFileType(blob.type, acceptedTypes);
-  }
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = event => {
-      try {
-        const arrayBuffer = event.target?.result as ArrayBuffer;
-
-        resolve({
-          data: arrayBuffer,
-          size: blob.size,
-          mimeType: blob.type || undefined,
-          loadTime: Date.now() - startTime,
-        });
-      } catch (error) {
-        reject(new BinaryLoaderError(
-          BinaryLoaderErrorType.READ_ERROR,
-          '读取 Blob 数据失败',
-          error as Error
-        ));
-      }
-    };
-
-    reader.onerror = event => {
-      reject(new BinaryLoaderError(
-        BinaryLoaderErrorType.READ_ERROR,
-        'Blob 读取错误',
-        event.target?.error || undefined
-      ));
-    };
-
-    reader.readAsArrayBuffer(blob);
-  });
-}
-
-/**
- * 从 URL 中提取文件名
- */
-function extractFileNameFromUrl (url: string): string | undefined {
-  try {
-    const urlObject = new URL(url);
-    const pathname = urlObject.pathname;
-    const fileName = pathname.split('/').pop();
-
-    if (fileName && fileName !== '') {
-      return fileName;
-    }
-  } catch {
-    const lastSlashIndex = url.lastIndexOf('/');
-
-    if (lastSlashIndex !== -1) {
-      return url.substring(lastSlashIndex + 1);
-    }
-  }
-
-  return undefined;
-}
-
-/**
- * 主加载函数
- */
-export async function loadBinaryFile (
-  source: FileSource,
-  options: BinaryLoadOptions = {},
-  progressCallback?: ProgressCallback
-): Promise<BinaryLoadResult> {
-  const mergedOptions: Required<BinaryLoadOptions> = {
-    enableProgress: options.enableProgress ?? true,
-    timeout: options.timeout ?? 30000,
-    maxFileSize: options.maxFileSize ?? 100 * 1024 * 1024,
-    acceptedTypes: options.acceptedTypes ?? [],
-    enableCache: options.enableCache ?? true,
-  };
-
-  // 检查缓存
-  if (mergedOptions.enableCache) {
-    const cacheKey = getCacheKey(source);
-    const cached = cache.get(cacheKey);
-
-    if (cached) {
-      return { ...cached, loadTime: 0 };
-    }
-  }
-
-  let result: BinaryLoadResult;
-
-  try {
-    switch (source.type) {
-      case 'url':
-        result = await loadFromUrl(source.url, mergedOptions, progressCallback);
-
-        break;
-      case 'file':
-        result = await loadFromFile(source.file, mergedOptions, progressCallback);
-
-        break;
-      case 'blob':
-        result = await loadFromBlob(source.blob, mergedOptions, progressCallback);
-
-        break;
-      default:
-        throw new BinaryLoaderError(
-          BinaryLoaderErrorType.UNKNOWN_ERROR,
-          '不支持的文件源类型'
-        );
-    }
-
-    // 缓存结果
-    if (mergedOptions.enableCache) {
-      const cacheKey = getCacheKey(source);
-
-      cache.set(cacheKey, result);
-    }
-
-    // 完成进度通知
-    if (progressCallback && mergedOptions.enableProgress) {
-      progressCallback({
-        loaded: result.size,
-        total: result.size,
-        percentage: 100,
-        status: 'completed',
-      });
-    }
-
-    return result;
-
-  } catch (error) {
-    if (error instanceof BinaryLoaderError) {
-      throw error;
-    }
-
-    throw new BinaryLoaderError(
-      BinaryLoaderErrorType.UNKNOWN_ERROR,
-      `加载文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      error as Error
-    );
-  }
-}
-
-/**
- * 便捷函数：从 URL 加载
- */
-export async function loadBinaryFromUrl (
-  url: string,
-  options: BinaryLoadOptions = {},
-  progressCallback?: ProgressCallback
-): Promise<BinaryLoadResult> {
-  return loadBinaryFile({ type: 'url', url }, options, progressCallback);
-}
-
-/**
- * 便捷函数：从 File 加载
- */
-export async function loadBinaryFromFile (
-  file: File,
-  options: BinaryLoadOptions = {},
-  progressCallback?: ProgressCallback
-): Promise<BinaryLoadResult> {
-  return loadBinaryFile({ type: 'file', file }, options, progressCallback);
-}
-
-/**
- * 便捷函数：从 Blob 加载
- */
-export async function loadBinaryFromBlob (
-  blob: Blob,
-  options: BinaryLoadOptions = {},
-  progressCallback?: ProgressCallback
-): Promise<BinaryLoadResult> {
-  return loadBinaryFile({ type: 'blob', blob }, options, progressCallback);
-}
-
-/**
- * 清除缓存
- */
-export function clearBinaryCache (): void {
-  cache.clear();
-}
-
-/**
  * A class with loader utility functions.
  */
 export class LoaderUtils {
+/**
+ * 格式化文件大小
+ */
+  static formatFileSize (bytes: number): string {
+    if (bytes === 0) {return '0 Bytes';}
+
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+  /**
+ * 生成缓存键
+ */
+  static getCacheKey (source: FileSource): string {
+    switch (source.type) {
+      case 'url':
+        return `url:${source.url}`;
+      case 'file':
+        return `file:${source.file.name}:${source.file.size}:${source.file.lastModified}`;
+      case 'blob':
+        return `blob:${source.blob.size}:${source.blob.type}`;
+    }
+  }
+  /**
+ * 从 File 对象加载二进制文件
+ */
+  static loadFromFile (
+    file: File,
+    options: BinaryLoadOptions,
+    progressCallback?: ProgressCallback
+  ): Promise<BinaryLoadResult> {
+    const startTime = Date.now();
+    const maxFileSize = options.maxFileSize ?? 100 * 1024 * 1024;
+    const acceptedTypes = options.acceptedTypes ?? [];
+
+    validateFileSize(file.size, maxFileSize);
+
+    if (file.type && acceptedTypes.length > 0) {
+      validateFileType(file.type, acceptedTypes);
+    }
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = event => {
+        try {
+          const arrayBuffer = event.target?.result as ArrayBuffer;
+
+          resolve({
+            data: arrayBuffer,
+            size: file.size,
+            mimeType: file.type || undefined,
+            fileName: file.name,
+            loadTime: Date.now() - startTime,
+          });
+        } catch (error) {
+          reject(new BinaryLoaderError(
+            BinaryLoaderErrorType.READ_ERROR,
+            '读取文件数据失败',
+            error as Error
+          ));
+        }
+      };
+
+      reader.onerror = event => {
+        reject(new BinaryLoaderError(
+          BinaryLoaderErrorType.READ_ERROR,
+          '文件读取错误',
+          event.target?.error || undefined
+        ));
+      };
+
+      reader.readAsArrayBuffer(file);
+    });
+  }
+  /**
+ * 从 Blob 对象加载二进制文件
+ */
+  static async loadFromBlob (
+    blob: Blob,
+    options: BinaryLoadOptions,
+    progressCallback?: ProgressCallback
+  ): Promise<BinaryLoadResult> {
+    const startTime = Date.now();
+    const maxFileSize = options.maxFileSize ?? 100 * 1024 * 1024;
+    const acceptedTypes = options.acceptedTypes ?? [];
+
+    validateFileSize(blob.size, maxFileSize);
+
+    if (blob.type && acceptedTypes.length > 0) {
+      validateFileType(blob.type, acceptedTypes);
+    }
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = event => {
+        try {
+          const arrayBuffer = event.target?.result as ArrayBuffer;
+
+          resolve({
+            data: arrayBuffer,
+            size: blob.size,
+            mimeType: blob.type || undefined,
+            loadTime: Date.now() - startTime,
+          });
+        } catch (error) {
+          reject(new BinaryLoaderError(
+            BinaryLoaderErrorType.READ_ERROR,
+            '读取 Blob 数据失败',
+            error as Error
+          ));
+        }
+      };
+
+      reader.onerror = event => {
+        reject(new BinaryLoaderError(
+          BinaryLoaderErrorType.READ_ERROR,
+          'Blob 读取错误',
+          event.target?.error || undefined
+        ));
+      };
+
+      reader.readAsArrayBuffer(blob);
+    });
+  }
+
+  /**
+ * 从 URL 加载二进制文件
+ */
+  static async loadFromUrl (
+    url: string,
+    options: BinaryLoadOptions,
+    progressCallback?: ProgressCallback
+  ): Promise<BinaryLoadResult> {
+    const startTime = Date.now();
+    const timeout = options.timeout ?? 30000;
+    const maxFileSize = options.maxFileSize ?? 100 * 1024 * 1024;
+    const acceptedTypes = options.acceptedTypes ?? [];
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'Range': 'bytes=0-' },
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new BinaryLoaderError(
+          BinaryLoaderErrorType.NETWORK_ERROR,
+          `HTTP ${response.status}: ${response.statusText}`
+        );
+      }
+
+      const contentLength = response.headers.get('Content-Length');
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+      const mimeType = response.headers.get('Content-Type') || undefined;
+
+      if (total > 0) {
+        validateFileSize(total, maxFileSize);
+      }
+
+      if (mimeType && acceptedTypes.length > 0) {
+        validateFileType(mimeType, acceptedTypes);
+      }
+
+      if (!response.body) {
+        throw new BinaryLoaderError(
+          BinaryLoaderErrorType.READ_ERROR,
+          '无法获取响应体数据'
+        );
+      }
+
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let loaded = 0;
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {break;}
+
+        if (value) {
+          chunks.push(value);
+          loaded += value.length;
+
+          if (progressCallback && options.enableProgress) {
+            progressCallback({
+              loaded,
+              total: total || loaded,
+              percentage: total > 0 ? Math.min(100, (loaded / total) * 100) : 100,
+              status: 'loading',
+            });
+          }
+        }
+      }
+
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const resultArray = new Uint8Array(totalLength);
+      let offset = 0;
+
+      for (const chunk of chunks) {
+        resultArray.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      const fileName = LoaderUtils.extractFileNameFromUrl(url);
+
+      return {
+        data: resultArray.buffer,
+        size: totalLength,
+        mimeType,
+        fileName,
+        loadTime: Date.now() - startTime,
+      };
+
+    } catch (error) {
+      if (error instanceof BinaryLoaderError) {
+        throw error;
+      }
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new BinaryLoaderError(
+          BinaryLoaderErrorType.TIMEOUT_ERROR,
+          `请求超时 (${timeout}ms)`
+        );
+      }
+
+      throw new BinaryLoaderError(
+        BinaryLoaderErrorType.NETWORK_ERROR,
+        `网络错误: ${error instanceof Error ? error.message : '未知错误'}`,
+        error as Error
+      );
+    }
+  }
+
+  /**
+   * 从 URL 中提取文件名
+   */
+  static extractFileNameFromUrl (url: string): string | undefined {
+    try {
+      const urlObject = new URL(url);
+      const pathname = urlObject.pathname;
+      const fileName = pathname.split('/').pop();
+
+      if (fileName && fileName !== '') {
+        return fileName;
+      }
+    } catch {
+      const lastSlashIndex = url.lastIndexOf('/');
+
+      if (lastSlashIndex !== -1) {
+        return url.substring(lastSlashIndex + 1);
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * 主加载函数
+   */
+  static async loadBinaryFile (
+    source: FileSource,
+    options: BinaryLoadOptions = {},
+    progressCallback?: ProgressCallback
+  ): Promise<BinaryLoadResult> {
+    const mergedOptions: Required<BinaryLoadOptions> = {
+      enableProgress: options.enableProgress ?? true,
+      timeout: options.timeout ?? 30000,
+      maxFileSize: options.maxFileSize ?? 100 * 1024 * 1024,
+      acceptedTypes: options.acceptedTypes ?? [],
+      enableCache: options.enableCache ?? true,
+    };
+
+    // 检查缓存
+    if (mergedOptions.enableCache) {
+      const cacheKey = LoaderUtils.getCacheKey(source);
+      const cached = cache.get(cacheKey);
+
+      if (cached) {
+        return { ...cached, loadTime: 0 };
+      }
+    }
+
+    let result: BinaryLoadResult;
+
+    try {
+      switch (source.type) {
+        case 'url':
+          result = await LoaderUtils.loadFromUrl(source.url, mergedOptions, progressCallback);
+
+          break;
+        case 'file':
+          result = await LoaderUtils.loadFromFile(source.file, mergedOptions, progressCallback);
+
+          break;
+        case 'blob':
+          result = await LoaderUtils.loadFromBlob(source.blob, mergedOptions, progressCallback);
+
+          break;
+        default:
+          throw new BinaryLoaderError(
+            BinaryLoaderErrorType.UNKNOWN_ERROR,
+            '不支持的文件源类型'
+          );
+      }
+
+      // 缓存结果
+      if (mergedOptions.enableCache) {
+        const cacheKey = LoaderUtils.getCacheKey(source);
+
+        cache.set(cacheKey, result);
+      }
+
+      // 完成进度通知
+      if (progressCallback && mergedOptions.enableProgress) {
+        progressCallback({
+          loaded: result.size,
+          total: result.size,
+          percentage: 100,
+          status: 'completed',
+        });
+      }
+
+      return result;
+
+    } catch (error) {
+      if (error instanceof BinaryLoaderError) {
+        throw error;
+      }
+
+      throw new BinaryLoaderError(
+        BinaryLoaderErrorType.UNKNOWN_ERROR,
+        `加载文件失败: ${error instanceof Error ? error.message : '未知错误'}`,
+        error as Error
+      );
+    }
+  }
+
+  /**
+ * 便捷函数：从 URL 加载
+ */
+  static async loadBinaryFromUrl (
+    url: string,
+    options: BinaryLoadOptions = {},
+    progressCallback?: ProgressCallback
+  ): Promise<BinaryLoadResult> {
+    return LoaderUtils.loadBinaryFile({ type: 'url', url }, options, progressCallback);
+  }
+
+  /**
+ * 便捷函数：从 File 加载
+ */
+  static async loadBinaryFromFile (
+    file: File,
+    options: BinaryLoadOptions = {},
+    progressCallback?: ProgressCallback
+  ): Promise<BinaryLoadResult> {
+    return LoaderUtils.loadBinaryFile({ type: 'file', file }, options, progressCallback);
+  }
+
+  /**
+   * 清除缓存
+   */
+  static clearBinaryCache (): void {
+    cache.clear();
+  }
+
+  /**
+   * 便捷函数：从 Blob 加载
+   */
+  static async loadBinaryFromBlob (
+    blob: Blob,
+    options: BinaryLoadOptions = {},
+    progressCallback?: ProgressCallback
+  ): Promise<BinaryLoadResult> {
+    return LoaderUtils.loadBinaryFile({ type: 'blob', blob }, options, progressCallback);
+  }
 
   /**
 	 * Extracts the base URL from the given URL.
