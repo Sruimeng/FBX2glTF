@@ -2,4 +2,4 @@
 export * from './transform';
 export * from './math';
 export * from './validation';
-export * from './binary-loader';
+export * from './loader';
