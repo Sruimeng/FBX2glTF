@@ -1,1 +1,1 @@
-export * from './parse';
+export { FBXLoader } from './FBX-loader';

@@ -62,7 +62,7 @@ export function init () {
 function loadFBXModel () {
   const loader = new FBXLoader().setPath('../assets/models/fbx/');
 
-  loader.load('mixamo.fbx', function (fbx: Group) {
+  loader.load('frog.fbx', function (fbx: Group) {
     // 缩放模型
     fbx.scale.setScalar(0.01);
     scene.add(fbx);
