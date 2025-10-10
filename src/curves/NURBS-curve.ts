@@ -1,23 +1,17 @@
-import type {
-  CurveJSON,
-  Vector2 } from 'three';
-import {
-  Curve,
-  Vector3,
-  Vector4,
-} from 'three';
-import * as NURBSUtils from './NURBS-utils.js';
+import type { CurveJSON, Vector2 } from 'three';
+import { Curve, Vector3, Vector4 } from 'three';
+import * as NURBSUtils from './NURBS-utils';
 
 /**
  * 曲线的 JSON 数据格式
  * @see {@link NURBSCurveJSON}
  */
 interface NURBSCurveJSON extends CurveJSON {
-  degree: number,
-  knots: number[],
-  controlPoints: number[][],
-  startKnot: number,
-  endKnot: number,
+  controlPoints: number[][];
+  degree: number;
+  endKnot: number;
+  knots: number[];
+  startKnot: number;
 }
 
 /**
@@ -36,116 +30,123 @@ export class NURBSCurve extends Curve<Vector3> {
   endKnot: number;
 
   /**
-	 * Constructs a new NURBS curve.
-	 *
-	 * @param {number} degree - The NURBS degree.
-	 * @param {Array<number>} knots - The knots as a flat array of numbers.
-	 * @param {Array<Vector2|Vector3|Vector4>} controlPoints - An array holding control points.
-	 * @param {number} [startKnot] - Index of the start knot into the `knots` array.
-	 * @param {number} [endKnot] - Index of the end knot into the `knots` array.
-	 */
-  constructor (degree: number, knots: number[], controlPoints: (Vector2 | Vector3 | Vector4)[], startKnot?: number, endKnot?: number) {
-
+   * Constructs a new NURBS curve.
+   *
+   * @param {number} degree - The NURBS degree.
+   * @param {Array<number>} knots - The knots as a flat array of numbers.
+   * @param {Array<Vector2|Vector3|Vector4>} controlPoints - An array holding control points.
+   * @param {number} [startKnot] - Index of the start knot into the `knots` array.
+   * @param {number} [endKnot] - Index of the end knot into the `knots` array.
+   */
+  constructor(
+    degree: number,
+    knots: number[],
+    controlPoints: (Vector2 | Vector3 | Vector4)[],
+    startKnot?: number,
+    endKnot?: number,
+  ) {
     super();
 
     const knotsLength = knots ? knots.length - 1 : 0;
     const pointsLength = controlPoints ? controlPoints.length : 0;
 
     /**
-		 * The NURBS degree.
-		 *
-		 * @type {number}
-		 */
+     * The NURBS degree.
+     *
+     * @type {number}
+     */
     this.degree = degree;
 
     /**
-		 * The knots as a flat array of numbers.
-		 *
-		 * @type {Array<number>}
-		 */
+     * The knots as a flat array of numbers.
+     *
+     * @type {Array<number>}
+     */
     this.knots = knots;
 
     /**
-		 * An array of control points.
-		 *
-		 * @type {Array<Vector4>}
-		 */
+     * An array of control points.
+     *
+     * @type {Array<Vector4>}
+     */
     this.controlPoints = [];
 
     /**
-		 * Index of the start knot into the `knots` array.
-		 *
-		 * @type {number}
-		 */
+     * Index of the start knot into the `knots` array.
+     *
+     * @type {number}
+     */
     this.startKnot = startKnot || 0;
 
     /**
-		 * Index of the end knot into the `knots` array.
-		 *
-		 * @type {number}
-		 */
+     * Index of the end knot into the `knots` array.
+     *
+     * @type {number}
+     */
     this.endKnot = endKnot || knotsLength;
 
-    for (let i = 0; i < pointsLength; ++ i) {
-
+    for (let i = 0; i < pointsLength; ++i) {
       // ensure Vector4 for control points
-      const point = controlPoints[ i ] as Vector4;
+      const point = controlPoints[i] as Vector4;
 
-      this.controlPoints[ i ] = new Vector4(point.x, point.y, point.z, point.w);
-
+      this.controlPoints[i] = new Vector4(point.x, point.y, point.z, point.w);
     }
-
   }
 
   /**
-	 * This method returns a vector in 3D space for the given interpolation factor.
-	 *
-	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
-	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
-	 * @return {Vector3} The position on the curve.
-	 */
-  override getPoint (t: number, optionalTarget = new Vector3()) {
-
+   * This method returns a vector in 3D space for the given interpolation factor.
+   *
+   * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+   * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+   * @return {Vector3} The position on the curve.
+   */
+  override getPoint(t: number, optionalTarget = new Vector3()) {
     const point = optionalTarget;
 
-    const u = this.knots[ this.startKnot ] + t * (this.knots[ this.endKnot ] - this.knots[ this.startKnot ]); // linear mapping t->u
+    const u
+      = this.knots[this.startKnot] as number + t * (this.knots[this.endKnot] as number - (this.knots[this.startKnot] as number)); // linear mapping t->u
 
     // following results in (wx, wy, wz, w) homogeneous point
-    const hpoint = NURBSUtils.calcBSplinePoint(this.degree, this.knots, this.controlPoints as Vector4[], u);
+    const hpoint = NURBSUtils.calcBSplinePoint(
+      this.degree,
+      this.knots,
+      this.controlPoints as Vector4[],
+      u,
+    );
 
     if (hpoint.w !== 1.0) {
-
       // project to 3D space: (wx, wy, wz, w) -> (x, y, z, 1)
       hpoint.divideScalar(hpoint.w);
-
     }
 
     return point.set(hpoint.x, hpoint.y, hpoint.z);
-
   }
 
   /**
-	 * Returns a unit vector tangent for the given interpolation factor.
-	 *
-	 * @param {number} t - The interpolation factor.
-	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
-	 * @return {Vector3} The tangent vector.
-	 */
-  override getTangent (t: number, optionalTarget = new Vector3()) {
-
+   * Returns a unit vector tangent for the given interpolation factor.
+   *
+   * @param {number} t - The interpolation factor.
+   * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+   * @return {Vector3} The tangent vector.
+   */
+  override getTangent(t: number, optionalTarget = new Vector3()) {
     const tangent = optionalTarget;
 
-    const u = this.knots[ 0 ] + t * (this.knots[ this.knots.length - 1 ] - this.knots[ 0 ]);
-    const ders = NURBSUtils.calcNURBSDerivatives(this.degree, this.knots, this.controlPoints as Vector4[], u, 1);
+    const u = this.knots[0] as number + t * (this.knots[this.knots.length - 1] as number - (this.knots[0] as number));
+    const ders = NURBSUtils.calcNURBSDerivatives(
+      this.degree,
+      this.knots,
+      this.controlPoints as Vector4[],
+      u,
+      1,
+    );
 
-    tangent.copy(ders[ 1 ]).normalize();
+    tangent.copy(ders[1] as Vector3).normalize();
 
     return tangent;
-
   }
 
-  override toJSON () {
-
+  override toJSON() {
     const data = super.toJSON() as NURBSCurveJSON;
 
     data.degree = this.degree;
@@ -155,21 +156,17 @@ export class NURBSCurve extends Curve<Vector3> {
     data.endKnot = this.endKnot;
 
     return data;
-
   }
 
-  override fromJSON (json: NURBSCurveJSON) {
-
+  override fromJSON(json: NURBSCurveJSON) {
     super.fromJSON(json);
 
     this.degree = json.degree;
     this.knots = [...json.knots];
-    this.controlPoints = json.controlPoints.map(p => new Vector4(p[ 0 ], p[ 1 ], p[ 2 ], p[ 3 ]));
+    this.controlPoints = json.controlPoints.map(p => new Vector4(p[0], p[1], p[2], p[3]));
     this.startKnot = json.startKnot;
     this.endKnot = json.endKnot;
 
     return this;
-
   }
-
 }

@@ -3,42 +3,42 @@ import { Group } from 'three';
 
 // FBX 上下文参数
 export interface FBXDocumentOptions {
-  fbxTree: IFBXTree;
   fbxConnections: Map<number, FBXConnectionNode>;
+  fbxTree: IFBXTree;
   sceneGraph?: Group;
 }
 
 export interface IFBXTree {
-  FBXHeaderExtension?: FBXHeaderExtension;
-  FileId?: FBXProperty;
+  [key: string]: unknown;
+  Connections?: FBXConnectionDocment;
   CreationTime?: FBXProperty;
   Creator?: FBXProperty;
-  GlobalSettings?: FBXGlobalSettings;
-  Documents?: FBXDocuments;
-  References?: FBXProperty;
   Definitions?: FBXDefinitions;
+  Documents?: FBXDocuments;
+  FBXHeaderExtension?: FBXHeaderExtension;
+  FileId?: FBXProperty;
+  GlobalSettings?: FBXGlobalSettings;
   Objects?: FBXObjects;
-  Connections?: FBXConnectionDocment;
-  [key: string]: any;
+  References?: FBXProperty;
 }
 
 export interface FBXProperty {
-  singleProperty: boolean;
-  propertyList: object[];
+  [key: string]: unknown;
   name: string;
-  [key: string]: any;
+  propertyList: object[];
+  singleProperty: boolean;
 }
 
 export interface FBXHeaderExtension {
-  singleProperty: boolean;
-  FBXHeaderVersion: number;
-  FBXVersion: number;
-  EncryptionType: number;
   CreationTimeStamp: FBXTimeStamp;
   Creator: string;
-  SceneInfo: FBXSceneInfo;
-  propertyList: any[];
+  EncryptionType: number;
+  FBXHeaderVersion: number;
+  FBXVersion: number;
   name: string;
+  propertyList: unknown[];
+  SceneInfo: FBXSceneInfo;
+  singleProperty: boolean;
 }
 
 export interface FBXConnectionDocment extends FBXPropertyTemplate {
@@ -46,138 +46,138 @@ export interface FBXConnectionDocment extends FBXPropertyTemplate {
 }
 
 export interface FBXTimeStamp {
+  Day: number;
+  Hour: number;
+  Millisecond: number;
+  Minute: number;
+  Month: number;
+  name: string;
+  propertyList: unknown[];
+  Second: number;
   singleProperty: boolean;
   Version: number;
   Year: number;
-  Month: number;
-  Day: number;
-  Hour: number;
-  Minute: number;
-  Second: number;
-  Millisecond: number;
-  propertyList: any[];
-  name: string;
 }
 
 export interface FBXSceneInfo {
+  [key: string]: unknown;
+  attrName: string;
+  DocumentUrl: FBXTypedProperty;
+  LastSaved: FBXTypedProperty;
+  MetaData: FBXMetaData;
+  name: string;
+  Original: FBXTypedProperty;
+  propertyList: string[];
   singleProperty: boolean;
+  SrcDocumentUrl: FBXTypedProperty;
   Type: string;
   Version: number;
-  MetaData: FBXMetaData;
-  DocumentUrl: FBXTypedProperty;
-  SrcDocumentUrl: FBXTypedProperty;
-  Original: FBXTypedProperty;
-  LastSaved: FBXTypedProperty;
-  propertyList: string[];
-  name: string;
-  attrName: string;
-  [key: string]: any;
 }
 
 export interface FBXMetaData {
-  singleProperty: boolean;
-  Version: number;
-  Title: string;
-  Subject: string;
   Author: string;
-  Keywords: string;
-  Revision: string;
   Comment: string;
-  propertyList: any[];
+  Keywords: string;
   name: string;
+  propertyList: unknown[];
+  Revision: string;
+  singleProperty: boolean;
+  Subject: string;
+  Title: string;
+  Version: number;
 }
 
 export interface FBXTypedProperty {
+  flag: string;
   type: string;
   type2?: string;
-  flag: string;
-  value?: any;
+  value?: string | number | number[] | boolean;
 }
 
 export interface FBXGlobalSettings {
-  singleProperty: boolean;
-  Version: number;
-  UpAxis: FBXTypedProperty;
-  UpAxisSign: FBXTypedProperty;
-  FrontAxis: FBXTypedProperty;
-  FrontAxisSign: FBXTypedProperty;
+  AmbientColor: FBXTypedProperty;
   CoordAxis: FBXTypedProperty;
   CoordAxisSign: FBXTypedProperty;
+  CurrentTimeMarker: FBXTypedProperty;
+  CustomFrameRate: FBXTypedProperty;
+  DefaultCamera: FBXTypedProperty;
+  FrontAxis: FBXTypedProperty;
+  FrontAxisSign: FBXTypedProperty;
+  name: string;
+  OriginalUnitScaleFactor: FBXTypedProperty;
   OriginalUpAxis: FBXTypedProperty;
   OriginalUpAxisSign: FBXTypedProperty;
-  UnitScaleFactor: FBXTypedProperty;
-  OriginalUnitScaleFactor: FBXTypedProperty;
-  AmbientColor: FBXTypedProperty;
-  DefaultCamera: FBXTypedProperty;
+  propertyList: unknown[];
+  singleProperty: boolean;
+  SnapOnFrameMode: FBXTypedProperty;
+  TimeMarker: FBXTypedProperty;
   TimeMode: FBXTypedProperty;
   TimeProtocol: FBXTypedProperty;
-  SnapOnFrameMode: FBXTypedProperty;
   TimeSpanStart: FBXTypedProperty;
   TimeSpanStop: FBXTypedProperty;
-  CustomFrameRate: FBXTypedProperty;
-  TimeMarker: FBXTypedProperty;
-  CurrentTimeMarker: FBXTypedProperty;
-  propertyList: any[];
-  name: string;
+  UnitScaleFactor: FBXTypedProperty;
+  UpAxis: FBXTypedProperty;
+  UpAxisSign: FBXTypedProperty;
+  Version: number;
 }
 
 export interface FBXDocuments {
-  singleProperty: boolean;
   Count: number;
   Document: {
     [id: string]: FBXDocument;
   };
-  propertyList: any[];
   name: string;
+  propertyList: unknown[];
+  singleProperty: boolean;
 }
 
 export interface FBXDocument {
+  ActiveAnimStackName: FBXTypedProperty;
+  attrType: string;
+  id: number;
+  name: string;
+  propertyList: unknown[];
+  RootNode: number;
   singleProperty: boolean;
   SourceObject: FBXTypedProperty;
-  ActiveAnimStackName: FBXTypedProperty;
-  propertyList: any[];
-  name: string;
-  RootNode: number;
-  id: number;
-  attrType: string;
 }
 
 export interface FBXDefinitions {
-  singleProperty: boolean;
-  Version: number;
   Count: number;
+  name: string;
   ObjectType: {
     [key: string]: FBXObjectType;
   };
   propertyList: string[];
-  name: string;
+  singleProperty: boolean;
+  Version: number;
 }
 
 export interface FBXObjectType {
-  singleProperty: boolean;
   Count: number;
-  PropertyTemplate?: FBXPropertyTemplate;
-  propertyList: string[];
   name: string;
+  propertyList: string[];
+  PropertyTemplate?: FBXPropertyTemplate;
+  singleProperty: boolean;
   undefined?: FBXObjectType;
 }
 
 export interface FBXPropertyTemplate {
-  singleProperty: boolean;
   Description: FBXTypedProperty;
   LocalStart: FBXTypedProperty;
   LocalStop: FBXTypedProperty;
+  name: string;
+  propertyList: string[];
   ReferenceStart: FBXTypedProperty;
   ReferenceStop: FBXTypedProperty;
-  propertyList: string[];
-  name: string;
+  singleProperty: boolean;
 }
 export interface FBXRawTargets {
-  geoID?: number;
-  name: string;
-  initialWeight: FBXTreeNodeDetails;
-  id: number;
   fullWeights: number[];
+  geoID?: number;
+  id: number;
+  initialWeight: FBXTreeNodeDetails;
+  name: string;
 }
 export interface FBXMorphTarget {
   id: string;
@@ -185,53 +185,53 @@ export interface FBXMorphTarget {
   skeleton?: FBXSkeleton;
 }
 export interface UserDataTransform {
-  translation?: number[];
-  rotation?: number[];
-  scale?: number[];
-  preRotation?: number[];
-  postRotation?: number[];
-  rotationOffset?: number[];
-  rotationPivot?: number[];
-  scalingOffset?: number[];
-  scalingPivot?: number[];
   eulerOrder?: EulerOrder;
   inheritType?: number;
   parentMatrix?: Matrix4;
   parentMatrixWorld?: Matrix4;
+  postRotation?: number[];
+  preRotation?: number[];
+  rotation?: number[];
+  rotationOffset?: number[];
+  rotationPivot?: number[];
+  scale?: number[];
+  scalingOffset?: number[];
+  scalingPivot?: number[];
+  translation?: number[];
 }
 
 export interface FBXSkeleton {
-  ID: string;
-  rawBones: RawBone[];
   bones: Bone[];
   geometryID: number;
+  ID: string;
+  rawBones: RawBone[];
 }
 
 export interface RawBone {
   ID: number;
   indices: number[];
-  weights: number[];
   transformLink: Matrix4;
+  weights: number[];
 }
 
 export interface FBXPoseNode extends FBXTreeNode {
-  PoseNode: FBXMeshNode | FBXMeshNode[] | Record<string, FBXMeshNode>[];
   NbPoseNodes: number;
+  PoseNode: FBXMeshNode | FBXMeshNode[] | Record<string, FBXMeshNode>[];
 }
 
 export interface Deformers {
-  skeletons: Record<number, FBXSkeleton>;
   morphTargets: Record<number, FBXMorphTarget>;
+  skeletons: Record<number, FBXSkeleton>;
 }
 
 export interface FBXNodeAttribute extends FBXTreeNode {
-  CameraProjectionType?: FBXTreeNode;
-  NearPlane?: FBXTreeNode;
-  FarPlane?: FBXTreeNode;
-  FocalLength?: FBXTreeNode;
-  AspectWidth?: FBXTreeNode;
   AspectHeight?: FBXTreeNode;
+  AspectWidth?: FBXTreeNode;
+  CameraProjectionType?: FBXTreeNode;
+  FarPlane?: FBXTreeNode;
   FieldOfView?: FBXTreeNode;
+  FocalLength?: FBXTreeNode;
+  NearPlane?: FBXTreeNode;
 }
 
 export interface FBXAnimationCurveNode extends FBXTreeNode {
@@ -240,50 +240,66 @@ export interface FBXAnimationCurveNode extends FBXTreeNode {
 }
 
 export interface FBXLightNodeAttribute extends FBXNodeAttribute {
-  CastShadows?: FBXTreeNode;
-  LightType?: FBXTreeNode;
-  Color?: FBXTreeNode;
-  Intensity?: FBXTreeNode;
-  InnerAngle?: FBXTreeNode;
-  OuterAngle?: FBXTreeNode;
   CastLightOnObject?: FBXTreeNode;
+  CastShadows?: FBXTreeNode;
+  Color?: FBXTreeNode;
   EnableFarAttenuation?: FBXTreeNode;
   FarAttenuationEnd?: FBXTreeNode;
+  InnerAngle?: FBXTreeNode;
+  Intensity?: FBXTreeNode;
+  LightType?: FBXTreeNode;
+  OuterAngle?: FBXTreeNode;
 }
 
 export interface FBXObjects {
-  singleProperty: boolean;
+  [key: string]: unknown;
+  AnimationCurve?: Record<string, FBXAnimationCurveNode>;
+  AnimationCurveNode?: Record<string, FBXAnimationCurveNode>;
+  Deformer?: Record<string, FBXDeformer>;
   Geometry?: {
     [id: string]: FBXGeometryNode;
   };
-  Model?: Record<string, FBXModelNode>;
+  LayeredTexture?: Record<string, FBXLayer>;
   Material?: Record<string, FBXMaterialNode>;
-  Pose?: Record<string, FBXPoseNode>;
-  Video?: Record<string, FBXVideoNode>;
-  NodeAttribute?: Record<string, FBXNodeAttribute>;
-  AnimationCurveNode?: Record<string, FBXAnimationCurveNode>;
-  AnimationCurve?: Record<string, FBXAnimationCurveNode>;
-  [key: string]: any;
-  propertyList: any[];
+  Model?: Record<string, FBXModelNode>;
   name: string;
+  NodeAttribute?: Record<string, FBXNodeAttribute>;
+  Pose?: Record<string, FBXPoseNode>;
+  propertyList: unknown[];
+  singleProperty: boolean;
+  Texture?: Record<string, FBXTextureNode>;
+  Video?: Record<string, FBXVideoNode>;
+}
+
+export interface FBXDeformer {
+  attrName: string;
+  attrType?: string;
+  id?: number;
+  // 添加其他可能的属性，如 type, indices 等，根据 FBX 规范
 }
 
 export interface FBXGeometryNode {
-  Order?: string;
-  Form?: string;
-  KnotVector?: FBXTreeNodeDetails;
-  Points?: FBXTreeNodeDetails;
-  LayerElementColor: any;
   attrName: string;
-  singleProperty: boolean;
-  Vertices: FBXProperty;
-  Indexes?: FBXProperty;
-  PolygonVertexIndex: FBXProperty;
+  attrType: string;
+  Form?: string;
   GeometryVersion: number;
+  id: number;
+  Indexes?: FBXProperty;
+  KnotVector?: FBXTreeNodeDetails;
+  Layer?: {
+    [id: string]: FBXLayer;
+  };
+  LayerElementBinormal?: {
+    [id: string]: FBXLayerElement;
+  };
+  LayerElementColor: FBXLayerElementColor[];
+  LayerElementMaterial?: {
+    [id: string]: FBXMaterialNode;
+  };
   LayerElementNormal?: {
     [id: string]: FBXLayerElement;
   };
-  LayerElementBinormal?: {
+  LayerElementSmoothing?: {
     [id: string]: FBXLayerElement;
   };
   LayerElementTangent?: {
@@ -292,38 +308,32 @@ export interface FBXGeometryNode {
   LayerElementUV?: {
     [id: string]: FBXLayerElementUV;
   };
-  LayerElementSmoothing?: {
-    [id: string]: FBXLayerElement;
-  };
-  LayerElementMaterial?: {
-    [id: string]: FBXMaterialNode;
-  };
-  Layer?: {
-    [id: string]: FBXLayer;
-  };
-  propertyList: any[];
-  id: number;
-  attrType: string;
   name: string;
+  Order?: string;
+  Points?: FBXTreeNodeDetails;
+  PolygonVertexIndex: FBXProperty;
+  propertyList: unknown[];
+  singleProperty: boolean;
+  Vertices: FBXProperty;
 }
 
 export interface FBXLayerElement {
-  singleProperty: boolean;
-  Version: number;
-  Name: string;
-  MappingInformationType: string;
-  ReferenceInformationType: string;
-  Normals?: FBXTreeNodeDetails;
-  NormalsW?: FBXProperty;
   Binormals?: FBXProperty;
   BinormalsW?: FBXProperty;
+  id: number;
+  MappingInformationType: string;
+  Materials?: FBXProperty;
+  Name: string;
+  name: string;
+  Normals?: FBXTreeNodeDetails;
+  NormalsW?: FBXProperty;
+  propertyList: unknown[];
+  ReferenceInformationType: string;
+  singleProperty: boolean;
+  Smoothing?: FBXProperty;
   Tangents?: FBXProperty;
   TangentsW?: FBXProperty;
-  Smoothing?: FBXProperty;
-  Materials?: FBXProperty;
-  propertyList: any[];
-  id: number;
-  name: string;
+  Version: number;
 }
 
 export interface FBXLayerElementUV extends FBXLayerElement {
@@ -332,8 +342,8 @@ export interface FBXLayerElementUV extends FBXLayerElement {
 }
 
 export interface FBXLayerElementColor extends FBXLayerElement {
-  Colors: FBXTreeNodeDetails;
   ColorIndex: FBXTreeNodeDetails;
+  Colors: FBXTreeNodeDetails;
 }
 export interface FBXLayerElementNormal extends FBXLayerElement {
   NormalIndex?: FBXTreeNodeDetails;
@@ -341,72 +351,73 @@ export interface FBXLayerElementNormal extends FBXLayerElement {
 }
 
 export interface FBXLayer {
+  id: number;
+  LayerElement: FBXLayerElementRef;
+  name: string;
+  propertyList: unknown[];
   singleProperty: boolean;
   Version: number;
-  LayerElement: FBXLayerElementRef;
-  propertyList: any[];
-  id: number;
-  name: string;
 }
 
 export interface FBXLayerElementRef {
+  name: string;
+  propertyList: object[];
   singleProperty: boolean;
   Type: string;
   TypedIndex: number;
-  propertyList: object[];
-  name: string;
   undefined?: FBXLayerElementRef;
 }
 
 export interface FBXMaterial {
-  singleProperty: boolean;
-  Version: number;
-  ShadingModel: string;
-  MultiLayer: number;
+  Ambient: FBXTypedProperty;
   AmbientColor: FBXTypedProperty;
+  attrName: string;
+  Diffuse: FBXTypedProperty;
   DiffuseColor: FBXTypedProperty;
   DiffuseFactor: FBXTypedProperty;
-  TransparencyFactor: FBXTypedProperty;
   Emissive: FBXTypedProperty;
-  Ambient: FBXTypedProperty;
-  Diffuse: FBXTypedProperty;
+  id: number;
+  MultiLayer: number;
+  name: string;
   Opacity: FBXTypedProperty;
   propertyList: object[];
-  name: string;
-  id: number;
-  attrName: string;
+  ShadingModel: string;
+  singleProperty: boolean;
+  TransparencyFactor: FBXTypedProperty;
+  Version: number;
 }
 
 export interface FBXTransformData {
-  postRotation?: number[];
-  scalingOffset?: number[];
-  scalingPivot?: number[];
-  rotationOffset?: number[];
-  rotationPivot?: number[];
-  parentMatrixWorld?: Matrix4;
-  parentMatrix?: Matrix4;
   eulerOrder?: string;
   inheritType?: number;
-  translation?: number[];
-  rotation?: number[];
-  scale?: number[];
+  parentMatrix?: Matrix4;
+  parentMatrixWorld?: Matrix4;
+  postRotation?: number[];
   preRotation?: number[];
+  rotation?: number[];
+  rotationOffset?: number[];
+  rotationPivot?: number[];
+  scale?: number[];
+  scalingOffset?: number[];
+  scalingPivot?: number[];
+  translation?: number[];
 }
 
 export interface FBXConnectionNode {
-  parents: FBXConnectionReference[];
   children: FBXConnectionReference[];
+  parents: FBXConnectionReference[];
 }
 
 export interface FBXTreeNode {
-  value?: FBXEulerOrder | string | number;
-  ID?: number;
-  id?: number;
+  a?: number[];
   attrName?: string;
   attrType?: string;
+  ID?: number;
+  id?: number;
   name?: string;
   propertyList?: string[];
   singleProperty?: boolean;
+  value?: FBXEulerOrder | string | number;
   version?: number;
 }
 
@@ -423,89 +434,57 @@ export interface FBXMeshNode extends FBXTreeNode {
   DeformPercent: FBXTreeNodeDetails;
   FullWeights: FBXTreeNodeDetails;
   Indexes?: FBXTreeNodeDetails;
+  Material?: FBXTreeNodeDetails;
+  Matrix?: FBXTreeNodeDetails;
+  Node?: number;
   Transform?: FBXTreeNodeDetails;
   TransformLink?: FBXTreeNodeDetails;
   UserData?: FBXTreeNodeDetails;
   Weights?: FBXTreeNodeDetails;
-  Material?: FBXTreeNodeDetails;
-  Matrix?: FBXTreeNodeDetails;
-  Node?: number;
 }
 
 export interface FBXModelNode extends FBXTreeNode {
-  LookAtProperty?: string;
-  GeometricTranslation: FBXTypedProperty;
+  Culling: string;
+  currentUVSet: FBXTypedProperty;
+  DefaultAttributeIndex: FBXTypedProperty;
+  filmboxTypeID: FBXTypedProperty;
   GeometricRotation: FBXTypedProperty;
   GeometricScaling: FBXTypedProperty;
-  singleProperty: boolean;
-  ScalingOffset: FBXTypedProperty;
-  RotationOffset: FBXTypedProperty;
-  Lcl_Rotation: FBXTypedProperty;
-  PostRotation: FBXTypedProperty;
-  Version: number;
-  RotationPivot: FBXTypedProperty;
-  ScalingPivot: FBXTypedProperty;
-  RotationActive: FBXTypedProperty;
+  GeometricTranslation: FBXTypedProperty;
   InheritType: FBXTypedProperty;
-  ScalingMax: FBXTypedProperty;
-  DefaultAttributeIndex: FBXTypedProperty;
-  currentUVSet: FBXTypedProperty;
-  RotationOrder: FBXTreeNode;
-  Shading: boolean;
-  Lcl_Translation: FBXTypedProperty;
+  Lcl_Rotation: FBXTypedProperty;
   Lcl_Scaling: FBXTypedProperty;
-  filmboxTypeID: FBXTypedProperty;
+  Lcl_Translation: FBXTypedProperty;
   lockInfluenceWeights: FBXTypedProperty;
+  LookAtProperty?: string;
+  PostRotation: FBXTypedProperty;
   PreRotation: FBXTypedProperty;
-  Culling: string;
+  RotationActive: FBXTypedProperty;
+  RotationOffset: FBXTypedProperty;
+  RotationOrder: FBXTreeNode;
+  RotationPivot: FBXTypedProperty;
+  ScalingMax: FBXTypedProperty;
+  ScalingOffset: FBXTypedProperty;
+  ScalingPivot: FBXTypedProperty;
+  Shading: boolean;
+  singleProperty: boolean;
+  Version: number;
 }
 
 /**
  * FBX文件中纹理节点的接口定义
  */
 export interface FBXTextureNode {
-  WrapModeU: {
-    value: number;
-  };
-  Scaling: FBXTypedProperty;
-  WrapModeV: {
-    value: number;
-  }; // Added back the WrapModeV property
-  Translation: FBXTypedProperty;
-  /** 纹理文件的完整路径 */
-  FileName: string;
-
-  /** 媒体文件名 */
-  Media: string;
-
-  /** 相对路径的文件名 */
-  RelativeFilename: string;
-
-  /** 纹理名称，通常描述纹理用途 */
-  TextureName: string;
-
-  /** 纹理类型 */
-  Type: string;
-
-  /** 使用材质的标志 */
-  UseMaterial: {
-    type: string;
-    type2: string;
-    flag: string;
-    value: number;
-  };
-
-  /** 版本号 */
-  Version: number;
-
   /** 属性名称 */
   attrName: string;
-
   /** 属性类型 */
   attrType: string;
-
+  /** 纹理文件的完整路径 */
+  FileName: string;
   /** 唯一标识符 */
   id: number;
+  /** 媒体文件名 */
+  Media: string;
 
   /** 节点名称 */
   name: string;
@@ -513,44 +492,76 @@ export interface FBXTextureNode {
   /** 属性列表，通常包含 [id, 名称, 类型] */
   propertyList: Array<number | string>;
 
+  /** 相对路径的文件名 */
+  RelativeFilename: string;
+
+  Scaling: FBXTypedProperty;
+
   /** 是否为单一属性 */
   singleProperty: boolean;
+
+  /** 纹理名称，通常描述纹理用途 */
+  TextureName: string;
+
+  Translation: FBXTypedProperty;
+
+  /** 纹理类型 */
+  Type: string;
+
+  /** 使用材质的标志 */
+  UseMaterial: {
+    flag: string;
+    type: string;
+    type2: string;
+    value: number;
+  };
+
+  /** 版本号 */
+  Version: number;
+
+  WrapModeU: {
+    value: number;
+  };
+
+  WrapModeV: {
+    value: number;
+  }; // Added back the WrapModeV property
 }
 
 export interface FBXVideoNode {
+  attrName: string;
+  attrType: string;
   // 主要属性
   Content: ArrayBuffer;
   Filename: string;
-  RelativeFilename: string;
+
+  // 标志和值
+  flag: string;
+  // 标识信息
+  id: number;
+  name: string;
   Path: string;
+
+  // 属性列表，通常包含 [id, 文件名, 类型]
+  propertyList: Array<string | number>;
+  RelativeFilename: string;
+  // 是否为单一属性
+  singleProperty: boolean;
 
   // 类型标识
   Type: string;
   type: string;
   type2: string;
-  attrType: string;
 
-  // 标志和值
-  flag: string;
-  value: string;
   UseMipMap: number;
 
-  // 标识信息
-  id: number;
-  name: string;
-  attrName: string;
-
-  // 属性列表，通常包含 [id, 文件名, 类型]
-  propertyList: Array<string | number>;
-
-  // 是否为单一属性
-  singleProperty: boolean;
+  value: string;
 }
 
 export interface FBXConnectionDocment {
   from: number;
-  to: number;
   relationship?: number;
+  to: number;
 }
 
 // FBX连接类型
@@ -563,12 +574,12 @@ export enum FBXConnectionType {
  * FBX材质节点中颜色或数值属性的通用接口
  */
 export interface IFBXPropertyValue<T> {
+  /** 标志 */
+  flag: string;
   /** 属性类型 */
   type: string;
   /** 次级类型 */
   type2: string;
-  /** 标志 */
-  flag: string;
   /** 属性值 */
   value: T;
 }
@@ -577,69 +588,45 @@ export interface IFBXPropertyValue<T> {
  * FBX文件中材质节点的接口定义
  */
 export interface FBXMaterialNode {
-  MappingInformationType: string;
-  ReferenceInformationType: string;
-  Materials: any;
+  /** 环境光颜色 */
+  AmbientColor: IFBXPropertyValue<number[]>;
+  /** 环境光因子 */
+  AmbientFactor: IFBXPropertyValue<number>;
+  /** 属性名称 */
+  attrName: string;
+  /** 属性类型 */
+  attrType: string;
+  /** 凹凸因子 */
+  BumpFactor: IFBXPropertyValue<number>;
   Diffuse: IFBXPropertyValue<number[]>;
+  /** 漫反射颜色 */
+  DiffuseColor: IFBXPropertyValue<number[]>;
   DisplacementFactor: IFBXPropertyValue<number[] | number>;
   Emissive: IFBXPropertyValue<number[]>;
-  TransparencyFactor: IFBXPropertyValue<string>;
-  Opacity: IFBXPropertyValue<string>;
-  TransparentColor: IFBXPropertyValue<string[]>;
-  Specular: IFBXPropertyValue<number[]>;
+  /** 自发光颜色 */
+  EmissiveColor: IFBXPropertyValue<number[]>;
+  /** 自发光因子 */
+  EmissiveFactor: IFBXPropertyValue<string>;
+
   /** 唯一标识符 */
   id: number;
 
-  /** 属性名称 */
-  attrName: string;
+  MappingInformationType: string;
 
-  /** 属性类型 */
-  attrType: string;
-
-  /** 是否为单一属性 */
-  singleProperty: boolean;
-
-  /** 节点名称 */
-  name: string;
-
-  /** 版本号 */
-  Version: number;
-
-  /** 着色模型类型 */
-  ShadingModel: IFBXPropertyValue<string>;
+  Materials: FBXProperty;
 
   /** 是否多层 */
   MultiLayer: number;
 
-  /** 漫反射颜色 */
-  DiffuseColor: IFBXPropertyValue<number[]>;
+  /** 节点名称 */
+  name: string;
 
-  /** 自发光颜色 */
-  EmissiveColor: IFBXPropertyValue<number[]>;
+  Opacity: IFBXPropertyValue<string>;
 
-  /** 自发光因子 */
-  EmissiveFactor: IFBXPropertyValue<string>;
+  /** 属性列表，通常包含 [id, 名称, 类型] */
+  propertyList: Array<number | string>;
 
-  /** 环境光颜色 */
-  AmbientColor: IFBXPropertyValue<number[]>;
-
-  /** 环境光因子 */
-  AmbientFactor: IFBXPropertyValue<number>;
-
-  /** 凹凸因子 */
-  BumpFactor: IFBXPropertyValue<number>;
-
-  /** 镜面颜色 */
-  SpecularColor: IFBXPropertyValue<number[]>;
-
-  /** 镜面因子 */
-  SpecularFactor: IFBXPropertyValue<number>;
-
-  /** 光泽度 */
-  Shininess: IFBXPropertyValue<number>;
-
-  /** 光泽度指数 */
-  ShininessExponent: IFBXPropertyValue<number>;
+  ReferenceInformationType: string;
 
   /** 反射颜色 */
   ReflectionColor: IFBXPropertyValue<number[]>;
@@ -647,48 +634,72 @@ export interface FBXMaterialNode {
   /** 反射因子 */
   ReflectionFactor: IFBXPropertyValue<number>;
 
-  /** 属性列表，通常包含 [id, 名称, 类型] */
-  propertyList: Array<number | string>;
+  /** 着色模型类型 */
+  ShadingModel: IFBXPropertyValue<string>;
+
+  /** 光泽度 */
+  Shininess: IFBXPropertyValue<number>;
+
+  /** 光泽度指数 */
+  ShininessExponent: IFBXPropertyValue<number>;
+
+  /** 是否为单一属性 */
+  singleProperty: boolean;
+
+  Specular: IFBXPropertyValue<number[]>;
+
+  /** 镜面颜色 */
+  SpecularColor: IFBXPropertyValue<number[]>;
+
+  /** 镜面因子 */
+  SpecularFactor: IFBXPropertyValue<number>;
+
+  TransparencyFactor: IFBXPropertyValue<string>;
+
+  TransparentColor: IFBXPropertyValue<string[]>;
+
+  /** 版本号 */
+  Version: number;
 }
 
 export enum FBXEulerOrder {
-  'ZYX' = 0, // -> XYZ extrinsic
-  'YZX' = 1, // -> XZY extrinsic
-  'XZY' = 2, // -> YZX extrinsic
-  'ZXY' = 3, // -> YXZ extrinsic
-  'YXZ' = 4, // -> ZXY extrinsic
-  'XYZ' = 5, // -> ZYX extrinsic
-  'SphericXYZ' = 6, // not possible to support
+  SphericXYZ = 6, // not possible to support
+  XYZ = 5, // -> ZYX extrinsic
+  XZY = 2, // -> YZX extrinsic
+  YXZ = 4, // -> ZXY extrinsic
+  YZX = 1, // -> XZY extrinsic
+  ZXY = 3, // -> YXZ extrinsic
+  ZYX = 0, // -> XYZ extrinsic
 }
 
 // FBX节点类型枚举
 export enum FBXNodeType {
-  MODEL = 'Model',
-  GEOMETRY = 'Geometry',
-  MATERIAL = 'Material',
-  TEXTURE = 'Texture',
-  VIDEO = 'Video',
   ANIMATION = 'Animation',
   DEFORMER = 'Deformer',
+  GEOMETRY = 'Geometry',
+  MATERIAL = 'Material',
+  MODEL = 'Model',
+  TEXTURE = 'Texture',
+  VIDEO = 'Video',
 }
 
 // FBX材质属性类型
 export enum FBXMaterialPropertyType {
-  EMISSIVE = 'Emissive',
   AMBIENT = 'Ambient',
   DIFFUSE = 'Diffuse',
-  SPECULAR = 'Specular',
-  SHININESS = 'Shininess',
+  EMISSIVE = 'Emissive',
   REFLECTIVITY = 'Reflectivity',
+  SHININESS = 'Shininess',
+  SPECULAR = 'Specular',
 }
 
 // FBX映射信息类型
 export enum MappingInformationType {
-  BY_POLYGON_VERTEX = 'ByPolygonVertex',
-  BY_POLYGON = 'ByPolygon',
-  BY_VERTEX = 'ByVertex',
-  BY_EDGE = 'ByEdge',
   ALL_SAME = 'AllSame',
+  BY_EDGE = 'ByEdge',
+  BY_POLYGON = 'ByPolygon',
+  BY_POLYGON_VERTEX = 'ByPolygonVertex',
+  BY_VERTEX = 'ByVertex',
 }
 
 // FBX引用信息类型
@@ -699,25 +710,44 @@ export enum ReferenceInformationType {
 
 // FBX层元素类型
 export enum LayerElementType {
-  NORMAL = 'LayerElementNormal',
   BINORMAL = 'LayerElementBinormal',
-  TANGENT = 'LayerElementTangent',
-  UV = 'LayerElementUV',
   COLOR = 'LayerElementColor',
   MATERIAL = 'LayerElementMaterial',
+  NORMAL = 'LayerElementNormal',
   SMOOTHING = 'LayerElementSmoothing',
+  TANGENT = 'LayerElementTangent',
+  UV = 'LayerElementUV',
 }
 
 export interface Global {
-  wireframe?: boolean;
-  fbxTree: IFBXTree;
   connections: Map<number, FBXConnectionNode>;
+  fbxTree: IFBXTree;
   sceneGraph: Group;
+  wireframe?: boolean;
 }
 
 export const global: Global = {
-  fbxTree: {},
   connections: new Map(),
+  fbxTree: {},
   sceneGraph: new Group(),
-  wireframe: true,
 };
+
+// FBXTree holds a representation of the FBX data, returned by the TextParser ( FBX ASCII format)
+// and BinaryParser( FBX Binary format)
+export class FBXTree implements IFBXTree {
+  FBXHeaderExtension?: FBXHeaderExtension;
+  FileId?: FBXProperty;
+  CreationTime?: FBXProperty;
+  Creator?: FBXProperty;
+  GlobalSettings?: FBXGlobalSettings;
+  Documents?: FBXDocuments;
+  References?: FBXProperty;
+  Definitions?: FBXDefinitions;
+  Objects?: FBXObjects;
+  Connections?: FBXConnectionDocment;
+  [key: string]: unknown; // 添加索引签名
+  connections?: FBXConnectionNode[];
+  add(key: string, val: unknown) {
+    this[key] = val;
+  }
+}

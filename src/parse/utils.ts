@@ -14,7 +14,7 @@ export function getEulerOrder(order: FBXEulerOrder): string {
       'THREE.FBXLoader: unsupported Euler Order: Spherical XYZ. Animations and rotations may be incorrect.',
     );
 
-    return FBXEulerOrder[0];
+    return FBXEulerOrder[0] as string;
   }
 
   return FBXEulerOrder[order];
@@ -22,7 +22,7 @@ export function getEulerOrder(order: FBXEulerOrder): string {
 
 const tempEuler = new Euler();
 const tempVec = new Vector3();
-const dataArray: any[] = []; // corrected type annotation
+const dataArray: [] = []; // corrected type annotation
 
 // generate transformation from FBX transform data
 // ref: https://help.autodesk.com/view/FBX/2017/ENU/?guid=__files_GUID_10CDD63C_79C1_4F2D_BB28_AD2BE65A02ED_htm
@@ -160,7 +160,7 @@ export function generateTransform(transformData: FBXTransformData) {
 
 function slice(a: number[], b: number[], from: number, to: number): number[] {
   for (let i = from, j = 0; i < to; i++, j++) {
-    a[j] = b[i];
+    a[j] = b[i] ?? 0;
   }
 
   return a;
@@ -172,11 +172,11 @@ export function getData(
   polygonIndex: number,
   vertexIndex: number,
   infoObject: {
-    mappingType: string;
-    indices: number[];
-    referenceType: string;
-    dataSize: number;
     buffer: number[];
+    dataSize: number;
+    indices: number[];
+    mappingType: string;
+    referenceType: string;
   },
 ): number[] {
   let index = 0;
@@ -195,7 +195,7 @@ export function getData(
 
       break;
     case 'AllSame':
-      index = infoObject.indices[0];
+      index = infoObject.indices[0] ?? 0;
 
       break;
     default:
@@ -203,7 +203,7 @@ export function getData(
   }
 
   if (infoObject.referenceType === 'IndexToDirect') {
-    index = infoObject.indices[index];
+    index = infoObject.indices[index] ?? 0;
   }
 
   const from = index * infoObject.dataSize;

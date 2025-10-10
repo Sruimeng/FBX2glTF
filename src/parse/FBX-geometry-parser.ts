@@ -1,4 +1,4 @@
-import type { EulerOrder, Matrix4 } from 'three';
+import type { BufferAttribute, EulerOrder, Matrix4 } from 'three';
 import {
   BufferGeometry,
   Color,
@@ -12,7 +12,6 @@ import {
   Vector3,
   Vector4,
 } from 'three';
-import { FBXEdgesGeometry } from '../../tripo-mesh';
 import type {
   Deformers,
   FBXConnectionNode,
@@ -22,52 +21,49 @@ import type {
   FBXLayerElementNormal,
   FBXLayerElementUV,
   FBXMaterialNode,
+  FBXModelNode,
   FBXMorphTarget,
   FBXSkeleton,
   UserDataTransform,
 } from '../constants';
-import { global } from '../constants';
-import { NURBSCurve } from '../curves/NURBS-curve';
+import type { BaseInfo } from '../../type';
 import { generateTransform, getData, getEulerOrder } from './utils';
+import { NURBSCurve } from '../curves/NURBS-curve';
+import { global } from '../constants';
 
 interface GeoBufferInfo {
-  dataSize: number;
   buffer: number[];
+  dataSize: number;
   indices: number[];
   mappingType: string;
   referenceType: string;
 }
 interface GeoInfo {
-  material?: GeoBufferInfo;
-  vertexPositions?: number[];
-  vertexIndices?: any[];
   baseVertexPositions?: number[];
   color?: GeoBufferInfo;
+  material?: GeoBufferInfo;
   normal?: GeoBufferInfo;
+  skeleton?: FBXSkeleton;
   uv?: {
+    buffer: number[];
     dataSize: number;
-    buffer: any[];
-    indices: any[];
+    indices: number[];
     mappingType: string;
     referenceType: string;
   }[];
+  vertexIndices?: number[];
+  vertexPositions?: number[];
   weightTable?: {
     [key: number]: Array<{ id: number; weight: number }>;
   };
-  skeleton?: FBXSkeleton;
 }
 
 export class GeometryParser {
   negativeMaterialIndices: boolean;
-  modelInfo: {
-    triangles: number;
-    quads: number;
-    polygons: number;
-    vertices: number;
-  } = {
-    triangles: 0,
-    quads: 0,
+  modelInfo: BaseInfo = {
     polygons: 0,
+    quads: 0,
+    triangles: 0,
     vertices: 0,
   };
 
@@ -78,7 +74,7 @@ export class GeometryParser {
   // Parse nodes in FBXTree.Objects.Geometry
   parse(deformers: Deformers) {
     const geometryMap = new Map();
-    const wireframeMap = new Map();
+    const geoInfoMap = new Map();
     const fbxTree = global.fbxTree;
     const connections = global.connections;
 
@@ -95,11 +91,12 @@ export class GeometryParser {
       const geoNodes = objects.Geometry;
 
       for (const nodeID in geoNodes) {
-        const relationships = connections.get(parseInt(nodeID)) || { parents: [], children: [] };
-        const { geometry, wireframe } =
-          this.parseGeometry(relationships, geoNodes[nodeID], deformers) || {};
-        wireframeMap.set(parseInt(nodeID), wireframe);
+        if (!geoNodes[nodeID]) continue;
+        const relationships = connections.get(parseInt(nodeID)) || { children: [], parents: [] };
+        const result = this.parseGeometry(relationships, geoNodes[nodeID], deformers);
+        const { geometry, modelInfo } = result || {};
         geometryMap.set(parseInt(nodeID), geometry);
+        geoInfoMap.set(parseInt(nodeID), modelInfo);
       }
     }
 
@@ -111,7 +108,7 @@ export class GeometryParser {
       );
     }
 
-    return { geometryMap, wireframeMap };
+    return { geoInfoMap, geometryMap };
   }
 
   // Parse single node in FBXTree.Objects.Geometry
@@ -146,7 +143,7 @@ export class GeometryParser {
     }
 
     const modelNodes = relationships.parents.map((parent) => {
-      return models[parent.ID];
+      return models[parent.ID.toString()];
     });
 
     // don't create geometry if it is not associated with any models
@@ -166,13 +163,13 @@ export class GeometryParser {
 
     relationships.children.forEach((child) => {
       if (deformers.morphTargets[child.ID] !== undefined) {
-        morphTargets.push(deformers.morphTargets[child.ID]);
+        morphTargets.push(deformers.morphTargets[child.ID] as FBXMorphTarget);
       }
     });
 
     // Assume one model and get the preRotation from that
     // if there is more than one model associated with the geometry this may cause problems
-    const modelNode = modelNodes[0];
+    const modelNode = modelNodes[0] as FBXModelNode;
 
     const transformData: UserDataTransform = {};
 
@@ -186,17 +183,17 @@ export class GeometryParser {
       }
     }
     if ('InheritType' in modelNode) {
-      transformData.inheritType = parseInt(modelNode.InheritType.value);
+      transformData.inheritType = parseInt(modelNode.InheritType.value as string);
     }
 
     if ('GeometricTranslation' in modelNode) {
-      transformData.translation = modelNode.GeometricTranslation.value;
+      transformData.translation = modelNode.GeometricTranslation.value as number[];
     }
     if ('GeometricRotation' in modelNode) {
-      transformData.rotation = modelNode.GeometricRotation.value;
+      transformData.rotation = modelNode.GeometricRotation.value as number[];
     }
     if ('GeometricScaling' in modelNode) {
-      transformData.scale = modelNode.GeometricScaling.value;
+      transformData.scale = modelNode.GeometricScaling.value as number[];
     }
 
     const transform = generateTransform(transformData);
@@ -219,11 +216,11 @@ export class GeometryParser {
     const geoInfo = this.parseGeoNode(geoNode, skeleton);
     const buffers = this.genBuffers(geoInfo);
     this.modelInfo.vertices = buffers.positionCount;
-    geometry.userData.modelInfo = { ...this.modelInfo };
+    const modelInfo = { ...this.modelInfo };
     this.modelInfo = {
-      triangles: 0,
-      quads: 0,
       polygons: 0,
+      quads: 0,
+      triangles: 0,
       vertices: 0,
     };
 
@@ -243,7 +240,7 @@ export class GeometryParser {
       geometry.setAttribute('skinWeight', new Float32BufferAttribute(buffers.vertexWeights, 4));
 
       // used later to bind the skeleton to the model
-      (geometry as any).FBX_Deformer = skeleton;
+      (geometry as BufferGeometry & { FBX_Deformer?: FBXSkeleton }).FBX_Deformer = skeleton;
     }
 
     if (buffers.normal.length > 0) {
@@ -260,8 +257,9 @@ export class GeometryParser {
 
     buffers.uvs.forEach(function (_, i) {
       const name = i === 0 ? 'uv' : `uv${i}`;
+      const uv = buffers.uvs[i] as unknown as number[];
 
-      geometry.setAttribute(name, new Float32BufferAttribute(buffers.uvs[i], 2));
+      geometry.setAttribute(name, new Float32BufferAttribute(uv, 2));
     });
 
     if (geoInfo.material && geoInfo.material.mappingType !== 'AllSame') {
@@ -280,7 +278,11 @@ export class GeometryParser {
 
       // the loop above doesn't add the last group, do that here.
       if (geometry.groups.length > 0) {
-        const lastGroup = geometry.groups[geometry.groups.length - 1];
+        const lastGroup = geometry.groups[geometry.groups.length - 1] as {
+          count: number;
+          materialIndex: number;
+          start: number;
+        };
         const lastIndex = lastGroup.start + lastGroup.count;
 
         if (lastIndex !== buffers.materialIndex.length) {
@@ -297,32 +299,29 @@ export class GeometryParser {
 
     this.addMorphTargets(geometry, geoNode, morphTargets, preTransform);
 
-    let wireframe: FBXEdgesGeometry | undefined;
-    if (global.wireframe) {
-      // 使用基于三角形的线框几何体，提供更好的线宽控制和深度偏移
-      wireframe = new FBXEdgesGeometry(buffers.wireframePositions, buffers.wireframeIndices);
-    }
-
-    return { geometry, wireframe };
+    return { geometry, modelInfo };
   }
 
   parseGeoNode(geoNode: FBXGeometryNode, skeleton: FBXSkeleton | null): GeoInfo {
     const geoInfo: GeoInfo = {};
 
-    geoInfo.vertexPositions = geoNode.Vertices !== undefined ? geoNode.Vertices.a : [];
-    geoInfo.vertexIndices =
-      geoNode.PolygonVertexIndex !== undefined ? geoNode.PolygonVertexIndex.a : [];
+    geoInfo.vertexPositions
+      = geoNode.Vertices !== undefined ? (geoNode.Vertices.a as number[]) : [];
+    geoInfo.vertexIndices
+      = geoNode.PolygonVertexIndex !== undefined ? (geoNode.PolygonVertexIndex.a as number[]) : [];
 
     if (geoNode.LayerElementColor) {
-      geoInfo.color = this.parseVertexColors(geoNode.LayerElementColor[0]);
+      geoInfo.color = this.parseVertexColors(geoNode.LayerElementColor[0] as FBXLayerElementColor);
     }
 
     if (geoNode.LayerElementMaterial) {
-      geoInfo.material = this.parseMaterialIndices(geoNode.LayerElementMaterial[0]);
+      geoInfo.material = this.parseMaterialIndices(
+        geoNode.LayerElementMaterial[0] as FBXMaterialNode,
+      );
     }
 
     if (geoNode.LayerElementNormal) {
-      geoInfo.normal = this.parseNormals(geoNode.LayerElementNormal[0]);
+      geoInfo.normal = this.parseNormals(geoNode.LayerElementNormal[0] as FBXLayerElementNormal);
     }
 
     if (geoNode.LayerElementUV) {
@@ -331,8 +330,8 @@ export class GeometryParser {
       let i = 0;
 
       while (geoNode.LayerElementUV[i]) {
-        if (geoNode.LayerElementUV[i].UV) {
-          geoInfo.uv.push(this.parseUVs(geoNode.LayerElementUV[i]));
+        if ((geoNode.LayerElementUV[i] as FBXLayerElementUV).UV) {
+          geoInfo.uv.push(this.parseUVs(geoNode.LayerElementUV[i] as FBXLayerElementUV));
         }
 
         i++;
@@ -352,9 +351,9 @@ export class GeometryParser {
           }
 
           if (geoInfo.weightTable) {
-            geoInfo.weightTable[index].push({
+            (geoInfo.weightTable[index] as { id: number; weight: number }[]).push({
               id: i,
-              weight: rawBone.weights[j],
+              weight: rawBone.weights[j] as number,
             });
           }
         });
@@ -366,17 +365,14 @@ export class GeometryParser {
 
   genBuffers(geoInfo: GeoInfo) {
     const buffers = {
-      vertex: [],
-      normal: [],
       colors: [],
-      uvs: [],
       materialIndex: [],
+      normal: [],
+      positionCount: 0,
+      uvs: [],
+      vertex: [],
       vertexWeights: [],
       weightsIndices: [],
-      wireframePositions: [] as number[][],
-      wireframeIndices: [] as number[][],
-      wireframeNormals: [] as number[][],
-      positionCount: 0,
     };
 
     let polygonIndex = 0;
@@ -413,17 +409,23 @@ export class GeometryParser {
       facePositionIndexes.push(vertexIndex * 3, vertexIndex * 3 + 1, vertexIndex * 3 + 2);
 
       if (geoInfo.color) {
-        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.color);
+        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.color) as [
+          number,
+          number,
+          number,
+        ];
 
         faceColors.push(data[0], data[1], data[2]);
       }
 
       if (geoInfo.skeleton && geoInfo.weightTable) {
         if (geoInfo.weightTable[vertexIndex] !== undefined) {
-          geoInfo.weightTable[vertexIndex].forEach(function (wt) {
-            weights.push(wt.weight);
-            weightIndices.push(wt.id);
-          });
+          (geoInfo.weightTable[vertexIndex] as { id: number; weight: number }[]).forEach(
+            function (wt) {
+              weights.push(wt.weight);
+              weightIndices.push(wt.id);
+            },
+          );
         }
 
         if (weights.length > 4) {
@@ -448,7 +450,7 @@ export class GeometryParser {
 
                 const tmp = wIndex[comparedWeightIndex];
 
-                wIndex[comparedWeightIndex] = currentIndex;
+                wIndex[comparedWeightIndex] = currentIndex as number;
                 currentIndex = tmp;
               }
             });
@@ -465,19 +467,28 @@ export class GeometryParser {
         }
 
         for (let i = 0; i < 4; ++i) {
-          faceWeights.push(weights[i]);
-          faceWeightIndices.push(weightIndices[i]);
+          faceWeights.push(weights[i] as number);
+          faceWeightIndices.push(weightIndices[i] as number);
         }
       }
 
       if (geoInfo.normal) {
-        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.normal);
+        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.normal) as [
+          number,
+          number,
+          number,
+        ];
 
         faceNormals.push(data[0], data[1], data[2]);
       }
 
       if (geoInfo.material && geoInfo.material.mappingType !== 'AllSame') {
-        materialIndex = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.material)[0];
+        materialIndex = getData(
+          polygonVertexIndex,
+          polygonIndex,
+          vertexIndex,
+          geoInfo.material,
+        )[0] as number;
 
         if (materialIndex < 0) {
           this.negativeMaterialIndices = true;
@@ -487,7 +498,10 @@ export class GeometryParser {
 
       if (geoInfo.uv) {
         geoInfo.uv.forEach((uv, i) => {
-          const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, uv);
+          const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, uv) as [
+            number,
+            number,
+          ];
 
           if (faceUVs[i] === undefined) {
             faceUVs[i] = [];
@@ -537,8 +551,8 @@ export class GeometryParser {
     const normal = new Vector3(0.0, 0.0, 0.0);
 
     for (let i = 0; i < vertices.length; i++) {
-      const current = vertices[i];
-      const next = vertices[(i + 1) % vertices.length];
+      const current = vertices[i] as Vector3;
+      const next = vertices[(i + 1) % vertices.length] as Vector3;
 
       normal.x += (current.y - next.y) * (current.z + next.z);
       normal.y += (current.z - next.z) * (current.x + next.x);
@@ -553,15 +567,15 @@ export class GeometryParser {
   getNormalTangentAndBitangent(vertices: Vector3[]) {
     const normalVector = this.getNormalNewell(vertices);
     // Avoid up being equal or almost equal to normalVector
-    const up =
-      Math.abs(normalVector.z) > 0.5 ? new Vector3(0.0, 1.0, 0.0) : new Vector3(0.0, 0.0, 1.0);
+    const up
+      = Math.abs(normalVector.z) > 0.5 ? new Vector3(0.0, 1.0, 0.0) : new Vector3(0.0, 0.0, 1.0);
     const tangent = up.cross(normalVector).normalize();
     const bitangent = normalVector.clone().cross(tangent).normalize();
 
     return {
+      bitangent: bitangent,
       normal: normalVector,
       tangent: tangent,
-      bitangent: bitangent,
     };
   }
 
@@ -572,16 +586,13 @@ export class GeometryParser {
   // Generate data for a single face in a geometry. If the face is a quad then split it into 2 tris
   genFace(
     buffers: {
-      vertex: number[];
-      normal: number[];
       colors: number[];
-      uvs: number[][];
       materialIndex: number[];
+      normal: number[];
+      uvs: number[][];
+      vertex: number[];
       vertexWeights: number[];
       weightsIndices: number[];
-      wireframePositions: number[][];
-      wireframeIndices: number[][];
-      wireframeNormals: number[][];
     },
     geoInfo: GeoInfo,
     facePositionIndexes: number[],
@@ -593,15 +604,7 @@ export class GeometryParser {
     faceWeightIndices: number[],
     faceLength: number,
   ) {
-    let triangles;
-    const wireframePositions: number[] = [];
-    const wireframeIndices: number[] = [];
-
-    // 为线框生成边缘索引 - 使用原始面的顶点索引
-    wireframeIndices.push(faceLength);
-    for (let i = 0; i < faceLength; i++) {
-      wireframeIndices.push(i);
-    }
+    let triangles: number[][];
 
     if (faceLength > 3) {
       if (faceLength === 4) {
@@ -618,14 +621,14 @@ export class GeometryParser {
       for (let i = 0; i < facePositionIndexes.length; i += 3) {
         vertices.push(
           new Vector3(
-            positions[facePositionIndexes[i]],
-            positions[facePositionIndexes[i + 1]],
-            positions[facePositionIndexes[i + 2]],
+            positions[facePositionIndexes[i] as number],
+            positions[facePositionIndexes[i + 1] as number],
+            positions[facePositionIndexes[i + 2] as number],
           ),
         );
       }
 
-      const { tangent, bitangent } = this.getNormalTangentAndBitangent(vertices);
+      const { bitangent, tangent } = this.getNormalTangentAndBitangent(vertices);
       const triangulationInput = [];
 
       for (const vertex of vertices) {
@@ -649,63 +652,77 @@ export class GeometryParser {
       throw new Error('vertexPositions is not defined in geoInfo');
     }
 
-    for (const [i0, i1, i2] of triangles) {
-      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i0 * 3]]);
-      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i0 * 3 + 1]]);
-      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i0 * 3 + 2]]);
+    for (const triangle of triangles) {
+      const [i0 = -1, i1 = -1, i2 = -1] = triangle;
 
-      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i1 * 3]]);
-      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i1 * 3 + 1]]);
-      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i1 * 3 + 2]]);
+      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i0 * 3] as number] as number);
+      buffers.vertex.push(
+        geoInfo.vertexPositions[facePositionIndexes[i0 * 3 + 1] as number] as number,
+      );
+      buffers.vertex.push(
+        geoInfo.vertexPositions[facePositionIndexes[i0 * 3 + 2] as number] as number,
+      );
 
-      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i2 * 3]]);
-      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i2 * 3 + 1]]);
-      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i2 * 3 + 2]]);
+      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i1 * 3] as number] as number);
+      buffers.vertex.push(
+        geoInfo.vertexPositions[facePositionIndexes[i1 * 3 + 1] as number] as number,
+      );
+      buffers.vertex.push(
+        geoInfo.vertexPositions[facePositionIndexes[i1 * 3 + 2] as number] as number,
+      );
+
+      buffers.vertex.push(geoInfo.vertexPositions[facePositionIndexes[i2 * 3] as number] as number);
+      buffers.vertex.push(
+        geoInfo.vertexPositions[facePositionIndexes[i2 * 3 + 1] as number] as number,
+      );
+      buffers.vertex.push(
+        geoInfo.vertexPositions[facePositionIndexes[i2 * 3 + 2] as number] as number,
+      );
 
       if (geoInfo.skeleton) {
-        buffers.vertexWeights.push(faceWeights[i0 * 4]);
-        buffers.vertexWeights.push(faceWeights[i0 * 4 + 1]);
-        buffers.vertexWeights.push(faceWeights[i0 * 4 + 2]);
-        buffers.vertexWeights.push(faceWeights[i0 * 4 + 3]);
+        buffers.vertexWeights.push(faceWeights[i0 * 4] as number);
+        buffers.vertexWeights.push(faceWeights[i0 * 4 + 1] as number);
+        buffers.vertexWeights.push(faceWeights[i0 * 4 + 2] as number);
+        buffers.vertexWeights.push(faceWeights[i0 * 4 + 3] as number);
 
-        buffers.vertexWeights.push(faceWeights[i1 * 4]);
-        buffers.vertexWeights.push(faceWeights[i1 * 4 + 1]);
-        buffers.vertexWeights.push(faceWeights[i1 * 4 + 2]);
-        buffers.vertexWeights.push(faceWeights[i1 * 4 + 3]);
+        buffers.vertexWeights.push(faceWeights[i1 * 4] as number);
+        buffers.vertexWeights.push(faceWeights[i1 * 4 + 1] as number);
+        buffers.vertexWeights.push(faceWeights[i1 * 4 + 2] as number);
+        buffers.vertexWeights.push(faceWeights[i1 * 4 + 3] as number);
 
-        buffers.vertexWeights.push(faceWeights[i2 * 4]);
-        buffers.vertexWeights.push(faceWeights[i2 * 4 + 1]);
-        buffers.vertexWeights.push(faceWeights[i2 * 4 + 2]);
-        buffers.vertexWeights.push(faceWeights[i2 * 4 + 3]);
+        buffers.vertexWeights.push(faceWeights[i2 * 4] as number);
+        buffers.vertexWeights.push(faceWeights[i2 * 4 + 1] as number);
+        buffers.vertexWeights.push(faceWeights[i2 * 4 + 2] as number);
+        buffers.vertexWeights.push(faceWeights[i2 * 4 + 3] as number);
 
-        buffers.weightsIndices.push(faceWeightIndices[i0 * 4]);
-        buffers.weightsIndices.push(faceWeightIndices[i0 * 4 + 1]);
-        buffers.weightsIndices.push(faceWeightIndices[i0 * 4 + 2]);
-        buffers.weightsIndices.push(faceWeightIndices[i0 * 4 + 3]);
+        buffers.weightsIndices.push(faceWeightIndices[i0 * 4] as number);
+        buffers.weightsIndices.push(faceWeightIndices[i0 * 4 + 1] as number);
+        buffers.weightsIndices.push(faceWeightIndices[i0 * 4 + 2] as number);
+        buffers.weightsIndices.push(faceWeightIndices[i0 * 4 + 3] as number);
 
-        buffers.weightsIndices.push(faceWeightIndices[i1 * 4]);
-        buffers.weightsIndices.push(faceWeightIndices[i1 * 4 + 1]);
-        buffers.weightsIndices.push(faceWeightIndices[i1 * 4 + 2]);
-        buffers.weightsIndices.push(faceWeightIndices[i1 * 4 + 3]);
+        buffers.weightsIndices.push(faceWeightIndices[i1 * 4] as number);
+        buffers.weightsIndices.push(faceWeightIndices[i1 * 4 + 1] as number);
+        buffers.weightsIndices.push(faceWeightIndices[i1 * 4 + 2] as number);
+        buffers.weightsIndices.push(faceWeightIndices[i1 * 4 + 3] as number);
 
-        buffers.weightsIndices.push(faceWeightIndices[i2 * 4]);
-        buffers.weightsIndices.push(faceWeightIndices[i2 * 4 + 1]);
-        buffers.weightsIndices.push(faceWeightIndices[i2 * 4 + 2]);
-        buffers.weightsIndices.push(faceWeightIndices[i2 * 4 + 3]);
+        buffers.weightsIndices.push(faceWeightIndices[i2 * 4] as number);
+        buffers.weightsIndices.push(faceWeightIndices[i2 * 4 + 1] as number);
+        buffers.weightsIndices.push(faceWeightIndices[i2 * 4 + 2] as number);
+        buffers.weightsIndices.push(faceWeightIndices[i2 * 4 + 3] as number);
       }
 
       if (geoInfo.color) {
-        buffers.colors.push(faceColors[i0 * 3]);
-        buffers.colors.push(faceColors[i0 * 3 + 1]);
-        buffers.colors.push(faceColors[i0 * 3 + 2]);
+        buffers.colors.push(faceColors[i0 * 3] as number);
+        buffers.colors.push(faceColors[i0 * 3 + 1] as number);
+        buffers.colors.push(faceColors[i0 * 3 + 2] as number);
 
-        buffers.colors.push(faceColors[i1 * 3]);
-        buffers.colors.push(faceColors[i1 * 3 + 1]);
-        buffers.colors.push(faceColors[i1 * 3 + 2]);
+        buffers.colors.push(faceColors[i1 * 3] as number);
+        buffers.colors.push(faceColors[i1 * 3 + 1] as number);
+        buffers.colors.push(faceColors[i1 * 3 + 2] as number);
 
-        buffers.colors.push(faceColors[i2 * 3]);
-        buffers.colors.push(faceColors[i2 * 3 + 1]);
-        buffers.colors.push(faceColors[i2 * 3 + 2]);
+        buffers.colors.push(faceColors[i2 * 3] as number);
+        buffers.colors.push(faceColors[i2 * 3 + 1] as number);
+        buffers.colors.push(faceColors[i2 * 3 + 2] as number);
       }
 
       if (geoInfo.material && geoInfo.material.mappingType !== 'AllSame') {
@@ -715,17 +732,17 @@ export class GeometryParser {
       }
 
       if (geoInfo.normal) {
-        buffers.normal.push(faceNormals[i0 * 3]);
-        buffers.normal.push(faceNormals[i0 * 3 + 1]);
-        buffers.normal.push(faceNormals[i0 * 3 + 2]);
+        buffers.normal.push(faceNormals[i0 * 3] as number);
+        buffers.normal.push(faceNormals[i0 * 3 + 1] as number);
+        buffers.normal.push(faceNormals[i0 * 3 + 2] as number);
 
-        buffers.normal.push(faceNormals[i1 * 3]);
-        buffers.normal.push(faceNormals[i1 * 3 + 1]);
-        buffers.normal.push(faceNormals[i1 * 3 + 2]);
+        buffers.normal.push(faceNormals[i1 * 3] as number);
+        buffers.normal.push(faceNormals[i1 * 3 + 1] as number);
+        buffers.normal.push(faceNormals[i1 * 3 + 2] as number);
 
-        buffers.normal.push(faceNormals[i2 * 3]);
-        buffers.normal.push(faceNormals[i2 * 3 + 1]);
-        buffers.normal.push(faceNormals[i2 * 3 + 2]);
+        buffers.normal.push(faceNormals[i2 * 3] as number);
+        buffers.normal.push(faceNormals[i2 * 3 + 1] as number);
+        buffers.normal.push(faceNormals[i2 * 3 + 2] as number);
       }
 
       if (geoInfo.uv) {
@@ -734,47 +751,17 @@ export class GeometryParser {
             buffers.uvs[j] = [];
           }
 
-          buffers.uvs[j].push(faceUVs[j][i0 * 2]);
-          buffers.uvs[j].push(faceUVs[j][i0 * 2 + 1]);
+          (buffers.uvs[j] as number[]).push((faceUVs[j] as number[])[i0 * 2] as number);
+          (buffers.uvs[j] as number[]).push((faceUVs[j] as number[])[i0 * 2 + 1] as number);
 
-          buffers.uvs[j].push(faceUVs[j][i1 * 2]);
-          buffers.uvs[j].push(faceUVs[j][i1 * 2 + 1]);
+          (buffers.uvs[j] as number[]).push((faceUVs[j] as number[])[i1 * 2] as number);
+          (buffers.uvs[j] as number[]).push((faceUVs[j] as number[])[i1 * 2 + 1] as number);
 
-          buffers.uvs[j].push(faceUVs[j][i2 * 2]);
-          buffers.uvs[j].push(faceUVs[j][i2 * 2 + 1]);
+          (buffers.uvs[j] as number[]).push((faceUVs[j] as number[])[i2 * 2] as number);
+          (buffers.uvs[j] as number[]).push((faceUVs[j] as number[])[i2 * 2 + 1] as number);
         }
       }
     }
-
-    // 生成线框顶点位置和法向量 - 每个面的所有顶点坐标和对应的法向量
-    const wireframeNormals: number[] = [];
-    for (let i = 1; i < wireframeIndices.length; i++) {
-      const vertexIndex = wireframeIndices[i];
-      const posIndex = vertexIndex * 3;
-
-      // 添加顶点位置
-      wireframePositions.push(geoInfo.vertexPositions[facePositionIndexes[posIndex]]);
-      wireframePositions.push(geoInfo.vertexPositions[facePositionIndexes[posIndex + 1]]);
-      wireframePositions.push(geoInfo.vertexPositions[facePositionIndexes[posIndex + 2]]);
-
-      // 添加对应的法向量（如果存在）
-      if (geoInfo.normal && faceNormals.length >= (vertexIndex + 1) * 3) {
-        wireframeNormals.push(faceNormals[vertexIndex * 3]);
-        wireframeNormals.push(faceNormals[vertexIndex * 3 + 1]);
-        wireframeNormals.push(faceNormals[vertexIndex * 3 + 2]);
-      } else {
-        // 如果没有法向量数据，使用默认值
-        wireframeNormals.push(0, 0, 1);
-      }
-    }
-
-    buffers.wireframePositions.push(wireframePositions);
-    buffers.wireframeIndices.push(wireframeIndices);
-    // 添加线框法向量数据
-    if (!buffers.wireframeNormals) {
-      buffers.wireframeNormals = [];
-    }
-    buffers.wireframeNormals.push(wireframeNormals);
   }
 
   addMorphTargets(
@@ -806,7 +793,7 @@ export class GeometryParser {
         return;
       }
       rawTargets.forEach((rawTarget) => {
-        const morphGeoNode = fbxGeometry[rawTarget.geoID ?? 0];
+        const morphGeoNode = fbxGeometry[(rawTarget.geoID ?? 0).toString()];
 
         if (morphGeoNode !== undefined) {
           this.genMorphGeometry(
@@ -833,28 +820,32 @@ export class GeometryParser {
     name: string,
   ) {
     const basePositions = parentGeoNode.Vertices !== undefined ? parentGeoNode.Vertices.a : [];
-    const baseIndices =
-      parentGeoNode.PolygonVertexIndex !== undefined ? parentGeoNode.PolygonVertexIndex.a : [];
+    const baseIndices
+      = parentGeoNode.PolygonVertexIndex !== undefined ? parentGeoNode.PolygonVertexIndex.a : [];
 
-    const morphPositionsSparse = morphGeoNode.Vertices !== undefined ? morphGeoNode.Vertices.a : [];
-    const morphIndices = morphGeoNode.Indexes !== undefined ? morphGeoNode.Indexes.a : [];
+    const morphPositionsSparse = (
+      morphGeoNode.Vertices !== undefined ? morphGeoNode.Vertices.a : []
+    ) as number[];
+    const morphIndices = (
+      morphGeoNode.Indexes !== undefined ? morphGeoNode.Indexes.a : []
+    ) as number[];
 
-    const length = parentGeo.attributes.position.count * 3;
+    const length = (parentGeo.attributes.position?.count as number) * 3;
     const morphPositions = new Float32Array(length);
 
     for (let i = 0; i < morphIndices.length; i++) {
-      const morphIndex = morphIndices[i] * 3;
+      const morphIndex = (morphIndices[i] as number) * 3;
 
-      morphPositions[morphIndex] = morphPositionsSparse[i * 3];
-      morphPositions[morphIndex + 1] = morphPositionsSparse[i * 3 + 1];
-      morphPositions[morphIndex + 2] = morphPositionsSparse[i * 3 + 2];
+      morphPositions[morphIndex] = morphPositionsSparse[i * 3] as number;
+      morphPositions[morphIndex + 1] = morphPositionsSparse[i * 3 + 1] as number;
+      morphPositions[morphIndex + 2] = morphPositionsSparse[i * 3 + 2] as number;
     }
 
     // TODO: add morph normal support
     const morphGeoInfo: GeoInfo = {
-      vertexIndices: baseIndices,
+      baseVertexPositions: basePositions as number[],
+      vertexIndices: baseIndices as number[],
       vertexPositions: Array.from(morphPositions),
-      baseVertexPositions: basePositions,
     };
 
     const morphBuffers = this.genBuffers(morphGeoInfo);
@@ -865,7 +856,7 @@ export class GeometryParser {
 
     positionAttribute.applyMatrix4(preTransform);
 
-    parentGeo.morphAttributes.position.push(positionAttribute);
+    (parentGeo.morphAttributes.position as BufferAttribute[]).push(positionAttribute);
   }
 
   // Parse normal from FBXTree.Objects.Geometry.LayerElementNormal if it exists
@@ -884,8 +875,8 @@ export class GeometryParser {
     }
 
     return {
-      dataSize: 3,
       buffer: buffer,
+      dataSize: 3,
       indices: indexBuffer,
       mappingType: mappingType,
       referenceType: referenceType,
@@ -897,15 +888,15 @@ export class GeometryParser {
     const mappingType = UVNode.MappingInformationType;
     const referenceType = UVNode.ReferenceInformationType;
     const buffer = UVNode.UV.a;
-    let indexBuffer = [];
+    let indexBuffer: number[] = [];
 
     if (referenceType === 'IndexToDirect') {
-      indexBuffer = UVNode.UVIndex.a;
+      indexBuffer = UVNode.UVIndex.a as number[];
     }
 
     return {
+      buffer: buffer as number[],
       dataSize: 2,
-      buffer: buffer,
       indices: indexBuffer,
       mappingType: mappingType,
       referenceType: referenceType,
@@ -914,8 +905,8 @@ export class GeometryParser {
 
   // Parse Vertex Colors from FBXTree.Objects.Geometry.LayerElementColor if it exists
   parseVertexColors(ColorNode: FBXLayerElementColor): {
-    dataSize: number;
     buffer: number[];
+    dataSize: number;
     indices: number[];
     mappingType: string;
     referenceType: string;
@@ -936,8 +927,8 @@ export class GeometryParser {
     }
 
     return {
-      dataSize: 4,
       buffer: buffer,
+      dataSize: 4,
       indices: indexBuffer,
       mappingType: mappingType,
       referenceType: referenceType,
@@ -951,28 +942,28 @@ export class GeometryParser {
 
     if (mappingType === 'NoMappingInformation') {
       return {
-        dataSize: 1,
         buffer: [0],
+        dataSize: 1,
         indices: [0],
         mappingType: 'AllSame',
         referenceType: referenceType,
       };
     }
 
-    const materialIndexBuffer = MaterialNode.Materials.a;
+    const materialIndexBuffer = MaterialNode.Materials.a as number[];
 
     // Since materials are stored as indices, there's a bit of a mismatch between FBX and what
     // we expect.So we create an intermediate buffer that points to the index in the buffer,
     // for conforming with the other functions we've written for other data.
-    const materialIndices = [];
+    const materialIndices: number[] = [];
 
     for (let i = 0; i < materialIndexBuffer.length; ++i) {
       materialIndices.push(i);
     }
 
     return {
-      dataSize: 1,
       buffer: materialIndexBuffer,
+      dataSize: 1,
       indices: materialIndices,
       mappingType: mappingType,
       referenceType: referenceType,
@@ -990,7 +981,7 @@ export class GeometryParser {
         geoNode.id,
       );
 
-      return { geometry: new BufferGeometry(), wireframe: undefined };
+      return { geometry: new BufferGeometry() };
     }
 
     const degree = order - 1;
@@ -1005,19 +996,22 @@ export class GeometryParser {
     let startKnot, endKnot;
 
     if (geoNode.Form === 'Closed') {
-      controlPoints.push(controlPoints[0]);
+      controlPoints.push(controlPoints[0] as Vector4);
     } else if (geoNode.Form === 'Periodic') {
       startKnot = degree;
       endKnot = knots.length - 1 - startKnot;
 
       for (let i = 0; i < degree; ++i) {
-        controlPoints.push(controlPoints[i]);
+        controlPoints.push(controlPoints[i] as Vector4);
       }
     }
 
     const curve = new NURBSCurve(degree, knots, controlPoints, startKnot, endKnot);
     const points = curve.getPoints(controlPoints.length * 12);
 
-    return { geometry: new BufferGeometry().setFromPoints(points), wireframe: undefined };
+    return {
+      geometry: new BufferGeometry().setFromPoints(points),
+      modelInfo: { polygons: 0, quads: 0, triangles: 0, vertices: points.length },
+    };
   }
 }
