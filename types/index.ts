@@ -13,6 +13,7 @@ export * from './nodes/geometry';
 export * from './nodes/material';
 export * from './nodes/texture';
 export * from './nodes/video';
+export * from './nodes/light';
 export * from './nodes/animation';
 
 // 结构定义

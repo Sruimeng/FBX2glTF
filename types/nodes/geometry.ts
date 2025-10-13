@@ -3,59 +3,59 @@
  * @description Geometry 节点定义
  */
 
-import { MappingInformationType, ReferenceInformationType } from '../enums';
-import { FBXNode, FBXArrayData, FBXValue } from '../shared';
+import type { MappingInformationType, ReferenceInformationType } from '../enums';
+import type { FBXNode, FBXArrayData } from '../shared';
 
 export interface FBXGeometryNode extends FBXNode {
-  id: number;
-  attrName: string;
-  attrType: string;
+  id: number,
+  attrName: string,
+  attrType: string,
 
-  GeometryVersion: number;
-  Vertices: FBXArrayData;
-  PolygonVertexIndex: FBXArrayData;
-  Edges?: FBXArrayData;
+  GeometryVersion: number,
+  Vertices: FBXArrayData,
+  PolygonVertexIndex: FBXArrayData,
+  Edges?: FBXArrayData,
 
-  LayerElementNormal?: FBXLayerElementNormal[];
-  LayerElementSmoothing?: FBXLayerElementSmoothing[];
-  LayerElementUV?: FBXLayerElementUV[];
-  LayerElementMaterial?: FBXLayerElementMaterial[];
-  LayerElementColor?: FBXLayerElementColor[];
+  LayerElementNormal?: FBXLayerElementNormal[],
+  LayerElementSmoothing?: FBXLayerElementSmoothing[],
+  LayerElementUV?: FBXLayerElementUV[],
+  LayerElementMaterial?: FBXLayerElementMaterial[],
+  LayerElementColor?: FBXLayerElementColor[],
 }
 
 // --- Layer Elements ---
 
 /** LayerElement 的基础接口 */
 interface FBXLayerElement {
-  Name: string;
-  Version: number;
-  MappingInformationType: MappingInformationType;
-  ReferenceInformationType: ReferenceInformationType;
+  Name: string,
+  Version: number,
+  MappingInformationType: MappingInformationType,
+  ReferenceInformationType: ReferenceInformationType,
 }
 
 /** 法线层 */
 export interface FBXLayerElementNormal extends FBXLayerElement {
-  Normals: FBXArrayData;
+  Normals: FBXArrayData,
 }
 
 /** 平滑组层 */
 export interface FBXLayerElementSmoothing extends FBXLayerElement {
-  Smoothing: FBXArrayData;
+  Smoothing: FBXArrayData,
 }
 
 /** UV层 */
 export interface FBXLayerElementUV extends FBXLayerElement {
-  UV: FBXArrayData;
-  UVIndex: FBXArrayData;
+  UV: FBXArrayData,
+  UVIndex: FBXArrayData,
 }
 
 /** 材质索引层 */
 export interface FBXLayerElementMaterial extends FBXLayerElement {
-  Materials: FBXArrayData;
+  Materials: FBXArrayData,
 }
 
 /** 颜色层 */
 export interface FBXLayerElementColor extends FBXLayerElement {
-  Colors: FBXArrayData;
-  ColorIndex?: FBXArrayData;
+  Colors: FBXArrayData,
+  ColorIndex?: FBXArrayData,
 }

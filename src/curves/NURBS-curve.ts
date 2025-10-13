@@ -7,11 +7,11 @@ import * as NURBSUtils from './NURBS-utils';
  * @see {@link NURBSCurveJSON}
  */
 interface NURBSCurveJSON extends CurveJSON {
-  controlPoints: number[][];
-  degree: number;
-  endKnot: number;
-  knots: number[];
-  startKnot: number;
+  controlPoints: number[][],
+  degree: number,
+  endKnot: number,
+  knots: number[],
+  startKnot: number,
 }
 
 /**
@@ -38,7 +38,7 @@ export class NURBSCurve extends Curve<Vector3> {
    * @param {number} [startKnot] - Index of the start knot into the `knots` array.
    * @param {number} [endKnot] - Index of the end knot into the `knots` array.
    */
-  constructor(
+  constructor (
     degree: number,
     knots: number[],
     controlPoints: (Vector2 | Vector3 | Vector4)[],
@@ -100,11 +100,11 @@ export class NURBSCurve extends Curve<Vector3> {
    * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
    * @return {Vector3} The position on the curve.
    */
-  override getPoint(t: number, optionalTarget = new Vector3()) {
+  override getPoint (t: number, optionalTarget = new Vector3()) {
     const point = optionalTarget;
 
     const u
-      = this.knots[this.startKnot] as number + t * (this.knots[this.endKnot] as number - (this.knots[this.startKnot] as number)); // linear mapping t->u
+      = this.knots[this.startKnot] + t * (this.knots[this.endKnot] - (this.knots[this.startKnot])); // linear mapping t->u
 
     // following results in (wx, wy, wz, w) homogeneous point
     const hpoint = NURBSUtils.calcBSplinePoint(
@@ -129,10 +129,10 @@ export class NURBSCurve extends Curve<Vector3> {
    * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
    * @return {Vector3} The tangent vector.
    */
-  override getTangent(t: number, optionalTarget = new Vector3()) {
+  override getTangent (t: number, optionalTarget = new Vector3()) {
     const tangent = optionalTarget;
 
-    const u = this.knots[0] as number + t * (this.knots[this.knots.length - 1] as number - (this.knots[0] as number));
+    const u = this.knots[0] + t * (this.knots[this.knots.length - 1] - (this.knots[0]));
     const ders = NURBSUtils.calcNURBSDerivatives(
       this.degree,
       this.knots,
@@ -141,12 +141,12 @@ export class NURBSCurve extends Curve<Vector3> {
       1,
     );
 
-    tangent.copy(ders[1] as Vector3).normalize();
+    tangent.copy(ders[1]).normalize();
 
     return tangent;
   }
 
-  override toJSON() {
+  override toJSON () {
     const data = super.toJSON() as NURBSCurveJSON;
 
     data.degree = this.degree;
@@ -158,7 +158,7 @@ export class NURBSCurve extends Curve<Vector3> {
     return data;
   }
 
-  override fromJSON(json: NURBSCurveJSON) {
+  override fromJSON (json: NURBSCurveJSON) {
     super.fromJSON(json);
 
     this.degree = json.degree;

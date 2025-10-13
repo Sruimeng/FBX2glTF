@@ -1,5 +1,5 @@
-import { FileLoader, Loader, LoaderUtils, TextureLoader } from 'three';
-import type { LoaderOptions, ModelLoaderResult } from '../type';
+import { FileLoader, Group, Loader, LoaderUtils, TextureLoader } from 'three';
+import type { LoaderOptions, ModelLoaderResult } from '../types';
 import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary } from './util';
 import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
@@ -39,7 +39,7 @@ class FBXLoader extends Loader<ModelLoaderResult> {
    *
    * @param {LoaderOptions} [options] - The loading options.
    */
-  constructor(options?: LoaderOptions) {
+  constructor (options?: LoaderOptions) {
     const { manager } = options || {};
 
     super(manager);
@@ -54,7 +54,7 @@ class FBXLoader extends Loader<ModelLoaderResult> {
    * @param {onProgressCallback} onProgress - Executed while the loading is in progress.
    * @param {onErrorCallback} onError - Executed when errors occur.
    */
-  override load(
+  override load (
     url: string,
     onLoad: (group: ModelLoaderResult) => void,
     onProgress?: (event: ProgressEvent) => void,
@@ -100,7 +100,7 @@ class FBXLoader extends Loader<ModelLoaderResult> {
    * @param {string} path - The URL base path.
    * @return {Group} An object representing the parsed asset.
    */
-  parse(FBXBuffer: ArrayBuffer | string, path: string) {
+  parse (FBXBuffer: ArrayBuffer | string, path: string) {
     if (isFbxFormatBinary(FBXBuffer as ArrayBuffer)) {
       global.fbxTree = new BinaryParser().parse(FBXBuffer as ArrayBuffer);
     } else {
@@ -118,11 +118,18 @@ class FBXLoader extends Loader<ModelLoaderResult> {
 
       global.fbxTree = new TextParser().parse(FBXText);
     }
+
     const textureLoader = new TextureLoader(this.manager)
       .setPath(this.resourcePath || path)
       .setCrossOrigin(this.crossOrigin);
 
-    return new FBXTreeParser(textureLoader, this.manager).parse();
+    const context = {
+      fbxTree: global.fbxTree,
+      connections: global.connections,
+      sceneGraph: new Group(),
+    };
+
+    return new FBXTreeParser(context, textureLoader, this.manager).parse();
   }
 }
 

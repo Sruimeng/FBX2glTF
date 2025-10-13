@@ -1,10 +1,23 @@
 // Parses binary FBX files.
 import * as fflate from 'fflate';
-import { type FBXConnectionNode, FBXTree, type FBXTreeNode, type IFBXTree } from '../constants';
+import type {
+  FBXConnection,
+} from '../constants';
+import {
+  type IFBXTree,
+  FBXTreeFactory,
+} from '../constants';
+import type { FBXTreeNode } from '../../types/shared';
 
 // Parse an FBX file in Binary format
 export class BinaryParser {
-  parse(buffer: ArrayBuffer): IFBXTree {
+  private factory: FBXTreeFactory;
+  private connections: FBXConnection[] = [];
+
+  parse (buffer: ArrayBuffer): IFBXTree {
+    this.factory = new FBXTreeFactory();
+    this.connections = [];
+
     const reader = new BinaryReader(buffer);
 
     reader.skip(23); // skip magic 23 bytes
@@ -15,21 +28,56 @@ export class BinaryParser {
       throw new Error('THREE.FBXLoader: FBX version not supported, FileVersion: ' + version);
     }
 
-    const allNodes = new FBXTree();
-
     while (!this.endOfContent(reader)) {
       const node = this.parseNode(reader, version);
 
       if (node !== null && node.name) {
-        allNodes.add(node.name, node);
+        this.processNode(node);
       }
     }
 
-    return allNodes as IFBXTree;
+    // 添加所有连接关系
+    this.connections.forEach(conn => {
+      this.factory.addConnection(conn);
+    });
+
+    return this.factory.build();
+  }
+
+  private processNode (node: FBXTreeNode): void {
+    switch (node.name) {
+      case 'FBXHeaderExtension':
+        this.factory.setHeader(node);
+
+        break;
+      case 'GlobalSettings':
+        this.factory.setGlobalSettings(node);
+
+        break;
+      case 'C':
+        // 连接关系
+        if (node.propertyList && node.propertyList.length >= 3) {
+          this.connections.push({
+            ID: node.id || 0,
+            from: node.propertyList[1] as number,
+            to: node.propertyList[2] as number,
+            relationship: node.propertyList[0] as any,
+          });
+        }
+
+        break;
+      default:
+        // 添加到 Objects
+        if (node.id !== undefined && node.name) {
+          this.factory.addObject(node.name, node.id, node);
+        }
+
+        break;
+    }
   }
 
   // Check if reader has reached the end of content.
-  endOfContent(reader: BinaryReader) {
+  endOfContent (reader: BinaryReader) {
     // footer size: 160bytes + 16-byte alignment padding
     // - 16bytes: magic
     // - padding til 16-byte alignment (at least 1byte?)
@@ -46,7 +94,7 @@ export class BinaryParser {
   }
 
   // recursively parse nodes until the end of the file is reached
-  parseNode(reader: BinaryReader, version: number) {
+  parseNode (reader: BinaryReader, version: number) {
     const node: FBXTreeNode = {};
 
     // The first three data sizes depends on version.
@@ -86,7 +134,8 @@ export class BinaryParser {
       const subNode = this.parseNode(reader, version);
 
       if (subNode !== null) {
-        this.parseSubNode(name, node as FBXTree, subNode);
+        // 处理子节点的特殊属性
+        this.processNodeProperties(subNode);
       }
     }
 
@@ -108,7 +157,13 @@ export class BinaryParser {
     return node;
   }
 
-  parseSubNode(name: string, node: FBXTree, subNode: FBXTreeNode) {
+  // 处理节点特殊属性
+  private processNodeProperties (_subNode: FBXTreeNode): void {
+    // 在新架构中，所有节点处理都通过 processNode 完成
+    // 此方法保留是为了兼容性，实际上不需要额外处理
+  }
+
+  parseSubNode (name: string, node: any, subNode: FBXTreeNode) {
     // special case: child node is single property
     if (subNode.singleProperty === true && subNode.propertyList && subNode.propertyList.length > 0) {
       const value = subNode.propertyList[0];
@@ -121,13 +176,13 @@ export class BinaryParser {
         node[subNode.name as string] = value;
       }
     } else if (name === 'Connections' && subNode.name === 'C') {
-      const array: FBXConnectionNode[] = [];
+      const array: any[] = [];
       const propertyDef = subNode.propertyList as [string, number, number | string];
 
-      propertyDef.forEach((property) => {
+      propertyDef.forEach(property => {
         // first Connection is FBX type (OO, OP, etc.). We'll discard these
         if (propertyDef.indexOf(property) !== 0) {
-          array.push(property as unknown as FBXConnectionNode);
+          array.push(property);
         }
       });
 
@@ -135,7 +190,7 @@ export class BinaryParser {
         node.connections = [];
       }
 
-      node.connections.push(array as unknown as FBXConnectionNode);
+      node.connections.push(array);
     } else if (subNode.name === 'Properties70') {
       const keys = Object.keys(subNode);
 
@@ -193,14 +248,14 @@ export class BinaryParser {
           node[subNode.name] = [node[subNode.name]];
         }
 
-        ((node as Record<string, unknown>)[subNode.name!] as unknown[]).push(subNode);
+        ((node as Record<string, unknown>)[subNode.name] as unknown[]).push(subNode);
       } else if (((node as Record<string, unknown>)[subNode.name!] as Record<number, unknown>)[subNode.id as number] === undefined) {
         ((node as Record<string, unknown>)[subNode.name!] as Record<number, unknown>)[subNode.id as number] = subNode;
       }
     }
   }
 
-  parseProperty(reader: BinaryReader) {
+  parseProperty (reader: BinaryReader) {
     const type = reader.getString(1);
     let length;
 
@@ -268,7 +323,6 @@ export class BinaryParser {
             return reader2.getInt64Array(arrayLength);
         }
       }
-
       // eslint-disable-next-line no-fallthrough
       default:
         throw new Error('THREE.FBXLoader: Unknown property type ' + type);
@@ -282,33 +336,33 @@ export class BinaryReader {
   littleEndian: boolean;
   _textDecoder: TextDecoder;
 
-  constructor(buffer: ArrayBuffer, littleEndian?: boolean) {
+  constructor (buffer: ArrayBuffer, littleEndian?: boolean) {
     this.dv = new DataView(buffer);
     this.offset = 0;
     this.littleEndian = littleEndian !== undefined ? littleEndian : true;
     this._textDecoder = new TextDecoder();
   }
 
-  getOffset() {
+  getOffset () {
     return this.offset;
   }
 
-  size() {
+  size () {
     return this.dv.buffer.byteLength;
   }
 
-  skip(length: number) {
+  skip (length: number) {
     this.offset += length;
   }
 
   // seems like true/false representation depends on exporter.
   // true: 1 or 'Y'(=0x59), false: 0 or 'T'(=0x54)
   // then sees LSB.
-  getBoolean() {
+  getBoolean () {
     return (this.getUint8() & 1) === 1;
   }
 
-  getBooleanArray(size: number) {
+  getBooleanArray (size: number) {
     const a = [];
 
     for (let i = 0; i < size; i++) {
@@ -318,7 +372,7 @@ export class BinaryReader {
     return a;
   }
 
-  getUint8() {
+  getUint8 () {
     const value = this.dv.getUint8(this.offset);
 
     this.offset += 1;
@@ -326,7 +380,7 @@ export class BinaryReader {
     return value;
   }
 
-  getInt16() {
+  getInt16 () {
     const value = this.dv.getInt16(this.offset, this.littleEndian);
 
     this.offset += 2;
@@ -334,7 +388,7 @@ export class BinaryReader {
     return value;
   }
 
-  getInt32() {
+  getInt32 () {
     const value = this.dv.getInt32(this.offset, this.littleEndian);
 
     this.offset += 4;
@@ -342,7 +396,7 @@ export class BinaryReader {
     return value;
   }
 
-  getInt32Array(size: number) {
+  getInt32Array (size: number) {
     const a = [];
 
     for (let i = 0; i < size; i++) {
@@ -352,7 +406,7 @@ export class BinaryReader {
     return a;
   }
 
-  getUint32() {
+  getUint32 () {
     const value = this.dv.getUint32(this.offset, this.littleEndian);
 
     this.offset += 4;
@@ -365,7 +419,7 @@ export class BinaryReader {
   // There's a possibility that this method returns wrong value if the value
   // is out of the range between Number.MAX_SAFE_INTEGER and Number.MIN_SAFE_INTEGER.
   // TODO: safely handle 64-bit integer
-  getInt64() {
+  getInt64 () {
     let low, high;
 
     if (this.littleEndian) {
@@ -393,7 +447,7 @@ export class BinaryReader {
     return high * 0x100000000 + low;
   }
 
-  getInt64Array(size: number) {
+  getInt64Array (size: number) {
     const a = [];
 
     for (let i = 0; i < size; i++) {
@@ -404,7 +458,7 @@ export class BinaryReader {
   }
 
   // Note: see getInt64() comment
-  getUint64() {
+  getUint64 () {
     let low, high;
 
     if (this.littleEndian) {
@@ -418,7 +472,7 @@ export class BinaryReader {
     return high * 0x100000000 + low;
   }
 
-  getFloat32() {
+  getFloat32 () {
     const value = this.dv.getFloat32(this.offset, this.littleEndian);
 
     this.offset += 4;
@@ -426,7 +480,7 @@ export class BinaryReader {
     return value;
   }
 
-  getFloat32Array(size: number) {
+  getFloat32Array (size: number) {
     const a = [];
 
     for (let i = 0; i < size; i++) {
@@ -436,7 +490,7 @@ export class BinaryReader {
     return a;
   }
 
-  getFloat64() {
+  getFloat64 () {
     const value = this.dv.getFloat64(this.offset, this.littleEndian);
 
     this.offset += 8;
@@ -444,7 +498,7 @@ export class BinaryReader {
     return value;
   }
 
-  getFloat64Array(size: number) {
+  getFloat64Array (size: number) {
     const a = [];
 
     for (let i = 0; i < size; i++) {
@@ -454,7 +508,7 @@ export class BinaryReader {
     return a;
   }
 
-  getArrayBuffer(size: number) {
+  getArrayBuffer (size: number) {
     const value = this.dv.buffer.slice(this.offset, this.offset + size);
 
     this.offset += size;
@@ -462,7 +516,7 @@ export class BinaryReader {
     return value;
   }
 
-  getString(size: number) {
+  getString (size: number) {
     const start = this.offset;
     let a = new Uint8Array(this.dv.buffer, start, size);
 

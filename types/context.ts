@@ -3,17 +3,18 @@
  * @description 运行时上下文定义
  */
 
-import { Group, Matrix4, EulerOrder } from 'three';
-import { IFBXTree } from './tree';
-import { FBXConnectionNode } from './connections';
+import type { Matrix4, EulerOrder } from 'three';
+import { Group } from 'three';
+import type { IFBXTree } from './tree';
+import type { FBXConnectionNode } from './connections';
 
 /**
  * FBX 加载运行时上下文
  */
 export interface FBXContext {
-  connections: Record<number, FBXConnectionNode>;
-  fbxTree: IFBXTree;
-  sceneGraph: Group;
+  connections: Record<number, FBXConnectionNode>,
+  fbxTree: IFBXTree,
+  sceneGraph: Group,
 }
 
 /**
@@ -29,15 +30,15 @@ export const global: FBXContext = {
  * FBX 节点的变换信息
  */
 export interface FBXTransform {
-  eulerOrder?: EulerOrder;
-  inheritType?: number;
-  translation?: number[];
-  rotation?: number[];
-  scale?: number[];
-  preRotation?: number[];
-  postRotation?: number[];
-  rotationPivot?: number[];
-  scalingPivot?: number[];
-  parentMatrix?: Matrix4;
-  parentMatrixWorld?: Matrix4;
+  eulerOrder?: EulerOrder,
+  inheritType?: number,
+  translation?: number[],
+  rotation?: number[],
+  scale?: number[],
+  preRotation?: number[],
+  postRotation?: number[],
+  rotationPivot?: number[],
+  scalingPivot?: number[],
+  parentMatrix?: Matrix4,
+  parentMatrixWorld?: Matrix4,
 }

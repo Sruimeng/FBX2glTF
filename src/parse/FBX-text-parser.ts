@@ -1,13 +1,13 @@
 import { parseNumberArray } from '../util';
-import { FBXTree } from '../constants';
+import { FBXTreeFactory } from '../constants';
 
 type TextNode = {
-  [key: string]: unknown; // 添加索引签名以支持动态属性
-  attrName?: string;
-  attrType?: string;
-  id?: number;
-  name: string;
-  PoseNode?: TextNode[];
+  [key: string]: unknown, // 添加索引签名以支持动态属性
+  attrName?: string,
+  attrType?: string,
+  id?: number,
+  name: string,
+  PoseNode?: TextNode[],
 };
 
 // parse an FBX file in ASCII format
@@ -16,47 +16,47 @@ export class TextParser {
   currentIndent: number;
   currentProp: { [key: string]: unknown } | unknown[];
   currentPropName: string;
-  allNodes: FBXTree;
+  allNodes: any;
 
-  constructor() {
+  constructor () {
     this.nodeStack = [];
     this.currentIndent = 0;
     this.currentProp = [];
     this.currentPropName = '';
-    this.allNodes = new FBXTree();
+    this.allNodes = new FBXTreeFactory();
   }
 
-  getPrevNode() {
+  getPrevNode () {
     return this.nodeStack[this.currentIndent - 2];
   }
 
-  getCurrentNode() {
+  getCurrentNode () {
     return this.nodeStack[this.currentIndent - 1];
   }
 
-  getCurrentProp() {
+  getCurrentProp () {
     return this.currentProp;
   }
 
-  pushStack(node: TextNode) {
+  pushStack (node: TextNode) {
     this.nodeStack.push(node);
     this.currentIndent += 1;
   }
 
-  popStack() {
+  popStack () {
     this.nodeStack.pop();
     this.currentIndent -= 1;
   }
 
-  setCurrentProp(val: TextNode, name: string) {
+  setCurrentProp (val: TextNode, name: string) {
     this.currentProp = val;
     this.currentPropName = name;
   }
 
-  parse(text: string) {
+  parse (text: string) {
     this.currentIndent = 0;
 
-    this.allNodes = new FBXTree();
+    this.allNodes = new FBXTreeFactory();
     this.nodeStack = [];
     this.currentProp = [];
     this.currentPropName = '';
@@ -78,7 +78,7 @@ export class TextParser {
       if (matchBeginning) {
         this.parseNodeBegin(line, matchBeginning);
       } else if (matchProperty) {
-        this.parseNodeProperty(line, matchProperty, split[++i] as string);
+        this.parseNodeProperty(line, matchProperty, split[++i]);
       } else if (matchEnd) {
         this.popStack();
       } else if (line.match(/^[^\s\t}]/)) {
@@ -91,10 +91,10 @@ export class TextParser {
     return this.allNodes;
   }
 
-  parseNodeBegin(_line: string, property: string[]) {
-    const nodeName = (property[1] as string).trim().replace(/^"/, '').replace(/"$/, '');
+  parseNodeBegin (_line: string, property: string[]) {
+    const nodeName = (property[1]).trim().replace(/^"/, '').replace(/"$/, '');
 
-    const nodeAttrs = (property[2] as string).split(',').map(function (attr) {
+    const nodeAttrs = (property[2]).split(',').map(function (attr) {
       return attr.trim().replace(/^"/, '').replace(/"$/, '');
     });
 
@@ -103,7 +103,7 @@ export class TextParser {
     };
     const attrs = this.parseNodeAttr(nodeAttrs);
 
-    const currentNode = this.getCurrentNode() as TextNode;
+    const currentNode = this.getCurrentNode();
 
     // a top node
     if (this.currentIndent === 0) {
@@ -118,6 +118,7 @@ export class TextParser {
           currentNode.PoseNode?.push(node);
         } else if ((currentNode[nodeName] as { id?: number }).id !== undefined) {
           const existing = currentNode[nodeName] as { id: number };
+
           currentNode[nodeName] = {};
           (currentNode[nodeName] as Record<string, { id: number }>)[existing.id] = existing;
         }
@@ -150,14 +151,14 @@ export class TextParser {
     this.pushStack(node);
   }
 
-  parseNodeAttr(attrs: string[]) {
+  parseNodeAttr (attrs: string[]) {
     let id: string | number = attrs[0] as string | number;
 
     if (attrs[0] !== '') {
-      id = parseInt(attrs[0] as string);
+      id = parseInt(attrs[0]);
 
       if (isNaN(id)) {
-        id = attrs[0] as string;
+        id = attrs[0];
       }
     }
 
@@ -165,16 +166,16 @@ export class TextParser {
       type = '';
 
     if (attrs.length > 1) {
-      name = (attrs[1] as string).replace(/^(\w+)::/, '');
-      type = attrs[2] as string;
+      name = (attrs[1]).replace(/^(\w+)::/, '');
+      type = attrs[2];
     }
 
     return { id: id, name: name, type: type };
   }
 
-  parseNodeProperty(line: string, property: string[], contentLine: string) {
-    const property1 = property[1] as string;
-    const property2 = property[2] as string;
+  parseNodeProperty (line: string, property: string[], contentLine: string) {
+    const property1 = property[1];
+    const property2 = property[2];
     let propName = property1.replace(/^"/, '').replace(/"$/, '').trim();
     let propValue: string | number[] | number = property2.replace(/^"/, '').replace(/"$/, '').trim();
 
@@ -185,7 +186,7 @@ export class TextParser {
       propValue = contentLine.replace(/"/g, '').replace(/,$/, '').trim();
     }
 
-    const currentNode = this.getCurrentNode() as TextNode;
+    const currentNode = this.getCurrentNode();
     const parentName = currentNode.name;
 
     if (parentName === 'Properties70') {
@@ -208,7 +209,7 @@ export class TextParser {
 
       propName = 'connections';
       propValue = [from, to];
-      append(propValue, rest as string[]);
+      append(propValue, rest);
 
       if (currentNode[propName] === undefined) {
         currentNode[propName] = [];
@@ -239,8 +240,8 @@ export class TextParser {
     }
   }
 
-  parseNodePropertyContinued(line: string) {
-    const currentNode = this.getCurrentNode() as TextNode;
+  parseNodePropertyContinued (line: string) {
+    const currentNode = this.getCurrentNode();
 
     currentNode.a += line;
 
@@ -252,7 +253,7 @@ export class TextParser {
   }
 
   // parse "Property70"
-  parseNodeSpecialProperty(_line: string, _propName: string, propValue: string) {
+  parseNodeSpecialProperty (_line: string, _propName: string, propValue: string) {
     // split this
     // P: "Lcl Scaling", "Lcl Scaling", "", "A",1,1,1
     // into array like below
@@ -261,7 +262,7 @@ export class TextParser {
       return prop.trim().replace(/^"/, '').replace(/\s/, '_');
     });
 
-    const innerPropName = props[0] as string;
+    const innerPropName = props[0];
     const innerPropType1 = props[1];
     const innerPropType2 = props[2];
     const innerPropFlag = props[3];
@@ -292,6 +293,7 @@ export class TextParser {
 
     // CAUTION: these props must append to parent's parent
     const prevNode = this.getPrevNode();
+
     if (prevNode) {
       prevNode[innerPropName] = {
         flag: innerPropFlag,
@@ -305,7 +307,7 @@ export class TextParser {
   }
 }
 
-function append(a: unknown[], b: unknown[]): void {
+function append (a: unknown[], b: unknown[]): void {
   for (let i = 0, j = a.length, l = b.length; i < l; i++, j++) {
     a[j] = b[i];
   }

@@ -62,8 +62,8 @@ export function init () {
 function loadFBXModel () {
   const loader = new FBXLoader().setPath('../assets/models/fbx/');
 
-  loader.load('frog.fbx', function (info: {scene: Group, scale: {setScalar: (arg0: number) => void}, animations: AnimationClip[]} | Group) {
-    const {scene} = info as {scene: Group, scale: {setScalar: (arg0: number) => void}, animations: AnimationClip[]};
+  loader.load('frog.fbx', function (info: { scene: Group, scale: { setScalar: (arg0: number) => void }, animations: AnimationClip[] } | Group) {
+    const { scene } = info as { scene: Group, scale: { setScalar: (arg0: number) => void }, animations: AnimationClip[] };
     // 缩放模型
     // scene.scale.setScalar(0.01);
 

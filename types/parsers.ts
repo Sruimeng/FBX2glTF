@@ -3,91 +3,91 @@
  * @description 解析器相关的类型定义
  */
 
-import { Bone, Matrix4, Group } from 'three';
-import { IFBXTree, FBXNode, FBXHeaderExtension, FBXGlobalSettings, FBXDocuments, FBXDefinitions, FBXObjects } from './index';
-import { FBXConnection, FBXConnectionNode } from './connections';
+import type { Bone, Matrix4, Group } from 'three';
+import type { IFBXTree, FBXNode, FBXHeaderExtension, FBXGlobalSettings, FBXDocuments, FBXDefinitions, FBXObjects } from './index';
+import type { FBXConnection, FBXConnectionNode } from './connections';
 
 /**
  * 变形器相关类型
  */
 export interface Deformers {
-  skeletons: Record<string, FBXSkeleton>;
-  morphTargets: Record<string, FBXMorphTarget>;
+  skeletons: Record<string, FBXSkeleton>,
+  morphTargets: Record<string, FBXMorphTarget>,
 }
 
 /**
  * FBX 骨骼定义
  */
 export interface FBXSkeleton {
-  ID: number;
-  name: string;
-  bones: Bone[];
+  ID: number,
+  name: string,
+  bones: Bone[],
   rawBones?: Array<{
-    ID: number;
-    indices: number[];
-    weights: number[];
-    transformLinkMatrix: Matrix4;
-  }>;
+    ID: number,
+    indices: number[],
+    weights: number[],
+    transformLinkMatrix: Matrix4,
+  }>,
 }
 
 /**
  * FBX 变形目标定义
  */
 export interface FBXMorphTarget {
-  ID: number;
-  name: string;
-  weights: number[];
+  ID: number,
+  name: string,
+  weights: number[],
   rawTargets?: Array<{
-    name: string;
-    geoID: number;
-  }>;
+    name: string,
+    geoID: number,
+  }>,
 }
 
 /**
  * 模型统计信息
  */
 export interface ModelInfo {
-  polygons: number;
-  quads: number;
-  triangles: number;
-  vertices: number;
+  polygons: number,
+  quads: number,
+  triangles: number,
+  vertices: number,
 }
 
 /**
  * 模型加载结果
  */
 export interface ModelLoaderResult {
-  scene: Group;
-  animations: any[]; // THREE.AnimationClip[]
-  modelInfo: ModelInfo;
+  scene: Group,
+  animations: unknown[], // THREE.AnimationClip[]
+  modelInfo: ModelInfo,
 }
 
 /**
  * 用户数据变换信息
  */
 export interface UserDataTransform {
-  eulerOrder?: string;
-  inheritType?: number;
-  translation?: number[];
-  rotation?: number[];
-  scale?: number[];
-  preRotation?: number[];
-  postRotation?: number[];
-  rotationPivot?: number[];
-  scalingPivot?: number[];
-  scalingOffset?: number[];
-  rotationOffset?: number[];
-  parentMatrix?: Matrix4;
-  parentMatrixWorld?: Matrix4;
+  eulerOrder?: string,
+  inheritType?: number,
+  translation?: number[],
+  rotation?: number[],
+  scale?: number[],
+  preRotation?: number[],
+  postRotation?: number[],
+  rotationPivot?: number[],
+  scalingPivot?: number[],
+  scalingOffset?: number[],
+  rotationOffset?: number[],
+  parentMatrix?: Matrix4,
+  parentMatrixWorld?: Matrix4,
 }
 
 /**
  * 解析上下文 - 替代全局状态
  */
 export interface ParseContext {
-  fbxTree: IFBXTree;
-  connections: Record<number, FBXConnectionNode>;
-  sceneGraph: Group;
+  fbxTree: IFBXTree,
+  connections: Record<number, FBXConnectionNode>,
+  sceneGraph: Group,
 }
 
 /**
@@ -98,37 +98,41 @@ export class FBXTreeFactory {
   private connections: FBXConnection[] = [];
 
   // 设置头信息
-  setHeader(header: any): FBXTreeFactory {
+  setHeader (header: FBXHeaderExtension): FBXTreeFactory {
     this.tree.FBXHeaderExtension = header;
+
     return this;
   }
 
   // 设置全局设置
-  setGlobalSettings(settings: any): FBXTreeFactory {
+  setGlobalSettings (settings: FBXGlobalSettings): FBXTreeFactory {
     this.tree.GlobalSettings = settings;
+
     return this;
   }
 
   // 添加对象
-  addObject(type: string, id: string | number, object: any): FBXTreeFactory {
+  addObject (type: string, id: string | number, object: unknown): FBXTreeFactory {
     if (!this.tree.Objects) {
       this.tree.Objects = { name: 'Objects', singleProperty: false };
     }
-    if (!(this.tree.Objects as any)[type]) {
-      (this.tree.Objects as any)[type] = {};
+    if (!(this.tree.Objects as Record<string, unknown>)[type]) {
+      (this.tree.Objects as Record<string, Record<string, unknown>>)[type] = {};
     }
-    (this.tree.Objects as any)[type][id.toString()] = object;
+    (this.tree.Objects as Record<string, Record<string, unknown>>)[type][id.toString()] = object;
+
     return this;
   }
 
   // 添加连接
-  addConnection(connection: FBXConnection): FBXTreeFactory {
+  addConnection (connection: FBXConnection): FBXTreeFactory {
     this.connections.push(connection);
+
     return this;
   }
 
   // 构建最终的 IFBXTree
-  build(): IFBXTree {
+  build (): IFBXTree {
     // 处理连接关系
     this.processConnections();
 
@@ -193,7 +197,7 @@ export class FBXTreeFactory {
     };
   }
 
-  private processConnections(): void {
+  private processConnections (): void {
     // 将连接数组转换为 Record 结构
     const connectionMap: Record<number, FBXConnectionNode> = {};
 
@@ -215,15 +219,11 @@ export class FBXTreeFactory {
       if (fromNode && toNode) {
         fromNode.children.push({
           ID: conn.to,
-          from: conn.from,
-          to: conn.to,
-          relationship: conn.relationship
+          relationship: conn.relationship,
         });
         toNode.parents.push({
           ID: conn.from,
-          from: conn.from,
-          to: conn.to,
-          relationship: conn.relationship
+          relationship: conn.relationship,
         });
       }
     }
@@ -234,7 +234,7 @@ export class FBXTreeFactory {
 
   private connectionsMap?: Record<number, FBXConnectionNode>;
 
-  getConnections(): Record<number, FBXConnectionNode> {
+  getConnections (): Record<number, FBXConnectionNode> {
     return this.connectionsMap || {};
   }
 }
@@ -243,5 +243,5 @@ export class FBXTreeFactory {
  * 加载器选项
  */
 export interface LoaderOptions {
-  manager?: any; // THREE.LoadingManager
+  manager?: unknown, // THREE.LoadingManager
 }

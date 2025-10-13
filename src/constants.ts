@@ -9,7 +9,7 @@
  */
 
 import { Group } from 'three';
-import { FBXContext, IFBXTree, FBXConnectionNode } from '../types';
+import type { FBXContext, IFBXTree } from '../types';
 
 /**
  * 全局运行时对象

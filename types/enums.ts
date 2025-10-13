@@ -33,17 +33,17 @@ export enum ReferenceInformationType {
 
 /** FBX 节点类型枚举 */
 export enum FBXNodeType {
-  GEOMETRY = "Geometry",
-  MATERIAL = "Material",
-  MODEL = "Model",
-  TEXTURE = "Texture",
-  VIDEO = "Video",
+  GEOMETRY = 'Geometry',
+  MATERIAL = 'Material',
+  MODEL = 'Model',
+  TEXTURE = 'Texture',
+  VIDEO = 'Video',
 }
 
 /** FBX 连接类型 */
 export enum FBXConnectionType {
-  OBJECT_OBJECT = "OO",
-  OBJECT_PROPERTY = "OP",
+  OBJECT_OBJECT = 'OO',
+  OBJECT_PROPERTY = 'OP',
 }
 
 /** Euler 枚举顺序映射（兼容 Blender 输出） */

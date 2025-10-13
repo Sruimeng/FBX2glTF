@@ -1,6 +1,6 @@
 // ************** UTILITY FUNCTIONS **************
 
-export function convertArrayBufferToString(buffer: ArrayBuffer, from?: number, to?: number) {
+export function convertArrayBufferToString (buffer: ArrayBuffer, from?: number, to?: number) {
   if (from === undefined) {
     from = 0;
   }
@@ -11,7 +11,7 @@ export function convertArrayBufferToString(buffer: ArrayBuffer, from?: number, t
   return new TextDecoder().decode(new Uint8Array(buffer, from, to));
 }
 
-export function isFbxFormatBinary(buffer: ArrayBuffer) {
+export function isFbxFormatBinary (buffer: ArrayBuffer) {
   const CORRECT = 'Kaydara\u0020FBX\u0020Binary\u0020\u0020\0';
 
   return (
@@ -22,7 +22,7 @@ export function isFbxFormatBinary(buffer: ArrayBuffer) {
 
 // Parses comma separated list of numbers and returns them an array.
 // Used internally by the TextParser
-export function parseNumberArray(value: string) {
+export function parseNumberArray (value: string) {
   const array = value.split(',').map(function (val) {
     return parseFloat(val);
   });
@@ -30,7 +30,7 @@ export function parseNumberArray(value: string) {
   return array;
 }
 
-export function isFbxFormatASCII(text: string) {
+export function isFbxFormatASCII (text: string) {
   const CORRECT = [
     'K',
     'a',
@@ -56,7 +56,7 @@ export function isFbxFormatASCII(text: string) {
 
   let cursor = 0;
 
-  function read(offset: number) {
+  function read (offset: number) {
     const result = text[offset - 1];
 
     text = text.slice(cursor + offset);
@@ -76,12 +76,12 @@ export function isFbxFormatASCII(text: string) {
   return true;
 }
 
-export function getFbxVersion(text: string) {
+export function getFbxVersion (text: string) {
   const versionRegExp = /FBXVersion: (\d+)/;
   const match = text.match(versionRegExp);
 
   if (match) {
-    const version = parseInt(match[1] as string);
+    const version = parseInt(match[1]);
 
     return version;
   }

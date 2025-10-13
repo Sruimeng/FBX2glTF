@@ -5,12 +5,12 @@
 
 import { FBXEulerOrder } from './enums';
 
-import { EulerOrder } from 'three';
+import type { EulerOrder } from 'three';
 
 /**
  * 将 FBX Euler Order 转换为 three.js EulerOrder
  */
-export function toThreeEulerOrder(fbxOrder: FBXEulerOrder): EulerOrder {
+export function toThreeEulerOrder (fbxOrder: FBXEulerOrder): EulerOrder {
   const map: Record<FBXEulerOrder, EulerOrder> = {
     [FBXEulerOrder.XYZ]: 'XYZ',
     [FBXEulerOrder.YXZ]: 'YXZ',
@@ -20,5 +20,6 @@ export function toThreeEulerOrder(fbxOrder: FBXEulerOrder): EulerOrder {
     [FBXEulerOrder.ZYX]: 'ZYX',
     [FBXEulerOrder.SphericXYZ]: 'XYZ', // fallback
   };
+
   return map[fbxOrder] || 'XYZ';
 }

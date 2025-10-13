@@ -3,25 +3,25 @@
  * @description Model 节点定义
  */
 
-import { CullingType, InheritType } from '../enums';
-import { FBXNode, FBXValue } from '../shared';
+import type { CullingType, InheritType } from '../enums';
+import type { FBXNode, FBXValue } from '../shared';
 
 export interface FBXModelNode extends FBXNode {
-  id: number;
-  attrName: string;
-  attrType: string;
+  id: number,
+  attrName: string,
+  attrType: string,
 
-  Version: number;
-  Culling: CullingType;
-  InheritType: FBXValue<InheritType>;
-  Lcl_Translation: FBXValue<number[]>;
-  Lcl_Rotation: FBXValue<number[]>;
-  Lcl_Scaling: FBXValue<number[]>;
-  GeometricTranslation?: FBXValue<number[]>;
-  GeometricRotation?: FBXValue<number[]>;
-  GeometricScaling?: FBXValue<number[]>;
-  PreRotation?: FBXValue<number[]>;
-  PostRotation?: FBXValue<number[]>;
-  RotationOrder?: FBXValue<number>;
+  Version: number,
+  Culling: CullingType,
+  InheritType: FBXValue<InheritType>,
+  Lcl_Translation: FBXValue<number[]>,
+  Lcl_Rotation: FBXValue<number[]>,
+  Lcl_Scaling: FBXValue<number[]>,
+  GeometricTranslation?: FBXValue<number[]>,
+  GeometricRotation?: FBXValue<number[]>,
+  GeometricScaling?: FBXValue<number[]>,
+  PreRotation?: FBXValue<number[]>,
+  PostRotation?: FBXValue<number[]>,
+  RotationOrder?: FBXValue<number>,
   // ... 其他模型属性
 }

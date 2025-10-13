@@ -15,7 +15,7 @@ import { Vector3, Vector4 } from 'three';
  * @param {Array<number>} U - The knot vector.
  * @return {number} The span.
  */
-function findSpan(p: number, u: number, U: Array<number>): number {
+function findSpan (p: number, u: number, U: Array<number>): number {
   const n = U.length - p - 1;
 
   if (u >= U[n]) {
@@ -52,7 +52,7 @@ function findSpan(p: number, u: number, U: Array<number>): number {
  * @param {Array<number>} U - The knot vector.
  * @return {Array<number>} Array[p+1] with basis functions values.
  */
-function calcBasisFunctions(span: number, u: number, p: number, U: Array<number>): Array<number> {
+function calcBasisFunctions (span: number, u: number, p: number, U: Array<number>): Array<number> {
   const N: Array<number> = [];
   const left: Array<number> = [];
   const right: Array<number> = [];
@@ -89,7 +89,7 @@ function calcBasisFunctions(span: number, u: number, p: number, U: Array<number>
  * @param {number} u - The parametric point.
  * @return {Vector4} The point for given `u`.
  */
-function calcBSplinePoint(p: number, U: Array<number>, P: Array<Vector4>, u: number): Vector4 {
+function calcBSplinePoint (p: number, U: Array<number>, P: Array<Vector4>, u: number): Vector4 {
   const span = findSpan(p, u, U);
   const N = calcBasisFunctions(span, u, p, U);
   const C = new Vector4(0, 0, 0, 0);
@@ -118,7 +118,7 @@ function calcBSplinePoint(p: number, U: Array<number>, P: Array<Vector4>, u: num
  * @param {Array<number>} U - The knot vector.
  * @return {Array<Array<number>>} An array[n+1][p+1] with basis functions derivatives.
  */
-function calcBasisFunctionDerivatives(
+function calcBasisFunctionDerivatives (
   span: number,
   u: number,
   p: number,
@@ -240,7 +240,7 @@ function calcBasisFunctionDerivatives(
  * @param {number} nd - The number of derivatives.
  * @return {Array<Vector4>} An array[d+1] with derivatives.
  */
-function calcBSplineDerivatives(
+function calcBSplineDerivatives (
   p: number,
   U: number[],
   P: Vector4[],
@@ -288,7 +288,7 @@ function calcBSplineDerivatives(
  * @param {number} i - The I value.
  * @return {number} k!/(i!(k-i)!)
  */
-function calcKoverI(k: number, i: number): number {
+function calcKoverI (k: number, i: number): number {
   let nom = 1;
 
   for (let j = 2; j <= k; ++j) {
@@ -314,7 +314,7 @@ function calcKoverI(k: number, i: number): number {
  * @param {Array<Vector4>} Pders - Array with derivatives.
  * @return {Array<Vector3>} An array with derivatives for rational curve.
  */
-function calcRationalCurveDerivatives(Pders: Array<Vector4>): Array<Vector3> {
+function calcRationalCurveDerivatives (Pders: Array<Vector4>): Array<Vector3> {
   const nd = Pders.length;
   const Aders = [];
   const wders = [];
@@ -351,7 +351,7 @@ function calcRationalCurveDerivatives(Pders: Array<Vector4>): Array<Vector3> {
  * @param {number} nd - The number of derivatives.
  * @return {Array<Vector3>} array with derivatives for rational curve.
  */
-function calcNURBSDerivatives(
+function calcNURBSDerivatives (
   p: number,
   U: number[],
   P: Vector4[],
@@ -375,7 +375,7 @@ function calcNURBSDerivatives(
  * @param {number} v - The second parametric point.
  * @param {Vector3} target - The target vector.
  */
-function calcSurfacePoint(
+function calcSurfacePoint (
   p: number,
   q: number,
   U: number[],
@@ -429,7 +429,7 @@ function calcSurfacePoint(
  * @param {number} w - The third parametric point.
  * @param {Vector3} target - The target vector.
  */
-function calcVolumePoint(
+function calcVolumePoint (
   p: number,
   q: number,
   r: number,
