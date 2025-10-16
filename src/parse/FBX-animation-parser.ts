@@ -296,10 +296,10 @@ export class AnimationParser {
 
                   // if the animated model is pre rotated, we'll have to apply the pre rotations to every
                   // animation value as well
-                  if ('PreRotation' in rawModel) {
+                  if ('PreRotation' in rawModel && rawModel.PreRotation?.value) {
                     node.preRotation = rawModel.PreRotation.value as [number, number, number];
                   }
-                  if ('PostRotation' in rawModel) {
+                  if ('PostRotation' in rawModel && rawModel.PostRotation?.value) {
                     node.postRotation = rawModel.PostRotation.value as [number, number, number];
                   }
                   layerCurveNodes[i] = node;

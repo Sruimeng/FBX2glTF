@@ -154,7 +154,8 @@ module.exports = {
       "files": ["**/test/**/*.ts", "**/demo/**/*.ts"],
       "rules": {
         "compat/compat": "off",
-        "@typescript-eslint/no-unused-vars": "off"
+        "@typescript-eslint/no-unused-vars": "off",
+        "no-console": "off"
       }
     }
   ]

@@ -168,7 +168,8 @@ export class FBXTreeParser {
       if (blobs[filename] !== undefined) {
         images[id] = blobs[filename];
       } else {
-        images[id] = images[id]?.split('\\').pop() || (images[id]);
+        const currentImage = images[id];
+        images[id] = currentImage?.split('\\').pop() || currentImage || '';
       }
     }
 
@@ -280,14 +281,14 @@ export class FBXTreeParser {
     texture.wrapS = valueU === 0 ? RepeatWrapping : ClampToEdgeWrapping;
     texture.wrapT = valueV === 0 ? RepeatWrapping : ClampToEdgeWrapping;
 
-    if ('Scaling' in textureNode) {
+    if ('Scaling' in textureNode && textureNode.Scaling?.value) {
       const values = textureNode.Scaling.value as number[];
 
       texture.repeat.x = values[0];
       texture.repeat.y = values[1];
     }
 
-    if ('Translation' in textureNode) {
+    if ('Translation' in textureNode && textureNode.Translation?.value) {
       const values = textureNode.Translation.value as number[];
 
       texture.offset.x = values[0];
@@ -400,8 +401,8 @@ export class FBXTreeParser {
     let type: string | number = materialNode.ShadingModel;
 
     // Case where FBX wraps shading model in property object.
-    if (typeof type === 'object') {
-      type = type.value;
+    if (typeof type === 'object' && type !== null && 'value' in type) {
+      type = (type as any).value;
     }
 
     // Ignore unused materials which don't have any connections.
@@ -413,7 +414,7 @@ export class FBXTreeParser {
 
     let material;
 
-    switch (type.toLowerCase()) {
+    switch (String(type).toLowerCase()) {
       case 'phong':
         material = new MeshStandardMaterial({ metalness: 0, roughness: 0.5, side: DoubleSide });
 
@@ -474,7 +475,7 @@ export class FBXTreeParser {
       parameters.displacementScale = materialNode.DisplacementFactor.value as number;
     }
 
-    if (materialNode.Emissive) {
+    if (materialNode.Emissive && materialNode.Emissive.value) {
       parameters.emissive = ColorManagement.toWorkingColorSpace(
         new Color().fromArray(materialNode.Emissive.value),
         SRGBColorSpace,
@@ -483,6 +484,7 @@ export class FBXTreeParser {
       materialNode.EmissiveColor
       && (materialNode.EmissiveColor.type === 'Color'
         || materialNode.EmissiveColor.type === 'ColorRGB')
+      && materialNode.EmissiveColor.value
     ) {
       // The blender exporter exports emissive color here instead of in materialNode.Emissive
       parameters.emissive = ColorManagement.toWorkingColorSpace(
@@ -506,8 +508,8 @@ export class FBXTreeParser {
       if (parameters.opacity === null) {
         parameters.opacity
           = 1
-            - (materialNode.TransparentColor
-              ? parseFloat(materialNode.TransparentColor.value[0] as string)
+            - (materialNode.TransparentColor?.value
+              ? parseFloat(String(materialNode.TransparentColor.value[0]))
               : 0);
       }
     }
@@ -524,7 +526,7 @@ export class FBXTreeParser {
       parameters.roughness = 1 / materialNode.Shininess.value;
     }
 
-    if (materialNode.Specular) {
+    if (materialNode.Specular && materialNode.Specular.value) {
       // 将specular颜色转换为metalness值
       // 可以使用颜色的平均值或亮度作为金属度
       const specularColor = new Color().fromArray(materialNode.Specular.value);
@@ -533,7 +535,7 @@ export class FBXTreeParser {
       parameters.metalness = (specularColor.r + specularColor.g + specularColor.b) / 3;
       // 限制metalness在0-1范围内
       parameters.metalness = Math.max(0, Math.min(1, parameters.metalness));
-    } else if (materialNode.SpecularColor && materialNode.SpecularColor.type === 'Color') {
+    } else if (materialNode.SpecularColor && materialNode.SpecularColor.type === 'Color' && materialNode.SpecularColor.value) {
       // The blender exporter exports specular color here instead of in materialNode.Specular
       const specularColor = new Color().fromArray(materialNode.SpecularColor.value);
 

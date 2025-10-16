@@ -60,6 +60,8 @@ export class GeometryParser {
   private context: ParseContext;
   negativeMaterialIndices: boolean;
   modelInfo: BaseInfo = {
+    id: 0,
+    name: '',
     polygons: 0,
     quads: 0,
     triangles: 0,
@@ -195,27 +197,25 @@ export class GeometryParser {
 
     const transformData: UserDataTransform = {};
 
-    if ('RotationOrder' in modelNode) {
+    if ('RotationOrder' in modelNode && modelNode.RotationOrder?.value) {
       const value = modelNode.RotationOrder.value;
 
       if (typeof value === 'number') {
-        transformData.eulerOrder = getEulerOrder(
-          modelNode.RotationOrder.value as FBXEulerOrder,
-        ) as EulerOrder;
+        transformData.eulerOrder = getEulerOrder(value as FBXEulerOrder) as EulerOrder;
       }
     }
-    if ('InheritType' in modelNode) {
-      transformData.inheritType = parseInt(modelNode.InheritType.value as string);
+    if ('InheritType' in modelNode && modelNode.InheritType?.value) {
+      transformData.inheritType = parseInt(String(modelNode.InheritType.value));
     }
 
-    if ('GeometricTranslation' in modelNode) {
-      transformData.translation = modelNode.GeometricTranslation.value as number[];
+    if ('GeometricTranslation' in modelNode && modelNode.GeometricTranslation?.value) {
+      transformData.translation = modelNode.GeometricTranslation.value;
     }
-    if ('GeometricRotation' in modelNode) {
-      transformData.rotation = modelNode.GeometricRotation.value as number[];
+    if ('GeometricRotation' in modelNode && modelNode.GeometricRotation?.value) {
+      transformData.rotation = modelNode.GeometricRotation.value;
     }
-    if ('GeometricScaling' in modelNode) {
-      transformData.scale = modelNode.GeometricScaling.value as number[];
+    if ('GeometricScaling' in modelNode && modelNode.GeometricScaling?.value) {
+      transformData.scale = modelNode.GeometricScaling.value;
     }
 
     const transform = generateTransform(transformData);
@@ -242,6 +242,8 @@ export class GeometryParser {
     const modelInfo = { ...this.modelInfo };
 
     this.modelInfo = {
+      id: 0,
+      name: '',
       polygons: 0,
       quads: 0,
       triangles: 0,
@@ -340,7 +342,7 @@ export class GeometryParser {
 
     if (geoNode.LayerElementMaterial) {
       geoInfo.material = this.parseMaterialIndices(
-        geoNode.LayerElementMaterial[0],
+        geoNode.LayerElementMaterial[0] as unknown as Record<string, unknown>,
       );
     }
 
@@ -364,7 +366,7 @@ export class GeometryParser {
 
     geoInfo.weightTable = {};
 
-    if (skeleton !== null) {
+    if (skeleton !== null && skeleton.rawBones) {
       geoInfo.skeleton = skeleton;
 
       skeleton.rawBones.forEach(function (rawBone, i) {
@@ -626,12 +628,12 @@ export class GeometryParser {
     faceWeightIndices: number[],
     faceLength: number,
   ) {
-    let triangles: number[][];
+    let triangles: number[][] = [];
 
     if (faceLength > 3) {
       if (faceLength === 4) {
-        this.modelInfo.quads++;
-      } else {
+        if (this.modelInfo) {this.modelInfo.quads++;}
+      } else if (this.modelInfo) {
         this.modelInfo.polygons++;
       }
       // Triangulate n-gon using earcut
@@ -665,7 +667,7 @@ export class GeometryParser {
       // so that we don't end up with an array of 0 triangles for the faces not participating in morph.
       triangles = ShapeUtils.triangulateShape(triangulationInput, []);
     } else {
-      this.modelInfo.triangles++;
+      if (this.modelInfo) {this.modelInfo.triangles++;}
       // Regular triangle, skip earcut triangulation step
       triangles = [[0, 1, 2]];
     }
@@ -899,10 +901,10 @@ export class GeometryParser {
     let indexBuffer: number[] = [];
 
     if (referenceType as string === 'IndexToDirect') {
-      if ('NormalIndex' in NormalNode) {
-        indexBuffer = NormalNode.NormalIndex?.a || [];
-      } else if ('NormalsIndex' in NormalNode) {
-        indexBuffer = NormalNode.NormalsIndex?.a || [];
+      if (NormalNode.NormalIndex && typeof NormalNode.NormalIndex === 'object' && 'a' in NormalNode.NormalIndex && NormalNode.NormalIndex.a) {
+        indexBuffer = NormalNode.NormalIndex.a as number[];
+      } else if (NormalNode.NormalsIndex && typeof NormalNode.NormalsIndex === 'object' && 'a' in NormalNode.NormalsIndex && NormalNode.NormalsIndex.a) {
+        indexBuffer = NormalNode.NormalsIndex.a as number[];
       }
     }
 
@@ -969,7 +971,7 @@ export class GeometryParser {
     let indexBuffer: number[] = [];
 
     if (referenceType as string === 'IndexToDirect') {
-      indexBuffer = ColorNode.ColorIndex.a;
+      indexBuffer = ColorNode.ColorIndex?.a || [];
     }
 
     for (let i = 0, c = new Color(); i < buffer.length; i += 4) {
@@ -1012,7 +1014,7 @@ export class GeometryParser {
       };
     }
 
-    const materialIndexBuffer = MaterialNode.Materials.a as number[];
+    const materialIndexBuffer = (MaterialNode.Materials as any)?.a as number[] || [];
 
     // Since materials are stored as indices, there's a bit of a mismatch between FBX and what
     // we expect.So we create an intermediate buffer that points to the index in the buffer,
