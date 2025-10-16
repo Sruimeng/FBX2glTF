@@ -50,8 +50,9 @@ import type {
   FBXTextureNode,
   RawBone,
 } from '../constants';
-import type { ParseContext, ModelLoaderResult, UserDataTransform, FBXLightNodeAttribute } from '../../types';
+import type { ParseContext, ModelLoaderResult, UserDataTransform } from '../../types';
 import type { BaseInfo } from '../../types';
+import type { FBXLightNodeAttribute } from '../../types/nodes/light';
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './FBX-geometry-parser';
@@ -86,6 +87,9 @@ export class FBXTreeParser {
   }
 
   async parse (): Promise<ModelLoaderResult> {
+    // Initialize connections first
+    this.context.connections = this.parseConnections();
+
     const images = this.parseImages();
 
     const textures = await this.parseTextures(images);
@@ -105,46 +109,21 @@ export class FBXTreeParser {
   // Parses context.fbxTree.Connections which holds parent-child connections between objects (e.g. material -> texture, model->geometry )
   // and details the connection type
   parseConnections () {
-    const connectionMap = new Map();
-
     const fbxTree = this.context.fbxTree;
 
-    if ('Connections' in fbxTree) {
-      if (!fbxTree.Connections) {
+    if ('connections' in fbxTree) {
+      if (!fbxTree.connections) {
         throw new Error('FBXLoader');
       }
-      const rawConnections = fbxTree.Connections.connections;
 
-      rawConnections.forEach(rawConnection => {
-        const fromID = rawConnection[0];
-        const toID = rawConnection[1];
-        const relationship = rawConnection[2];
+      // fbxTree.connections 已经是正确的格式：Record<number, FBXConnectionNode>
+      // 直接返回Record格式
+      const connectionsObj = fbxTree.connections as Record<number, any>;
 
-        if (!connectionMap.has(fromID)) {
-          connectionMap.set(fromID, {
-            children: [],
-            parents: [],
-          });
-        }
-
-        const parentRelationship = { ID: toID, relationship: relationship };
-
-        connectionMap.get(fromID).parents.push(parentRelationship);
-
-        if (!connectionMap.has(toID)) {
-          connectionMap.set(toID, {
-            children: [],
-            parents: [],
-          });
-        }
-
-        const childRelationship = { ID: fromID, relationship: relationship };
-
-        connectionMap.get(toID).children.push(childRelationship);
-      });
+      return connectionsObj;
+    } else {
+      return {};
     }
-
-    return connectionMap;
   }
 
   // Parse this.context.fbxTree.Objects.Video for embedded image data
@@ -228,14 +207,14 @@ export class FBXTreeParser {
         break;
       case 'tga':
         if (this.manager.getHandler('.tga') === null) {
-          console.warn('FBXLoader: TGA loader not found, skipping ', fileName);
+          // TGA loader not found
         }
 
         type = 'image/tga';
 
         break;
       default:
-        console.warn('FBXLoader: Image type "' + extension + '" is not supported.');
+        // Unsupported image type
 
         return;
     }
@@ -342,8 +321,14 @@ export class FBXTreeParser {
       throw new Error('Global connections are undefined');
     }
     const children = connections[textureNode.id]?.children;
-    const child = children[0];
 
+    if (!children || children.length === 0) {
+      // No children connections found, creating placeholder texture
+
+      return new Texture();
+    }
+
+    const child = children[0];
     let fileName;
 
     if (child !== undefined && images[child.ID] !== undefined) {
@@ -355,7 +340,7 @@ export class FBXTreeParser {
     }
 
     if (fileName === undefined) {
-      console.warn('FBXLoader: Undefined filename, creating placeholder texture.');
+      // Undefined filename, creating placeholder texture
 
       return new Texture();
     }
@@ -364,8 +349,8 @@ export class FBXTreeParser {
 
     try {
       texture = await (loader as TextureLoader).loadAsync(fileName);
-    } catch (error) {
-      console.warn('FBXLoader: Error loading texture', fileName, error);
+    } catch (_error) {
+      // Error loading texture
     }
 
     // revert to initial path
@@ -438,10 +423,7 @@ export class FBXTreeParser {
 
         break;
       default:
-        console.warn(
-          'THREE.FBXLoader: unknown material type "%s". Defaulting to MeshStandardMaterial.',
-          type,
-        );
+        // Unknown material type, defaulting to MeshStandardMaterial
         material = new MeshStandardMaterial({ metalness: 0, roughness: 0.5, side: DoubleSide });
 
         break;
@@ -561,7 +543,15 @@ export class FBXTreeParser {
       parameters.metalness = Math.max(0, Math.min(1, parameters.metalness));
     }
 
-    connections[ID].children.forEach(child => {
+    const materialConnections = connections[ID];
+
+    if (!materialConnections || !materialConnections.children || materialConnections.children.length === 0) {
+      // No connections found for material, using default parameters
+
+      return parameters;
+    }
+
+    materialConnections.children.forEach(child => {
       if (!(typeof child.ID === 'number')) {
         throw new Error('THREE.FBXLoader: Invalid child ID type');
       }
@@ -636,11 +626,7 @@ export class FBXTreeParser {
         case 'SpecularFactor': // AKA specularLevel
         case 'VectorDisplacementColor': // NOTE: Seems to be a copy of DisplacementColor
         default:
-          console.warn(
-            'THREE.FBXLoader: %s map is not supported in three.js, skipping texture.',
-            type,
-          );
-
+          // Silently skip unsupported texture types
           break;
       }
     });
@@ -661,12 +647,13 @@ export class FBXTreeParser {
     if (!objects || !connections) {
       throw new Error('No objects found in fbxTree.');
     }
-    // if the texture is a layered texture, just use the first layer and issue a warning
+    // if the texture is a layered texture, just use the first layer
     if ('LayeredTexture' in objects && objects.LayeredTexture && id in objects.LayeredTexture) {
-      console.warn(
-        'THREE.FBXLoader: layered textures are not supported in three.js. Discarding all but first layer.',
-      );
-      textureID = (connections[id].children[0]).ID;
+      const layeredConnections = connections[id];
+
+      if (layeredConnections && layeredConnections.children && layeredConnections.children.length > 0) {
+        textureID = layeredConnections.children[0].ID;
+      }
     }
 
     if (!textureID) {
@@ -708,11 +695,7 @@ export class FBXTreeParser {
 
           skeleton.ID = nodeID;
 
-          if (relationships.parents.length > 1) {
-            console.warn(
-              'THREE.FBXLoader: skeleton attached to more than one geometry is not supported.',
-            );
-          }
+          // Silently handle skeleton attached to multiple geometries
           skeleton.geometryID = (relationships.parents[0]).ID;
 
           skeletons[nodeID] = skeleton;
@@ -729,11 +712,7 @@ export class FBXTreeParser {
           );
           morphTarget.id = nodeID;
 
-          if (relationships.parents.length > 1) {
-            console.warn(
-              'THREE.FBXLoader: morph target attached to more than one geometry is not supported.',
-            );
-          }
+          // Silently handle morph target attached to multiple geometries
 
           morphTargets[nodeID] = morphTarget;
         }
@@ -871,7 +850,7 @@ export class FBXTreeParser {
 
       this.setLookAtProperties(model, modelNode);
 
-      const parentConnections = connections[modelID].parents || [];
+      const parentConnections = connections[modelID]?.parents || [];
 
       parentConnections.forEach(function (connection) {
         const parent = modelMap.get(connection.ID);
@@ -965,7 +944,7 @@ export class FBXTreeParser {
             break;
           case 'Mesh':
             {
-              const result = this.createMesh(relationships, geometryMap, materialMap, geoInfoMap);
+              const result = this.createMesh(relationships, geometryMap, materialMap, geoInfoMap, id);
 
               model = result.model;
               modelInfoMap[model.name] = result.modelInfo;
@@ -1147,12 +1126,12 @@ export class FBXTreeParser {
 
           break;
         case 1: // Orthographic
-          console.warn('THREE.FBXLoader: Orthographic cameras not supported yet.');
+          // Silently handle unsupported orthographic cameras
           model = new Object3D();
 
           break;
         default:
-          console.warn('THREE.FBXLoader: Unknown camera type ' + type + '.');
+          // Silently handle unknown camera types
           model = new Object3D();
 
           break;
@@ -1287,11 +1266,7 @@ export class FBXTreeParser {
 
           break;
         default:
-          console.warn(
-            'THREE.FBXLoader: Unknown light type '
-            + lightAttribute.LightType?.value
-            + ', defaulting to a PointLight.',
-          );
+          // Silently handle unknown light types, defaulting to PointLight
           model = new PointLight(color, intensity);
 
           break;
@@ -1310,6 +1285,7 @@ export class FBXTreeParser {
     geometryMap: Map<number, BufferGeometry>,
     materialMap: Map<number, MeshPhongMaterial | MeshStandardMaterial | LineBasicMaterial>,
     geoInfoMap: Map<number, BaseInfo>,
+    nodeID?: number,
   ) {
     let model;
     let geometry: BufferGeometry | undefined;
@@ -1322,17 +1298,48 @@ export class FBXTreeParser {
     };
     const materials: (MeshPhongMaterial | MeshStandardMaterial)[] = [];
 
-    // get geometry and materials(s) from connections
-    relationships.children.forEach(child => {
-      if (geometryMap.has(child.ID)) {
-        geometry = geometryMap.get(child.ID);
-        modelInfo = geoInfoMap.get(child.ID) || modelInfo;
+    // get geometry and materials(s) from connections - check parents first, then children
+    relationships.parents.forEach(parent => {
+      if (geometryMap.has(parent.ID) && !geometry) {
+        geometry = geometryMap.get(parent.ID);
+        modelInfo = geoInfoMap.get(parent.ID) || modelInfo;
       }
 
-      if (materialMap.has(child.ID)) {
-        materials.push(materialMap.get(child.ID) as MeshStandardMaterial);
+      if (materialMap.has(parent.ID)) {
+        materials.push(materialMap.get(parent.ID) as MeshStandardMaterial);
       }
     });
+
+    // Then check children only if no geometry found yet
+    if (!geometry) {
+      relationships.children.forEach(child => {
+        // Direct check
+        if (geometryMap.has(child.ID) && !geometry) {
+          geometry = geometryMap.get(child.ID);
+          modelInfo = geoInfoMap.get(child.ID) || modelInfo;
+        }
+
+        if (materialMap.has(child.ID)) {
+          materials.push(materialMap.get(child.ID) as MeshStandardMaterial);
+        }
+
+        // Check if this child has its own children that might be geometry
+        const childConnections = this.context.connections[child.ID];
+
+        if (childConnections && !geometry) {
+          childConnections.children.forEach(grandChild => {
+            if (geometryMap.has(grandChild.ID) && !geometry) {
+              geometry = geometryMap.get(grandChild.ID);
+              modelInfo = geoInfoMap.get(grandChild.ID) || modelInfo;
+            }
+
+            if (materialMap.has(grandChild.ID)) {
+              materials.push(materialMap.get(grandChild.ID) as MeshStandardMaterial);
+            }
+          });
+        }
+      });
+    }
 
     if (materials.length > 1) {
       material = materials;
@@ -1520,7 +1527,7 @@ export class FBXTreeParser {
       throw new Error('Global connections or FBX tree is undefined');
     }
     if ('LookAtProperty' in modelNode) {
-      const children = connections[(model as unknown as { ID: number }).ID].children ?? [];
+      const children = connections[(model as unknown as { ID: number }).ID]?.children ?? [];
 
       children.forEach(function (child) {
         if (child.relationship === 'LookAtProperty') {
@@ -1588,7 +1595,7 @@ export class FBXTreeParser {
     for (const ID in skeletons) {
       const skeleton = skeletons[ID];
 
-      const parents = connections[parseInt(skeleton.ID)].parents || [];
+      const parents = connections[parseInt(skeleton.ID)]?.parents || [];
 
       parents.forEach(function (parent) {
         if (geometryMap.has(parent.ID)) {
