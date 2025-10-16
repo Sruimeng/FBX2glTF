@@ -14,6 +14,11 @@ export interface FBXPoseNode extends FBXNode {
   attrType: string,
   Pose?: Record<string, unknown>,
   Type?: string,
+  NbPoseNodes?: number,
+  PoseNode?: Array<{
+    ID: number,
+    Matrix: number[],
+  }>,
 }
 
 /**

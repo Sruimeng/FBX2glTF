@@ -23,5 +23,9 @@ export interface FBXModelNode extends FBXNode {
   PreRotation?: FBXValue<number[]>,
   PostRotation?: FBXValue<number[]>,
   RotationOrder?: FBXValue<number>,
-  // ... 其他模型属性
+  // Additional transform properties
+  ScalingOffset?: FBXValue<number[]>,
+  ScalingPivot?: FBXValue<number[]>,
+  RotationOffset?: FBXValue<number[]>,
+  RotationPivot?: FBXValue<number[]>,
 }

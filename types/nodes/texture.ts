@@ -17,4 +17,6 @@ export interface FBXTextureNode extends FBXNode {
   Version: number,
   Translation?: FBXValue<number[]>,
   Scaling?: FBXValue<number[]>,
+  WrapModeU?: FBXValue<number>,
+  WrapModeV?: FBXValue<number>,
 }

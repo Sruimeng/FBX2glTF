@@ -18,6 +18,7 @@ export * from './nodes/animation';
 export * from './nodes/pose';
 export * from './nodes/mesh';
 export * from './nodes/bone';
+export * from './nodes/attribute';
 
 // 结构定义
 export * from './tree';

@@ -21,6 +21,12 @@ export interface FBXGeometryNode extends FBXNode {
   LayerElementUV?: FBXLayerElementUV[],
   LayerElementMaterial?: FBXLayerElementMaterial[],
   LayerElementColor?: FBXLayerElementColor[],
+  // Additional properties for special geometry types
+  Indexes?: FBXArrayData,
+  Order?: FBXArrayData,
+  KnotVector?: FBXArrayData,
+  Points?: FBXArrayData,
+  Form?: FBXArrayData,
 }
 
 // --- Layer Elements ---

@@ -16,6 +16,10 @@ export interface FBXValue<T = unknown> {
   type2?: string,
   /** 实际数值 */
   value?: T,
+  /** 数组数据（用于某些特殊情况） */
+  a?: T extends (infer R)[] ? R[] : T,
+  /** 兼容性访问器 */
+  [key: string]: unknown,
 }
 
 /**
@@ -79,4 +83,8 @@ export interface BaseInfo {
   id: number,
   name: string,
   type?: string,
+  polygons?: number,
+  quads?: number,
+  triangles?: number,
+  vertices?: number,
 }

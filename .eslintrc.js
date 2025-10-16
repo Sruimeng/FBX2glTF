@@ -11,7 +11,9 @@ module.exports = {
     jest: true,
   },
   ignorePatterns: [
-    '**/{node_modules,libs}',
+    '**/node_modules/**',
+    '**/libs/**',
+    '**/temp/**',
     '*.js',
     '*.d.ts',
   ],
