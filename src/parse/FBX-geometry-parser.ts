@@ -56,10 +56,20 @@ interface GeoInfo {
   },
 }
 
+interface ModelInfo {
+  id: number,
+  name: string,
+  type?: string,
+  polygons: number,
+  quads: number,
+  triangles: number,
+  vertices: number,
+}
+
 export class GeometryParser {
   private context: ParseContext;
   negativeMaterialIndices: boolean;
-  modelInfo: BaseInfo = {
+  modelInfo: ModelInfo = {
     id: 0,
     name: '',
     polygons: 0,
@@ -632,9 +642,9 @@ export class GeometryParser {
 
     if (faceLength > 3) {
       if (faceLength === 4) {
-        if (this.modelInfo) {this.modelInfo.quads++;}
+        this.modelInfo.quads++;
       } else if (faceLength > 4) {
-        if (this.modelInfo) {this.modelInfo.polygons++;}
+        this.modelInfo.polygons++;
       }
       // Triangulate n-gon using earcut
       const vertices = [];
@@ -666,11 +676,8 @@ export class GeometryParser {
       // That's why, in order to support morphing scenario, "positions" is looking first for baseVertexPositions,
       // so that we don't end up with an array of 0 triangles for the faces not participating in morph.
       triangles = ShapeUtils.triangulateShape(triangulationInput, []);
-    } else if (this.modelInfo) {
-      this.modelInfo.triangles++;
-      // Regular triangle, skip earcut triangulation step
-      triangles = [[0, 1, 2]];
     } else {
+      this.modelInfo.triangles++;
       // Regular triangle, skip earcut triangulation step
       triangles = [[0, 1, 2]];
     }
@@ -893,7 +900,7 @@ export class GeometryParser {
         buffer: [],
         dataSize: 3,
         indices: [],
-        mappingType: 'ByVertex',
+        mappingType: 'ByVertice',
         referenceType: 'Direct',
       };
     }
@@ -929,7 +936,7 @@ export class GeometryParser {
         buffer: [],
         dataSize: 2,
         indices: [],
-        mappingType: 'ByVertex',
+        mappingType: 'ByVertice',
         referenceType: 'Direct',
       };
     }
@@ -965,7 +972,7 @@ export class GeometryParser {
         buffer: [],
         dataSize: 4,
         indices: [],
-        mappingType: 'ByVertex',
+        mappingType: 'ByVertice',
         referenceType: 'Direct',
       };
     }

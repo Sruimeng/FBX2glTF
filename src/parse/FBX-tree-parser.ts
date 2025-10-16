@@ -58,7 +58,6 @@ import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './FBX-geometry-parser';
 
 interface FBXMeshStandardMaterialParameters extends MeshStandardMaterialParameters {
-  reflectivity?: number,
   specularMap?: Texture,
 }
 
@@ -561,7 +560,9 @@ export class FBXTreeParser {
     }
 
     if (materialNode.ReflectionFactor) {
-      parameters.reflectivity = materialNode.ReflectionFactor.value;
+      // MeshStandardMaterial doesn't have reflectivity property, use it for roughness instead
+      // or ignore it as it's not supported in PBR materials
+      // parameters.reflectivity = materialNode.ReflectionFactor.value;
     }
 
     if (materialNode.Shininess?.value) {
