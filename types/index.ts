@@ -15,6 +15,9 @@ export * from './nodes/texture';
 export * from './nodes/video';
 export * from './nodes/light';
 export * from './nodes/animation';
+export * from './nodes/pose';
+export * from './nodes/mesh';
+export * from './nodes/bone';
 
 // 结构定义
 export * from './tree';

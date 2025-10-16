@@ -8,6 +8,7 @@ import {
   FBXTreeFactory,
 } from '../constants';
 import type { FBXTreeNode } from '../../types/shared';
+import type { FBXConnectionType } from '../../types/enums';
 
 // Parse an FBX file in Binary format
 export class BinaryParser {
@@ -16,6 +17,7 @@ export class BinaryParser {
 
   parse (buffer: ArrayBuffer): IFBXTree {
     this.factory = new FBXTreeFactory();
+
     this.connections = [];
 
     const reader = new BinaryReader(buffer);
@@ -61,13 +63,17 @@ export class BinaryParser {
             ID: node.id || 0,
             from: node.propertyList[1] as number,
             to: node.propertyList[2] as number,
-            relationship: node.propertyList[0] as any,
+            relationship: node.propertyList[0] as FBXConnectionType,
           });
         }
 
         break;
+      case 'Objects':
+        // 处理 Objects 节点 - 这个节点包含所有的 FBX 对象
+        // Objects 节点本身不需要添加到 factory，但它的子节点需要
+        break;
       default:
-        // 添加到 Objects
+        // 添加到 Objects 或其他父节点
         if (node.id !== undefined && node.name) {
           this.factory.addObject(node.name, node.id, node);
         }
@@ -134,8 +140,14 @@ export class BinaryParser {
       const subNode = this.parseNode(reader, version);
 
       if (subNode !== null) {
-        // 处理子节点的特殊属性
-        this.processNodeProperties(subNode);
+        // 将子节点附加到当前节点
+        this.parseSubNode(name, node, subNode);
+
+        // 如果子节点不是 Properties70 类型，也需要通过 processNode 处理
+        // 这确保所有对象都被添加到 factory 中
+        if (subNode.name && subNode.name !== 'Properties70') {
+          this.processNode(subNode);
+        }
       }
     }
 
@@ -157,13 +169,7 @@ export class BinaryParser {
     return node;
   }
 
-  // 处理节点特殊属性
-  private processNodeProperties (_subNode: FBXTreeNode): void {
-    // 在新架构中，所有节点处理都通过 processNode 完成
-    // 此方法保留是为了兼容性，实际上不需要额外处理
-  }
-
-  parseSubNode (name: string, node: any, subNode: FBXTreeNode) {
+  parseSubNode (name: string, node: FBXTreeNode, subNode: FBXTreeNode) {
     // special case: child node is single property
     if (subNode.singleProperty === true && subNode.propertyList && subNode.propertyList.length > 0) {
       const value = subNode.propertyList[0];
@@ -176,7 +182,7 @@ export class BinaryParser {
         node[subNode.name as string] = value;
       }
     } else if (name === 'Connections' && subNode.name === 'C') {
-      const array: any[] = [];
+      const array: unknown[] = [];
       const propertyDef = subNode.propertyList as [string, number, number | string];
 
       propertyDef.forEach(property => {
@@ -186,11 +192,11 @@ export class BinaryParser {
         }
       });
 
-      if (node.connections === undefined) {
-        node.connections = [];
+      if ((node as Record<string, unknown>).connections === undefined) {
+        (node as Record<string, unknown>).connections = [];
       }
 
-      node.connections.push(array);
+      ((node as Record<string, unknown>).connections as unknown[]).push(array);
     } else if (subNode.name === 'Properties70') {
       const keys = Object.keys(subNode);
 
@@ -237,8 +243,7 @@ export class BinaryParser {
       };
     } else if (node[subNode.name as string] === undefined) {
       if (typeof subNode.id === 'number') {
-        node[subNode.name as string] = {};
-        ((node as Record<string, unknown>)[subNode.name!] as Record<number, unknown>)[subNode.id] = subNode;
+        node[subNode.name as string] = subNode;
       } else {
         node[subNode.name as string] = subNode;
       }

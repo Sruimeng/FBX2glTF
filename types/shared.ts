@@ -71,3 +71,12 @@ export interface FBXTreeNode {
   /** 可扩展字段 */
   [key: string]: unknown,
 }
+
+/**
+ * FBX 节点基础信息
+ */
+export interface BaseInfo {
+  id: number,
+  name: string,
+  type?: string,
+}

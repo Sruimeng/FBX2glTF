@@ -42,7 +42,7 @@ class FBXLoader extends Loader<ModelLoaderResult> {
   constructor (options?: LoaderOptions) {
     const { manager } = options || {};
 
-    super(manager);
+    super(manager as any);
   }
 
   /**
@@ -125,7 +125,7 @@ class FBXLoader extends Loader<ModelLoaderResult> {
 
     const context = {
       fbxTree: global.fbxTree,
-      connections: global.connections,
+      connections: (global.fbxTree as any).connections || global.connections,
       sceneGraph: new Group(),
     };
 

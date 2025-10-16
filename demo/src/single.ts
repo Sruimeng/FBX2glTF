@@ -62,19 +62,23 @@ export function init () {
 function loadFBXModel () {
   const loader = new FBXLoader().setPath('../assets/models/fbx/');
 
-  loader.load('frog.fbx', function (info: { scene: Group, scale: { setScalar: (arg0: number) => void }, animations: AnimationClip[] } | Group) {
-    const { scene } = info as { scene: Group, scale: { setScalar: (arg0: number) => void }, animations: AnimationClip[] };
-    // 缩放模型
-    // scene.scale.setScalar(0.01);
+  loader.load('frog.fbx', function (result) {
+    console.log('FBX加载结果:', result);
+
+    const { scene: fbxScene, animations } = result;
+
+    // 将加载的场景添加到主场景
+    fbxScene.updateMatrixWorld();
+    scene.add(fbxScene);
 
     // 创建动画混合器
-    mixer = new AnimationMixer(scene);
+    mixer = new AnimationMixer(fbxScene);
 
     // 处理动画剪辑
-    if (scene.animations && scene.animations.length > 0) {
-      console.info(`发现 ${scene.animations.length} 个动画:`);
+    if (animations && animations.length > 0) {
+      console.info(`发现 ${animations.length} 个动画:`);
 
-      scene.animations.forEach((clip: AnimationClip, index: number) => {
+      animations.forEach((clip: AnimationClip, index: number) => {
         console.info(`动画 ${index}: ${clip.name}, 持续时间: ${clip.duration}s`);
 
         // 创建动画动作

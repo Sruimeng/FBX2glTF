@@ -6,6 +6,7 @@
 import type { Bone, Matrix4, Group } from 'three';
 import type { IFBXTree, FBXNode, FBXHeaderExtension, FBXGlobalSettings, FBXDocuments, FBXDefinitions, FBXObjects } from './index';
 import type { FBXConnection, FBXConnectionNode } from './connections';
+import type { FBXTreeNode } from './shared';
 
 /**
  * 变形器相关类型
@@ -98,15 +99,23 @@ export class FBXTreeFactory {
   private connections: FBXConnection[] = [];
 
   // 设置头信息
-  setHeader (header: FBXHeaderExtension): FBXTreeFactory {
-    this.tree.FBXHeaderExtension = header;
+  setHeader (header: FBXHeaderExtension | FBXTreeNode): FBXTreeFactory {
+    // 确保 header 有 name 属性
+    if (header && !header.name) {
+      header.name = 'FBXHeaderExtension';
+    }
+    this.tree.FBXHeaderExtension = header as FBXHeaderExtension;
 
     return this;
   }
 
   // 设置全局设置
-  setGlobalSettings (settings: FBXGlobalSettings): FBXTreeFactory {
-    this.tree.GlobalSettings = settings;
+  setGlobalSettings (settings: FBXGlobalSettings | FBXTreeNode): FBXTreeFactory {
+    // 确保 settings 有 name 属性
+    if (settings && !settings.name) {
+      settings.name = 'GlobalSettings';
+    }
+    this.tree.GlobalSettings = settings as FBXGlobalSettings;
 
     return this;
   }
@@ -185,7 +194,7 @@ export class FBXTreeFactory {
       singleProperty: false,
     };
 
-    return {
+    const fbxTree: IFBXTree = {
       FBXHeaderExtension: this.tree.FBXHeaderExtension || defaultHeader,
       FileId: this.tree.FileId || defaultNode,
       CreationTime: this.tree.CreationTime || defaultNode,
@@ -195,6 +204,11 @@ export class FBXTreeFactory {
       Definitions: this.tree.Definitions || defaultDefinitions,
       Objects: this.tree.Objects || defaultObjects,
     };
+
+    // 将连接关系附加到全局 context 中
+    (fbxTree as any).connections = this.connectionsMap || {};
+
+    return fbxTree;
   }
 
   private processConnections (): void {
@@ -243,5 +257,5 @@ export class FBXTreeFactory {
  * 加载器选项
  */
 export interface LoaderOptions {
-  manager?: unknown, // THREE.LoadingManager
+  manager?: unknown, // THREE.LoadingManager | undefined
 }
