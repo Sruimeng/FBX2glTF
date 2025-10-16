@@ -1,5 +1,5 @@
 import type { Camera, Group, Texture, AnimationClip, AnimationAction } from 'three';
-import { AnimationMixer, Clock } from 'three';
+import { AnimationMixer, Clock, AmbientLight, DirectionalLight } from 'three';
 import { ACESFilmicToneMapping, EquirectangularReflectionMapping, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
@@ -24,12 +24,22 @@ export function init () {
   // 初始化时钟，用于动画计时
   clock = new Clock();
 
+  // 添加基础光照以调试模型显示问题
+  const ambientLight = new AmbientLight(0xffffff, 1.5);
+  scene.add(ambientLight);
+
+  const directionalLight = new DirectionalLight(0xffffff, 2);
+  directionalLight.position.set(5, 10, 7.5);
+  scene.add(directionalLight);
+
+  console.log('已添加基础光照到场景');
+
   // 初始化渲染器
   renderer = new WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1;
+  renderer.toneMappingExposure = 2; // 增加曝光以避免模型过暗
   container!.appendChild(renderer.domElement);
 
   // 设置控制器
@@ -66,6 +76,39 @@ function loadFBXModel () {
     console.log('FBX加载结果:', result);
 
     const { scene: fbxScene, animations } = result;
+
+    // 详细调试FBX场景内容
+    console.log('FBX场景子节点数量:', fbxScene.children.length);
+    fbxScene.traverse((child) => {
+      console.log('子节点:', {
+        name: child.name,
+        type: child.type,
+        isMesh: child.isMesh,
+        isGroup: child.isGroup,
+        hasMaterial: !!child.material,
+        materialType: child.material?.type,
+        hasGeometry: !!child.geometry,
+        geometryType: child.geometry?.type,
+        vertexCount: child.geometry?.attributes?.position?.count
+      });
+
+      if (child.isMesh && child.material) {
+        console.log('材质详情:', {
+          type: child.material.type,
+          color: child.material.color?.getHexString?.(),
+          metalness: child.material.metalness,
+          roughness: child.material.roughness,
+          envMapIntensity: child.material.envMapIntensity,
+          emissive: child.material.emissive?.getHexString?.(),
+          transparent: child.material.transparent,
+          opacity: child.material.opacity
+        });
+
+        // 确保材质能正确响应环境光
+        child.material.envMapIntensity = child.material.envMapIntensity || 1;
+        child.material.needsUpdate = true;
+      }
+    });
 
     // 将加载的场景添加到主场景
     fbxScene.updateMatrixWorld();

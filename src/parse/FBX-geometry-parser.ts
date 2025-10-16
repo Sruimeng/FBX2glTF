@@ -633,8 +633,8 @@ export class GeometryParser {
     if (faceLength > 3) {
       if (faceLength === 4) {
         if (this.modelInfo) {this.modelInfo.quads++;}
-      } else if (this.modelInfo) {
-        this.modelInfo.polygons++;
+      } else if (faceLength > 4) {
+        if (this.modelInfo) {this.modelInfo.polygons++;}
       }
       // Triangulate n-gon using earcut
       const vertices = [];
@@ -666,8 +666,11 @@ export class GeometryParser {
       // That's why, in order to support morphing scenario, "positions" is looking first for baseVertexPositions,
       // so that we don't end up with an array of 0 triangles for the faces not participating in morph.
       triangles = ShapeUtils.triangulateShape(triangulationInput, []);
+    } else if (this.modelInfo) {
+      this.modelInfo.triangles++;
+      // Regular triangle, skip earcut triangulation step
+      triangles = [[0, 1, 2]];
     } else {
-      if (this.modelInfo) {this.modelInfo.triangles++;}
       // Regular triangle, skip earcut triangulation step
       triangles = [[0, 1, 2]];
     }
@@ -901,10 +904,12 @@ export class GeometryParser {
     let indexBuffer: number[] = [];
 
     if (referenceType as string === 'IndexToDirect') {
-      if (NormalNode.NormalIndex && typeof NormalNode.NormalIndex === 'object' && 'a' in NormalNode.NormalIndex && NormalNode.NormalIndex.a) {
-        indexBuffer = NormalNode.NormalIndex.a as number[];
-      } else if (NormalNode.NormalsIndex && typeof NormalNode.NormalsIndex === 'object' && 'a' in NormalNode.NormalsIndex && NormalNode.NormalsIndex.a) {
-        indexBuffer = NormalNode.NormalsIndex.a as number[];
+      const normalNode = NormalNode as any;
+
+      if (normalNode.NormalIndex && typeof normalNode.NormalIndex === 'object' && 'a' in normalNode.NormalIndex && normalNode.NormalIndex.a) {
+        indexBuffer = normalNode.NormalIndex.a as number[];
+      } else if (normalNode.NormalsIndex && typeof normalNode.NormalsIndex === 'object' && 'a' in normalNode.NormalsIndex && normalNode.NormalsIndex.a) {
+        indexBuffer = normalNode.NormalsIndex.a as number[];
       }
     }
 
