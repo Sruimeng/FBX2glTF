@@ -7,9 +7,9 @@ import * as THREE from 'three';
 import type {
   IParsingContext,
   IParser,
-  BaseParser,
   ParserMetadata
 } from '../types/core';
+import { BaseParser } from '../types/core';
 import type {
   DeformerParserInput,
   DeformerParserOutput,
@@ -156,18 +156,18 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
     }
 
     // 解析集群数据
-    const skinWeightData = this.parseClusters(clusters, boneNodes);
+    const skinWeights = this.parseClusters(clusters, boneNodes);
 
     // 创建骨骼数组
-    const bones = this.createBonesArray(skinWeightData, boneNodes);
+    const bones = this.createBonesArray(skinWeights, boneNodes);
 
     // 创建骨骼逆矩阵数组
-    const boneInverses = this.createBoneInverseMatrices(skinWeightData, boneNodes);
+    const boneInverses = this.createBoneInverseMatrices(skinWeights, boneNodes);
 
     return {
       bones,
       boneInverses,
-      skinWeightData
+      skinWeights
     };
   }
 
@@ -232,7 +232,7 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
     }
 
     if (indexData.a && Array.isArray(indexData.a)) {
-      return indexData.a.map(idx => typeof idx === 'number' ? idx : parseInt(idx, 10));
+      return indexData.a.map((idx: any) => typeof idx === 'number' ? idx : parseInt(idx, 10));
     }
 
     this.log(`无法解析索引数据: ${JSON.stringify(indexData)}`, 'warn');
@@ -250,7 +250,7 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
     }
 
     if (weightData.a && Array.isArray(weightData.a)) {
-      return weightData.a.map(w => typeof w === 'number' ? w : parseFloat(w));
+      return weightData.a.map((w: any) => typeof w === 'number' ? w : parseFloat(w));
     }
 
     this.log(`无法解析权重数据: ${JSON.stringify(weightData)}`, 'warn');
@@ -348,12 +348,12 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
    * 创建骨骼数组
    */
   private createBonesArray(
-    skinWeightData: SkinWeightData[],
+    skinWeights: SkinWeightData[],
     boneNodes: Map<number, THREE.Bone>
   ): THREE.Bone[] {
     const boneIds = new Set<number>();
 
-    skinWeightData.forEach(weightData => {
+    skinWeights.forEach(weightData => {
       weightData.boneIndices.forEach(boneId => boneIds.add(boneId));
     });
 
@@ -372,12 +372,12 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
    * 创建骨骼逆矩阵数组
    */
   private createBoneInverseMatrices(
-    skinWeightData: SkinWeightData[],
+    skinWeights: SkinWeightData[],
     boneNodes: Map<number, THREE.Bone>
   ): THREE.Matrix4[] {
     const boneIds = new Set<number>();
 
-    skinWeightData.forEach(weightData => {
+    skinWeights.forEach(weightData => {
       weightData.boneIndices.forEach(boneId => boneIds.add(boneId));
     });
 
@@ -401,7 +401,7 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
     return {
       bones: [],
       boneInverses: [],
-      skinWeightData: []
+      skinWeights: []
     };
   }
 
@@ -418,8 +418,8 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
 
     const blendShapeChannels: BlendShapeChannelData[] = channels.map((channel, index) => {
       const channelName = channel.DeformerName?.value || `BlendShape_${index}`;
-      const fullWeights = this.parseWeightData(channel.FullWeights);
-      const defaultWeights = this.parseWeightData(channel.DefaultWeights);
+      const fullWeights = this.parseWeightData((channel as any).FullWeights);
+      const defaultWeights = this.parseWeightData((channel as any).DefaultWeights);
 
       return {
         name: channelName,
@@ -458,21 +458,21 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
     deformerNode: FBXDeformerNode,
     deformerData: DeformerData
   ): DeformerMetadata {
-    const type = deformerData.type === 'skin' ? 'skin' :
-                 deformerData.type === 'blendshape' ? 'blendshape' : 'cache';
+    const type = (deformerData as any).type === 'skin' ? 'skin' :
+                 (deformerData as any).type === 'blendshape' ? 'blendshape' : 'cache';
 
     let vertexCount = 0;
     let totalWeight = 0;
     let isValid = true;
 
-    if (deformerData.type === 'skin') {
+    if ((deformerData as any).type === 'skin') {
       const skinData = deformerData as SkinData;
-      vertexCount = skinData.skinWeightData.length;
-      totalWeight = skinData.skinWeightData.reduce(
+      vertexCount = skinData.skinWeights?.length || 0;
+      totalWeight = (skinData.skinWeights || []).reduce(
         (sum, weightData) => sum + weightData.weights.reduce((s, w) => s + w, 0), 0
       );
       isValid = skinData.bones.length > 0 && vertexCount > 0;
-    } else if (deformerData.type === 'blendshape') {
+    } else if ((deformerData as any).type === 'blendshape') {
       const blendData = deformerData as BlendShapeData;
       vertexCount = 0; // 将在几何解析阶段确定
       totalWeight = blendData.channels.reduce((sum, channel) => sum + channel.weight, 0);

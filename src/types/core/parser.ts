@@ -6,6 +6,9 @@
 import type * as THREE from 'three';
 import type { IFBXTree, FBXConnectionNode } from './fbx-types';
 
+// Re-export commonly needed types
+export type { IFBXTree, FBXConnectionNode } from './fbx-types';
+
 // 解析器结果类型
 export interface ModelLoaderResult {
   scene: THREE.Group;

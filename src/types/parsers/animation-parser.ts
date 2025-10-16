@@ -4,7 +4,10 @@
  */
 
 import type * as THREE from 'three';
-import type { FBXNode, FBXValue, FBXAnimationCurve, FBXKeyframe } from '../core/fbx-types';
+import type { FBXNode, FBXValue, FBXKeyframe, FBXAnimationCurve } from '../core/fbx-types';
+
+// Re-export for convenience
+export type { FBXAnimationCurve } from '../core/fbx-types';
 
 /**
  * FBX 动画曲线节点接口
@@ -24,25 +27,6 @@ export interface FBXAnimationCurveNode extends FBXNode {
   curves?: Map<string, FBXAnimationCurve>;
 }
 
-/**
- * FBX 动画曲线接口
- */
-export interface FBXAnimationCurve extends FBXNode {
-  /** 动画曲线类型 */
-  Type: 'AnimationCurve';
-  /** 版本 */
-  Version: number;
-  /** 关键帧时间 */
-  KeyTime?: FBXArrayData;
-  /** 关键帧值 */
-  KeyValueFloat?: FBXArrayData;
-  /** 关键帧属性 */
-  KeyAttrFlags?: FBXArrayData;
-  /** 关键帧属性数据 */
-  KeyAttrDataFloat?: FBXArrayData;
-  /** 曲线属性 */
-  KeyAttrRefCount?: FBXArrayData;
-}
 
 /**
  * FBX 动画层节点接口
@@ -92,8 +76,8 @@ export interface FBXPoseNode extends FBXNode {
   Version: number;
   /** 姿势名称 */
   PoseName?: FBXValue<string>;
-  /** 姿势类型 */
-  Type?: FBXValue<string>;
+  /** 姿势子类型 */
+  PoseType?: FBXValue<string>;
   /** 姿势节点 */
   PoseNode?: FBXPoseNodeData[];
 }
@@ -150,12 +134,14 @@ export interface AnimationTrackData {
   name: string;
   /** 轨道类型 */
   type: 'position' | 'rotation' | 'scale' | 'morphTargetInfluences' | 'other';
+  /** 轴向（可选） */
+  axis?: 'x' | 'y' | 'z';
   /** 关键帧时间数组 */
   times: number[];
   /** 关键帧值数组 */
   values: number[];
   /** 插值类型 */
-  interpolation?: THREE.InterpolateModes;
+  interpolation?: number;
   /** 目标对象 */
   target?: THREE.Object3D;
 }
@@ -193,7 +179,7 @@ export interface AnimationParserConfig {
   /** 是否自动生成插值 */
   generateInterpolation?: boolean;
   /** 默认插值类型 */
-  defaultInterpolation?: THREE.InterpolateModes;
+  defaultInterpolation?: number;
   /** 是否强制使用线性插值 */
   forceLinearInterpolation?: boolean;
   /** 是否启用循环 */

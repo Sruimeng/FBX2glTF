@@ -44,7 +44,7 @@ export class ParsingContext implements IParsingContext {
    * @template T 节点类型
    */
   getNodeById<T>(id: number): T | undefined {
-    return this._fbxTree.Objects?.[id] as T;
+    return this._fbxTree.objects?.[id] as T;
   }
 
   /**
@@ -68,7 +68,7 @@ export class ParsingContext implements IParsingContext {
     }
 
     const nodes = new Map<number, T>();
-    const objects = this._fbxTree.Objects;
+    const objects = this._fbxTree.objects;
 
     if (!objects) {
       this._cache.set(cacheKey, nodes);
@@ -105,7 +105,7 @@ export class ParsingContext implements IParsingContext {
    * 检查节点是否存在
    */
   hasNode(id: number): boolean {
-    return !!this._fbxTree.Objects?.[id];
+    return !!this._fbxTree.objects?.[id];
   }
 
   /**
@@ -153,8 +153,13 @@ export class ParsingContext implements IParsingContext {
    * 获取上下文摘要信息
    */
   getSummary(): {
+    totalNodes: number;
+    totalConnections: number;
+    cachedItems: number;
+    hasLoadingManager: boolean;
+  } {
     return {
-      totalNodes: Object.keys(this._fbxTree.Objects || {}).length,
+      totalNodes: Object.keys(this._fbxTree.objects || {}).length,
       totalConnections: this._connections.size,
       cachedItems: this._cache.size,
       hasLoadingManager: !!this._loadingManager

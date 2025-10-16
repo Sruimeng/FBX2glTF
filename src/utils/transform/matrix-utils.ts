@@ -20,10 +20,13 @@ export namespace MatrixUtils {
     scale: THREE.Vector3;
   } {
     const position = new THREE.Vector3();
-    const rotation = new THREE.Euler();
+    const quaternion = new THREE.Quaternion();
     const scale = new THREE.Vector3();
 
-    matrix.decompose(position, rotation, scale);
+    matrix.decompose(position, quaternion, scale);
+
+    // Convert quaternion to Euler
+    const rotation = new THREE.Euler().setFromQuaternion(quaternion);
 
     return { position, rotation, scale };
   }

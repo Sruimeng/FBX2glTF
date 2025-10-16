@@ -7,9 +7,9 @@ import * as THREE from 'three';
 import type {
   IParsingContext,
   IParser,
-  BaseParser,
   ParserMetadata
 } from '../types/core';
+import { BaseParser } from '../types/core';
 import type {
   AnimationParserInput,
   AnimationParserOutput,
@@ -46,9 +46,9 @@ enum FBXAnimationProperty {
 interface AnimationCurveData {
   times: number[];
   values: number[];
-  interpolationType: THREE.InterpolateModes;
-  preInfinity: THREE.InterpolationModes;
-  postInfinity: THREE.InterpolationModes;
+  interpolationType: number;
+  preInfinity: number;
+  postInfinity: number;
 }
 
 /**
@@ -259,23 +259,16 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
    * 提取曲线数据
    */
   private extractCurveData(curve: FBXAnimationCurve): AnimationCurveData {
-    const keyTimes = curve.KeyTime?.a || [];
-    const keyValues = curve.KeyValueFloat?.a || [];
-    const keyFlags = curve.KeyAttrFlags?.a || [];
-    const keyData = curve.KeyAttrDataFloat?.a || [];
-
-    if (keyTimes.length === 0 || keyValues.length === 0) {
+    if (!curve.keys || curve.keys.length === 0) {
       return this.createEmptyCurveData();
     }
 
-    // 解析时间（FBX 时间通常是 46186158000 的偏移）
-    const times = keyTimes.map(time => (time - 46186158000) / 46186158000);
-
-    // 解析值
-    const values = keyValues;
+    // 从关键帧数组中提取时间和值
+    const times = curve.keys.map(key => key.time);
+    const values = curve.keys.map(key => Array.isArray(key.value) ? key.value[0] : key.value);
 
     // 解析插值类型
-    const interpolationType = this.parseInterpolationType(keyFlags, keyData);
+    const interpolationType = this.parseInterpolationTypeFromCurve(curve);
 
     return {
       times,
@@ -448,9 +441,26 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   }
 
   /**
+   * 从曲线解析插值类型
+   */
+  private parseInterpolationTypeFromCurve(curve: FBXAnimationCurve): number {
+    switch (curve.interpolationType?.toLowerCase()) {
+      case 'linear':
+        return THREE.InterpolateLinear;
+      case 'cubic':
+        return THREE.InterpolateSmooth;
+      case 'step':
+      case 'discrete':
+        return THREE.InterpolateDiscrete;
+      default:
+        return this.config.defaultInterpolation!;
+    }
+  }
+
+  /**
    * 解析插值类型
    */
-  private parseInterpolationType(keyFlags?: number[], keyData?: number[]): THREE.InterpolateModes {
+  private parseInterpolationType(keyFlags?: number[], keyData?: number[]): number {
     if (!keyFlags || keyFlags.length === 0) {
       return this.config.defaultInterpolation!;
     }
@@ -461,7 +471,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
       case 1: // 线性插值
         return THREE.InterpolateLinear;
       case 2: // 立方插值
-        return THREE.InterpolateCubic;
+        return THREE.InterpolateSmooth;
       case 3: // 步进插值
         return THREE.InterpolateDiscrete;
       default:
@@ -742,7 +752,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 验证动画堆栈节点
    */
-  protected validateInput(input: AnimationParserInput): void {
+  protected override validateInput(input: AnimationParserInput): void {
     super.validateInput(input);
 
     if (!input.animationStackNode) {

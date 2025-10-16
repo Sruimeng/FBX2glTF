@@ -642,9 +642,9 @@ export class GeometryParser {
 
     if (faceLength > 3) {
       if (faceLength === 4) {
-        this.modelInfo.quads++;
+        if (this.modelInfo) this.modelInfo.quads++;
       } else if (faceLength > 4) {
-        this.modelInfo.polygons++;
+        if (this.modelInfo) this.modelInfo.polygons++;
       }
       // Triangulate n-gon using earcut
       const vertices = [];
@@ -677,7 +677,7 @@ export class GeometryParser {
       // so that we don't end up with an array of 0 triangles for the faces not participating in morph.
       triangles = ShapeUtils.triangulateShape(triangulationInput, []);
     } else {
-      this.modelInfo.triangles++;
+      if (this.modelInfo) this.modelInfo.triangles++;
       // Regular triangle, skip earcut triangulation step
       triangles = [[0, 1, 2]];
     }
