@@ -10,6 +10,74 @@ let camera: PerspectiveCamera, scene: Scene, renderer: WebGLRenderer;
 let mixer: AnimationMixer;
 let clock: Clock;
 const animationActions: AnimationAction[] = [];
+let currentFBXModel: Group | null = null;
+
+// 模型配置
+const MODEL_CONFIG = {
+  'frog.fbx': {
+    name: '青蛙',
+    description: 'FBX 青蛙模型，带材质贴图',
+    scale: 1.0,
+    position: { x: 0, y: 0, z: 0 },
+  },
+  'Samba Dancing.fbx': {
+    name: '森巴舞',
+    description: 'Mixamo 动画 - 森巴舞蹈',
+    scale: 0.01,
+    position: { x: 0, y: 0, z: 0 },
+  },
+  'mixamo.fbx': {
+    name: 'Mixamo 角色',
+    description: 'Mixamo 动画角色',
+    scale: 0.01,
+    position: { x: 0, y: 0, z: 0 },
+  },
+  'monkey.fbx': {
+    name: '猴子头',
+    description: '经典的猴子头模型',
+    scale: 1.0,
+    position: { x: 0, y: 0, z: 0 },
+  },
+  'monkey_embedded_texture.fbx': {
+    name: '猴子头 (带贴图)',
+    description: '带内置贴图的猴子头模型',
+    scale: 1.0,
+    position: { x: 0, y: 0, z: 0 },
+  },
+  'stanford-bunny.fbx': {
+    name: '斯坦福兔子',
+    description: '经典的斯坦福兔子模型',
+    scale: 0.01,
+    position: { x: 0, y: 0, z: 0 },
+  },
+  'morph_test.fbx': {
+    name: '变形测试',
+    description: '变形目标测试模型',
+    scale: 1.0,
+    position: { x: 0, y: 0, z: 0 },
+  },
+  'vCube.fbx': {
+    name: '立方体',
+    description: '简单的立方体模型',
+    scale: 1.0,
+    position: { x: 0, y: 0, z: 0 },
+  },
+  'nurbs.fbx': {
+    name: 'NURBS 曲面',
+    description: 'NURBS 曲面模型',
+    scale: 1.0,
+    position: { x: 0, y: 0, z: 0 },
+  },
+  'frogtexutre.fbx': {
+    name: '青蛙 (纹理)',
+    description: '带纹理贴图的青蛙模型',
+    scale: 1.0,
+    position: { x: 0, y: 0, z: 0 },
+  },
+};
+
+// 当前选中的模型
+let currentModelName = 'frog.fbx';
 
 init();
 animate(); // 使用 animate 替代 render
@@ -85,6 +153,9 @@ export function init () {
   // 进行一次初始渲染以确认场景正常
   render();
 
+  // 创建 UI 控制面板
+  createModelSelector();
+
   // 加载环境贴图
   new RGBELoader()
     .setPath('../assets/textures/equirectangular/')
@@ -98,27 +169,222 @@ export function init () {
       render();
 
       // 加载 FBX 模型
-      loadFBXModel();
+      loadFBXModel(currentModelName);
     }, undefined, function (error: any) {
       console.warn('环境贴图加载失败，使用纯色背景:', error);
       // 即使环境贴图加载失败，也继续加载 FBX 模型
-      loadFBXModel();
+      loadFBXModel(currentModelName);
     });
 }
 
-function loadFBXModel () {
-  try {
-    // 检查模型文件路径
-    const modelPath = '../assets/models/fbx/frog.fbx';
+// 创建模型选择器 UI
+function createModelSelector () {
+  // 创建控制面板容器
+  const panel = document.createElement('div');
 
-    console.log('尝试加载模型文件:', modelPath);
+  panel.id = 'model-selector-panel';
+  panel.style.cssText = `
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    font-family: Arial, sans-serif;
+    z-index: 1000;
+    min-width: 250px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  `;
+
+  // 标题
+  const title = document.createElement('h3');
+
+  title.textContent = '模型选择器';
+  title.style.cssText = `
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+  `;
+  panel.appendChild(title);
+
+  // 模型选择下拉框
+  const selectContainer = document.createElement('div');
+
+  selectContainer.style.marginBottom = '15px';
+
+  const label = document.createElement('label');
+
+  label.textContent = '选择模型:';
+  label.style.display = 'block';
+  label.style.marginBottom = '5px';
+  label.style.fontSize = '14px';
+  selectContainer.appendChild(label);
+
+  const select = document.createElement('select');
+
+  select.id = 'model-select';
+  select.style.cssText = `
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    background: #333;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+  `;
+
+  // 添加模型选项
+  Object.entries(MODEL_CONFIG).forEach(([filename, config]) => {
+    const option = document.createElement('option');
+
+    option.value = filename;
+    option.textContent = config.name;
+    option.selected = filename === currentModelName;
+    select.appendChild(option);
+  });
+
+  select.addEventListener('change', event => {
+    const selectedModel = (event.target as HTMLSelectElement).value;
+
+    if (selectedModel !== currentModelName) {
+      currentModelName = selectedModel;
+      loadFBXModel(currentModelName);
+    }
+  });
+
+  selectContainer.appendChild(select);
+  panel.appendChild(selectContainer);
+
+  // 模型信息显示
+  const infoContainer = document.createElement('div');
+
+  infoContainer.id = 'model-info';
+  infoContainer.style.cssText = `
+    font-size: 12px;
+    color: #ccc;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    min-height: 40px;
+  `;
+
+  const currentConfig = MODEL_CONFIG[currentModelName as keyof typeof MODEL_CONFIG];
+
+  infoContainer.innerHTML = `
+    <strong>${currentConfig.name}</strong><br>
+    ${currentConfig.description}
+  `;
+
+  panel.appendChild(infoContainer);
+
+  // 加载状态
+  const statusContainer = document.createElement('div');
+
+  statusContainer.id = 'loading-status';
+  statusContainer.style.cssText = `
+    font-size: 12px;
+    color: #4CAF50;
+    margin-bottom: 10px;
+  `;
+  statusContainer.textContent = '就绪';
+  panel.appendChild(statusContainer);
+
+  // 操作按钮
+  const buttonContainer = document.createElement('div');
+
+  buttonContainer.style.cssText = `
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+  `;
+
+  const reloadButton = document.createElement('button');
+
+  reloadButton.textContent = '重新加载';
+  reloadButton.style.cssText = `
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    background: #2196F3;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  `;
+  reloadButton.addEventListener('click', () => loadFBXModel(currentModelName));
+  reloadButton.addEventListener('mouseenter', () => reloadButton.style.background = '#1976D2');
+  reloadButton.addEventListener('mouseleave', () => reloadButton.style.background = '#2196F3');
+  buttonContainer.appendChild(reloadButton);
+
+  panel.appendChild(buttonContainer);
+
+  // 添加到页面
+  document.body.appendChild(panel);
+
+  // 更新模型信息函数
+  (window as any).updateModelInfo = (modelName: string) => {
+    const config = MODEL_CONFIG[modelName as keyof typeof MODEL_CONFIG];
+    const infoElement = document.getElementById('model-info');
+
+    if (infoElement && config) {
+      infoElement.innerHTML = `<strong>${config.name}</strong><br>${config.description}`;
+    }
+  };
+
+  // 更新加载状态函数
+  (window as any).updateLoadingStatus = (status: string, isError: boolean = false) => {
+    const statusElement = document.getElementById('loading-status');
+
+    if (statusElement) {
+      statusElement.textContent = status;
+      statusElement.style.color = isError ? '#f44336' : '#4CAF50';
+    }
+  };
+}
+
+function loadFBXModel (modelName: string = currentModelName) {
+  try {
+    // 清理当前模型
+    if (currentFBXModel) {
+      scene.remove(currentFBXModel);
+
+      // 清理动画混合器
+      if (mixer) {
+        mixer.stopAllAction();
+        mixer.uncacheRoot(currentFBXModel);
+      }
+
+      // 清理动画动作数组
+      animationActions.length = 0;
+
+      currentFBXModel = null;
+      console.log('已清理当前模型');
+    }
+
+    // 更新 UI 状态
+    if ((window as any).updateLoadingStatus) {
+      (window as any).updateLoadingStatus('正在加载模型...');
+    }
+
+    // 检查模型配置
+    const modelConfig = MODEL_CONFIG[modelName as keyof typeof MODEL_CONFIG];
+
+    if (!modelConfig) {
+      throw new Error(`未找到模型配置: ${modelName}`);
+    }
+
+    const modelPath = `../assets/models/fbx/${modelName}`;
+
+    console.log(`🔄 开始加载模型: ${modelConfig.name} (${modelPath})`);
 
     const loader = new FBXLoaderRefactored();
 
-    console.log('开始加载 FBX 模型...');
-
-    loader.load('../assets/models/fbx/frog.fbx', function (fbxResult) {
-      console.log('🐸 🎉 FBX模型加载成功!', fbxResult);
+    loader.load(modelPath, function (fbxResult) {
+      console.log(`🎉 模型加载成功: ${modelConfig.name}!`, fbxResult);
 
       // 从 ModelLoaderResult 中获取 scene 和 animations
       const fbxScene = fbxResult.scene;
@@ -174,9 +440,14 @@ function loadFBXModel () {
         }
       });
 
-      // 将加载的场景添加到主场景
+      // 应用模型配置（缩放和位置）
+      fbxScene.scale.setScalar(modelConfig.scale);
+      fbxScene.position.set(modelConfig.position.x, modelConfig.position.y, modelConfig.position.z);
       fbxScene.updateMatrixWorld();
+
+      // 将加载的场景添加到主场景
       scene.add(fbxScene);
+      currentFBXModel = fbxScene;
 
       // 创建动画混合器
       mixer = new AnimationMixer(fbxScene);
@@ -202,12 +473,23 @@ function loadFBXModel () {
         console.info('该模型没有动画数据');
       }
 
+      // 更新 UI 状态
+      if ((window as any).updateLoadingStatus) {
+        (window as any).updateLoadingStatus(`模型加载完成: ${modelConfig.name}`);
+      }
+
       render();
     },
     // 加载进度回调
     function (progress: ProgressEvent) {
       if (progress.lengthComputable) {
-        console.info('加载进度:', (progress.loaded / progress.total * 100) + '%');
+        const percent = Math.round(progress.loaded / progress.total * 100);
+
+        console.info('加载进度:', percent + '%');
+
+        if ((window as any).updateLoadingStatus) {
+          (window as any).updateLoadingStatus(`加载中: ${percent}%`);
+        }
       }
     },
     // 错误回调
@@ -215,6 +497,12 @@ function loadFBXModel () {
       console.error('加载 FBX 模型时出错:', error);
       console.error('错误详情:', error.message || error);
       console.error('错误堆栈:', error.stack);
+
+      // 更新 UI 状态
+      if ((window as any).updateLoadingStatus) {
+        (window as any).updateLoadingStatus(`加载失败: ${error.message || error}`, true);
+      }
+
       // 尝试创建一个默认的几何体作为占位符
       createDefaultGeometry();
     });
