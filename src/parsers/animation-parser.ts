@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import type {
   IParsingContext,
   IParser,
-  ParserMetadata
+  ParserMetadata,
 } from '../types/core';
 import { BaseParser } from '../types/core';
 import type {
@@ -15,14 +15,14 @@ import type {
   AnimationParserOutput,
   AnimationTrackData,
   AnimationMetadata,
-  AnimationParserConfig
+  AnimationParserConfig,
 } from '../types/parsers/animation-parser';
 import type {
   FBXAnimationStackNode,
   FBXAnimationLayerNode,
   FBXAnimationCurveNode,
   FBXAnimationCurve,
-  FBXPoseNode
+  FBXPoseNode,
 } from '../types/parsers/animation-parser';
 import { ArrayUtils } from '../utils/data/array-utils';
 import { MatrixUtils } from '../utils/transform/matrix-utils';
@@ -44,11 +44,11 @@ enum FBXAnimationProperty {
  * 动画曲线数据
  */
 interface AnimationCurveData {
-  times: number[];
-  values: number[];
-  interpolationType: number;
-  preInfinity: number;
-  postInfinity: number;
+  times: number[],
+  values: number[],
+  interpolationType: number,
+  preInfinity: number,
+  postInfinity: number,
 }
 
 /**
@@ -58,12 +58,12 @@ interface AnimationCurveData {
 export class AnimationParser extends BaseParser<AnimationParserInput, AnimationParserOutput> {
   private config: AnimationParserConfig;
 
-  constructor(context: IParsingContext, config?: AnimationParserConfig) {
+  constructor (context: IParsingContext, config?: AnimationParserConfig) {
     super(context, {
       name: 'AnimationParser',
       version: '1.0.0',
       description: '解析 FBX 动画数据为 Three.js 动画剪辑',
-      dependencies: ['THREE', 'ArrayUtils', 'MatrixUtils']
+      dependencies: ['THREE', 'ArrayUtils', 'MatrixUtils'],
     });
 
     this.config = {
@@ -75,14 +75,14 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
       forceLinearInterpolation: false,
       enableLoop: true,
       timeScale: 1.0,
-      ...config
+      ...config,
     };
   }
 
   /**
    * 解析动画堆栈节点
    */
-  parse(input: AnimationParserInput, context: IParsingContext): AnimationParserOutput {
+  parse (input: AnimationParserInput, context: IParsingContext): AnimationParserOutput {
     const { animationStackNode, stackId, animationLayers, animationCurveNodes, animationCurves, modelNodes } = input;
 
     this.log(`开始解析动画堆栈: ${animationStackNode.Name?.value || `Animation_${stackId}`}`);
@@ -113,10 +113,11 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
         name: animationStackNode.Name?.value || `Animation_${stackId}`,
         duration,
         fps,
-        metadata
+        metadata,
       };
 
       this.log(`成功解析动画: ${output.name} (${duration.toFixed(2)}s, ${fps} FPS, ${animationTracks.length} tracks)`);
+
       return output;
 
     } catch (error) {
@@ -128,7 +129,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 解析动画层
    */
-  private parseAnimationLayers(
+  private parseAnimationLayers (
     animationLayers: Map<number, FBXAnimationLayerNode>,
     animationCurveNodes: Map<number, FBXAnimationCurveNode>,
     animationCurves: Map<number, FBXAnimationCurve>,
@@ -151,13 +152,14 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
     });
 
     this.log(`解析完成: ${allTracks.length} 个动画轨道`);
+
     return allTracks;
   }
 
   /**
    * 解析动画层节点
    */
-  private parseAnimationLayerNodes(
+  private parseAnimationLayerNodes (
     layer: FBXAnimationLayerNode,
     animationCurveNodes: Map<number, FBXAnimationCurveNode>,
     animationCurves: Map<number, FBXAnimationCurve>,
@@ -173,6 +175,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
       }
 
       const track = this.parseAnimationCurveNode(curveNode, animationCurves, modelNodes);
+
       if (track) {
         tracks.push(track);
       }
@@ -184,34 +187,41 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 解析动画曲线节点
    */
-  private parseAnimationCurveNode(
+  private parseAnimationCurveNode (
     curveNode: FBXAnimationCurveNode,
     animationCurves: Map<number, FBXAnimationCurve>,
     modelNodes: Map<number, THREE.Object3D>
   ): AnimationTrackData | null {
     // 获取属性名称
     const propertyName = curveNode.d?.value;
+
     if (!propertyName) {
       this.log(`动画曲线节点 ${curveNode.Name?.value} 没有属性名称`, 'warn');
+
       return null;
     }
 
     // 解析动画类型和轴
     const { animationType, axis } = this.parseAnimationProperty(propertyName);
+
     if (!animationType) {
       this.log(`未知的动画属性: ${propertyName}`, 'warn');
+
       return null;
     }
 
     // 查找目标对象
     const targetObject = this.findTargetObject(curveNode, modelNodes);
+
     if (!targetObject) {
       this.log(`找不到动画曲线 ${curveNode.Name?.value} 的目标对象`, 'warn');
+
       return null;
     }
 
     // 解析动画曲线
     const curveData = this.parseAnimationCurve(curveNode, animationCurves);
+
     if (!curveData) {
       return null;
     }
@@ -228,14 +238,14 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
       times: curveData.times,
       values,
       interpolation: curveData.interpolationType,
-      target: targetObject
+      target: targetObject,
     };
   }
 
   /**
    * 解析动画曲线
    */
-  private parseAnimationCurve(
+  private parseAnimationCurve (
     curveNode: FBXAnimationCurveNode,
     animationCurves: Map<number, FBXAnimationCurve>
   ): AnimationCurveData | null {
@@ -246,6 +256,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
     if (animationCurves.size > 0) {
       // 查找关联的曲线
       const curve = this.findAssociatedCurve(curveNode, animationCurves);
+
       if (curve) {
         return this.extractCurveData(curve);
       }
@@ -258,7 +269,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 提取曲线数据
    */
-  private extractCurveData(curve: FBXAnimationCurve): AnimationCurveData {
+  private extractCurveData (curve: FBXAnimationCurve): AnimationCurveData {
     if (!curve.keys || curve.keys.length === 0) {
       return this.createEmptyCurveData();
     }
@@ -275,14 +286,14 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
       values,
       interpolationType,
       preInfinity: THREE.InterpolateLinear,
-      postInfinity: THREE.InterpolateLinear
+      postInfinity: THREE.InterpolateLinear,
     };
   }
 
   /**
    * 从曲线节点提取数据
    */
-  private extractCurveDataFromNode(curveNode: FBXAnimationCurveNode): AnimationCurveData {
+  private extractCurveDataFromNode (curveNode: FBXAnimationCurveNode): AnimationCurveData {
     // 简化实现：创建默认曲线数据
     // 在实际实现中，需要根据具体的 FBX 数据结构来解析
 
@@ -310,59 +321,62 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
       values,
       interpolationType: this.config.defaultInterpolation!,
       preInfinity: THREE.InterpolateLinear,
-      postInfinity: THREE.InterpolateLinear
+      postInfinity: THREE.InterpolateLinear,
     };
   }
 
   /**
    * 创建空曲线数据
    */
-  private createEmptyCurveData(): AnimationCurveData {
+  private createEmptyCurveData (): AnimationCurveData {
     return {
       times: [0, 1],
       values: [0, 0],
       interpolationType: this.config.defaultInterpolation!,
       preInfinity: THREE.InterpolateLinear,
-      postInfinity: THREE.InterpolateLinear
+      postInfinity: THREE.InterpolateLinear,
     };
   }
 
   /**
    * 解析动画属性
    */
-  private parseAnimationProperty(propertyName: string): {
-    animationType: 'position' | 'rotation' | 'scale' | 'morphTargetInfluences' | 'other';
-    axis?: 'x' | 'y' | 'z';
+  private parseAnimationProperty (propertyName: string): {
+    animationType: 'position' | 'rotation' | 'scale' | 'morphTargetInfluences' | 'other',
+    axis?: 'x' | 'y' | 'z',
   } {
     const prop = propertyName.toLowerCase();
 
     // 位置动画
     if (prop.includes('translation') || prop.includes('position')) {
-      if (prop.includes('x') || prop.includes('0')) return { animationType: 'position', axis: 'x' };
-      if (prop.includes('y') || prop.includes('1')) return { animationType: 'position', axis: 'y' };
-      if (prop.includes('z') || prop.includes('2')) return { animationType: 'position', axis: 'z' };
+      if (prop.includes('x') || prop.includes('0')) {return { animationType: 'position', axis: 'x' };}
+      if (prop.includes('y') || prop.includes('1')) {return { animationType: 'position', axis: 'y' };}
+      if (prop.includes('z') || prop.includes('2')) {return { animationType: 'position', axis: 'z' };}
+
       return { animationType: 'position' };
     }
 
     // 旋转动画
     if (prop.includes('rotation')) {
       if (prop.includes('quaternion')) {
-        if (prop.includes('x') || prop.includes('0')) return { animationType: 'rotation', axis: 'x' };
-        if (prop.includes('y') || prop.includes('1')) return { animationType: 'rotation', axis: 'y' };
-        if (prop.includes('z') || prop.includes('2')) return { animationType: 'rotation', axis: 'z' };
-        if (prop.includes('w') || prop.includes('3')) return { animationType: 'rotation', axis: undefined };
+        if (prop.includes('x') || prop.includes('0')) {return { animationType: 'rotation', axis: 'x' };}
+        if (prop.includes('y') || prop.includes('1')) {return { animationType: 'rotation', axis: 'y' };}
+        if (prop.includes('z') || prop.includes('2')) {return { animationType: 'rotation', axis: 'z' };}
+        if (prop.includes('w') || prop.includes('3')) {return { animationType: 'rotation', axis: undefined };}
       }
-      if (prop.includes('x') || prop.includes('0')) return { animationType: 'rotation', axis: 'x' };
-      if (prop.includes('y') || prop.includes('1')) return { animationType: 'rotation', axis: 'y' };
-      if (prop.includes('z') || prop.includes('2')) return { animationType: 'rotation', axis: 'z' };
+      if (prop.includes('x') || prop.includes('0')) {return { animationType: 'rotation', axis: 'x' };}
+      if (prop.includes('y') || prop.includes('1')) {return { animationType: 'rotation', axis: 'y' };}
+      if (prop.includes('z') || prop.includes('2')) {return { animationType: 'rotation', axis: 'z' };}
+
       return { animationType: 'rotation' };
     }
 
     // 缩放动画
     if (prop.includes('scale') || prop.includes('scaling')) {
-      if (prop.includes('x') || prop.includes('0')) return { animationType: 'scale', axis: 'x' };
-      if (prop.includes('y') || prop.includes('1')) return { animationType: 'scale', axis: 'y' };
-      if (prop.includes('z') || prop.includes('2')) return { animationType: 'scale', axis: 'z' };
+      if (prop.includes('x') || prop.includes('0')) {return { animationType: 'scale', axis: 'x' };}
+      if (prop.includes('y') || prop.includes('1')) {return { animationType: 'scale', axis: 'y' };}
+      if (prop.includes('z') || prop.includes('2')) {return { animationType: 'scale', axis: 'z' };}
+
       return { animationType: 'scale' };
     }
 
@@ -373,7 +387,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 查找目标对象
    */
-  private findTargetObject(curveNode: FBXAnimationCurveNode, modelNodes: Map<number, THREE.Object3D>): THREE.Object3D | null {
+  private findTargetObject (curveNode: FBXAnimationCurveNode, modelNodes: Map<number, THREE.Object3D>): THREE.Object3D | null {
     // 根据曲线节点的连接关系查找目标对象
     // 在实际实现中，需要解析 FBX 的连接数据
 
@@ -388,7 +402,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 查找关联的曲线
    */
-  private findAssociatedCurve(
+  private findAssociatedCurve (
     curveNode: FBXAnimationCurveNode,
     animationCurves: Map<number, FBXAnimationCurve>
   ): FBXAnimationCurve | null {
@@ -406,7 +420,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 检查曲线节点是否在层中
    */
-  private isCurveNodeInLayer(curveNode: FBXAnimationCurveNode, layer: FBXAnimationLayerNode): boolean {
+  private isCurveNodeInLayer (curveNode: FBXAnimationCurveNode, layer: FBXAnimationLayerNode): boolean {
     // 在实际实现中，需要解析 FBX 的连接关系
     // 简化实现：假设所有曲线节点都属于第一个层
     return true;
@@ -415,14 +429,14 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 创建轨道名称
    */
-  private createTrackName(objectName: string, animationType: string, axis?: string): string {
+  private createTrackName (objectName: string, animationType: string, axis?: string): string {
     return `${objectName}.${animationType}${axis ? '.' + axis : ''}`;
   }
 
   /**
    * 转换动画值
    */
-  private convertAnimationValues(
+  private convertAnimationValues (
     values: number[],
     animationType: string,
     axis?: string
@@ -443,7 +457,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 从曲线解析插值类型
    */
-  private parseInterpolationTypeFromCurve(curve: FBXAnimationCurve): number {
+  private parseInterpolationTypeFromCurve (curve: FBXAnimationCurve): number {
     switch (curve.interpolationType?.toLowerCase()) {
       case 'linear':
         return THREE.InterpolateLinear;
@@ -460,13 +474,14 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 解析插值类型
    */
-  private parseInterpolationType(keyFlags?: number[], keyData?: number[]): number {
+  private parseInterpolationType (keyFlags?: number[], keyData?: number[]): number {
     if (!keyFlags || keyFlags.length === 0) {
       return this.config.defaultInterpolation!;
     }
 
     // 简化实现：根据标志判断插值类型
     const firstFlag = keyFlags[0];
+
     switch (firstFlag) {
       case 1: // 线性插值
         return THREE.InterpolateLinear;
@@ -482,7 +497,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 优化动画轨道
    */
-  private optimizeAnimationTracks(tracks: AnimationTrackData[]): AnimationTrackData[] {
+  private optimizeAnimationTracks (tracks: AnimationTrackData[]): AnimationTrackData[] {
     if (!this.config.optimizeKeyframes) {
       return tracks;
     }
@@ -491,19 +506,21 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
 
     tracks.forEach(track => {
       const optimizedTrack = this.optimizeAnimationTrack(track);
+
       if (optimizedTrack.times.length > 1) {
         optimizedTracks.push(optimizedTrack);
       }
     });
 
     this.log(`优化动画轨道: ${tracks.length} -> ${optimizedTracks.length}`);
+
     return optimizedTracks;
   }
 
   /**
    * 优化单个动画轨道
    */
-  private optimizeAnimationTrack(track: AnimationTrackData): AnimationTrackData {
+  private optimizeAnimationTrack (track: AnimationTrackData): AnimationTrackData {
     const tolerance = this.config.keyframeTolerance!;
     const optimizedTimes: number[] = [track.times[0]];
     const optimizedValues: number[] = [track.values[0]];
@@ -536,30 +553,32 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
     return {
       ...track,
       times: optimizedTimes,
-      values: optimizedValues
+      values: optimizedValues,
     };
   }
 
   /**
    * 插值计算
    */
-  private interpolateValue(start: number, end: number, t: number): number {
+  private interpolateValue (start: number, end: number, t: number): number {
     return start + (end - start) * t;
   }
 
   /**
    * 计算动画时长和帧率
    */
-  private calculateAnimationTiming(tracks: AnimationTrackData[]): { duration: number; fps: number } {
+  private calculateAnimationTiming (tracks: AnimationTrackData[]): { duration: number, fps: number } {
     if (tracks.length === 0) {
       return { duration: 1.0, fps: this.config.defaultFPS! };
     }
 
     // 找出最晚的结束时间
     let maxDuration = 0;
+
     tracks.forEach(track => {
       if (track.times.length > 0) {
         const trackDuration = track.times[track.times.length - 1];
+
         maxDuration = Math.max(maxDuration, trackDuration);
       }
     });
@@ -569,13 +588,16 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
 
     // 计算帧率
     let fps = this.config.defaultFPS!;
+
     if (tracks.length > 0) {
       // 基于第一个轨道的平均时间间隔计算帧率
       const firstTrack = tracks[0];
+
       if (firstTrack.times.length > 1) {
         const avgInterval = ArrayUtils.average(
           firstTrack.times.slice(1).map((time, i) => time - firstTrack.times[i])
         );
+
         fps = Math.round(1.0 / avgInterval);
       }
     }
@@ -586,7 +608,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 创建动画剪辑
    */
-  private createAnimationClips(
+  private createAnimationClips (
     tracks: AnimationTrackData[],
     duration: number,
     animationStackNode: FBXAnimationStackNode
@@ -596,6 +618,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
 
     tracks.forEach(track => {
       const objectName = track.target?.name || 'Unknown';
+
       if (!tracksByObject.has(objectName)) {
         tracksByObject.set(objectName, []);
       }
@@ -615,6 +638,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
           typeTracks,
           duration
         );
+
         if (threeTrack) {
           threeTracks.push(threeTrack);
         }
@@ -631,11 +655,12 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 按动画类型分组轨道
    */
-  private groupTracksByType(tracks: AnimationTrackData[]): Map<string, AnimationTrackData[]> {
+  private groupTracksByType (tracks: AnimationTrackData[]): Map<string, AnimationTrackData[]> {
     const grouped = new Map<string, AnimationTrackData[]>();
 
     tracks.forEach(track => {
       const key = `${track.type}${track.axis ? '.' + track.axis : ''}`;
+
       if (!grouped.has(key)) {
         grouped.set(key, []);
       }
@@ -648,13 +673,13 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 创建 Three.js 关键帧轨道
    */
-  private createThreeKeyframeTrack(
+  private createThreeKeyframeTrack (
     objectName: string,
     trackType: string,
     tracks: AnimationTrackData[],
     duration: number
   ): THREE.KeyframeTrack | null {
-    if (tracks.length === 0) return null;
+    if (tracks.length === 0) {return null;}
 
     // 合并同类型的轨道
     const mergedTrack = this.mergeTracks(tracks, trackType);
@@ -677,7 +702,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 合并轨道
    */
-  private mergeTracks(tracks: AnimationTrackData[], trackType: string): AnimationTrackData {
+  private mergeTracks (tracks: AnimationTrackData[], trackType: string): AnimationTrackData {
     if (tracks.length === 1) {
       return tracks[0];
     }
@@ -706,14 +731,14 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
       times: sortedTimes,
       values: sortedValues,
       interpolation: tracks[0].interpolation,
-      target: tracks[0].target
+      target: tracks[0].target,
     };
   }
 
   /**
    * 生成动画元数据
    */
-  private generateAnimationMetadata(
+  private generateAnimationMetadata (
     animationStackNode: FBXAnimationStackNode,
     tracks: AnimationTrackData[],
     duration: number,
@@ -731,9 +756,11 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
     // 检查是否循环
     if (tracks.length > 0) {
       const firstTrack = tracks[0];
+
       if (firstTrack.times.length > 1) {
         const firstValue = firstTrack.values[0];
         const lastValue = firstTrack.values[firstTrack.values.length - 1];
+
         isLoop = Math.abs(firstValue - lastValue) < 0.001;
       }
     }
@@ -745,14 +772,14 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
       fps,
       trackCount: tracks.length,
       modelCount: objectNames.size,
-      isLoop: this.config.enableLoop! && isLoop
+      isLoop: this.config.enableLoop! && isLoop,
     };
   }
 
   /**
    * 验证动画堆栈节点
    */
-  protected override validateInput(input: AnimationParserInput): void {
+  protected override validateInput (input: AnimationParserInput): void {
     super.validateInput(input);
 
     if (!input.animationStackNode) {
@@ -767,14 +794,14 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
   /**
    * 获取配置
    */
-  public getConfig(): AnimationParserConfig {
+  public getConfig (): AnimationParserConfig {
     return { ...this.config };
   }
 
   /**
    * 更新配置
    */
-  public updateConfig(newConfig: Partial<AnimationParserConfig>): void {
+  public updateConfig (newConfig: Partial<AnimationParserConfig>): void {
     this.config = { ...this.config, ...newConfig };
     this.log('更新动画解析器配置');
   }
@@ -786,22 +813,23 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
 export class AnimationParserFactory {
   private defaultConfig: AnimationParserConfig;
 
-  constructor(defaultConfig?: AnimationParserConfig) {
+  constructor (defaultConfig?: AnimationParserConfig) {
     this.defaultConfig = defaultConfig || {};
   }
 
   /**
    * 创建动画解析器实例
    */
-  create(context: IParsingContext, config?: AnimationParserConfig): AnimationParser {
+  create (context: IParsingContext, config?: AnimationParserConfig): AnimationParser {
     const mergedConfig = { ...this.defaultConfig, ...config };
+
     return new AnimationParser(context, mergedConfig);
   }
 
   /**
    * 获取默认配置
    */
-  public getDefaultConfig(): AnimationParserConfig {
+  public getDefaultConfig (): AnimationParserConfig {
     return { ...this.defaultConfig };
   }
 }

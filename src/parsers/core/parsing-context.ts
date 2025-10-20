@@ -16,7 +16,7 @@ export class ParsingContext implements IParsingContext {
   private readonly _loadingManager: THREE.LoadingManager;
   private readonly _cache: Map<string, any> = new Map();
 
-  constructor(
+  constructor (
     fbxTree: IFBXTree,
     connections: Map<number, FBXConnectionNode>,
     loadingManager: THREE.LoadingManager
@@ -27,15 +27,15 @@ export class ParsingContext implements IParsingContext {
     this._loadingManager = loadingManager;
   }
 
-  get fbxTree(): IFBXTree {
+  get fbxTree (): IFBXTree {
     return this._fbxTree;
   }
 
-  get connections(): Map<number, FBXConnectionNode> {
+  get connections (): Map<number, FBXConnectionNode> {
     return this._connections;
   }
 
-  get loadingManager(): THREE.LoadingManager {
+  get loadingManager (): THREE.LoadingManager {
     return this._loadingManager;
   }
 
@@ -50,7 +50,7 @@ export class ParsingContext implements IParsingContext {
   /**
    * 获取指定节点的连接信息
    */
-  getConnections(id: number): FBXConnectionNode | undefined {
+  getConnections (id: number): FBXConnectionNode | undefined {
     return this._connections.get(id);
   }
 
@@ -72,6 +72,7 @@ export class ParsingContext implements IParsingContext {
 
     if (!objects) {
       this._cache.set(cacheKey, nodes);
+
       return nodes;
     }
 
@@ -82,29 +83,32 @@ export class ParsingContext implements IParsingContext {
     });
 
     this._cache.set(cacheKey, nodes);
+
     return nodes;
   }
 
   /**
    * 获取节点的子节点
    */
-  getChildNodes(id: number): Array<{ ID: number }> {
+  getChildNodes (id: number): Array<{ ID: number }> {
     const connection = this._connections.get(id);
+
     return connection?.children || [];
   }
 
   /**
    * 获取节点的父节点
    */
-  getParentNodes(id: number): Array<{ ID: number }> {
+  getParentNodes (id: number): Array<{ ID: number }> {
     const connection = this._connections.get(id);
+
     return connection?.parents || [];
   }
 
   /**
    * 检查节点是否存在
    */
-  hasNode(id: number): boolean {
+  hasNode (id: number): boolean {
     return !!this._fbxTree.objects?.[id];
   }
 
@@ -125,7 +129,7 @@ export class ParsingContext implements IParsingContext {
   /**
    * 清空缓存
    */
-  clearCache(): void {
+  clearCache (): void {
     this._cache.clear();
   }
 
@@ -141,6 +145,7 @@ export class ParsingContext implements IParsingContext {
     // 冻结普通对象
     Object.keys(obj).forEach(key => {
       const value = (obj as any)[key];
+
       if (value && typeof value === 'object') {
         this.deepFreeze(value);
       }
@@ -152,24 +157,24 @@ export class ParsingContext implements IParsingContext {
   /**
    * 获取上下文摘要信息
    */
-  getSummary(): {
-    totalNodes: number;
-    totalConnections: number;
-    cachedItems: number;
-    hasLoadingManager: boolean;
+  getSummary (): {
+    totalNodes: number,
+    totalConnections: number,
+    cachedItems: number,
+    hasLoadingManager: boolean,
   } {
     return {
       totalNodes: Object.keys(this._fbxTree.objects || {}).length,
       totalConnections: this._connections.size,
       cachedItems: this._cache.size,
-      hasLoadingManager: !!this._loadingManager
+      hasLoadingManager: !!this._loadingManager,
     };
   }
 
   /**
    * 创建子上下文（用于测试或特殊场景）
    */
-  createChildContext(
+  createChildContext (
     overrides?: Partial<IFBXTree> & { connections?: Map<number, FBXConnectionNode> }
   ): IParsingContext {
     const newFbxTree = overrides
