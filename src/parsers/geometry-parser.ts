@@ -8,7 +8,7 @@ import type {
   IParsingContext,
   IParser,
   BaseParser,
-  ParserMetadata
+  ParserMetadata,
 } from '../types/core';
 import type {
   GeometryParserInput,
@@ -17,12 +17,12 @@ import type {
   SkinInfo,
   GeometryStats,
   GeometryMetadata,
-  GeometryParserConfig
+  GeometryParserConfig,
 } from '../types/parsers/geometry-parser';
 import type {
   FBXGeometryNode,
   FBXLayerNode,
-  FBXLayerElementNode
+  FBXLayerElementNode,
 } from '../types/parsers/geometry-parser';
 import type { MappingInformationType, ReferenceInformationType } from '../types/enums/mapping-types';
 import type { DeformerData, SkinData, BlendShapeData } from '../types/parsers/deformer-parser';
@@ -33,12 +33,12 @@ import { MatrixUtils } from '../utils/transform/matrix-utils';
  * 层元素数据接口
  */
 interface LayerElementData {
-  mappingType: MappingInformationType;
-  referenceType: ReferenceInformationType;
-  indices?: number[];
-  data?: any[];
-  dataByPolygonVertex?: any[];
-  name: string;
+  mappingType: MappingInformationType,
+  referenceType: ReferenceInformationType,
+  indices?: number[],
+  data?: any[],
+  dataByPolygonVertex?: any[],
+  name: string,
 }
 
 /**
@@ -48,12 +48,12 @@ interface LayerElementData {
 export class GeometryParser extends BaseParser<GeometryParserInput, GeometryParserOutput> {
   private config: GeometryParserConfig;
 
-  constructor(context: IParsingContext, config?: GeometryParserConfig) {
+  constructor (context: IParsingContext, config?: GeometryParserConfig) {
     super(context, {
       name: 'GeometryParser',
       version: '1.0.0',
       description: '解析 FBX 几何体节点为 Three.js 缓冲几何体',
-      dependencies: ['THREE', 'ArrayUtils', 'MatrixUtils']
+      dependencies: ['THREE', 'ArrayUtils', 'MatrixUtils'],
     });
 
     this.config = {
@@ -66,14 +66,14 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       maxBonesPerVertex: 4,
       weightThreshold: 0.01,
       enableMorphTargets: true,
-      ...config
+      ...config,
     };
   }
 
   /**
    * 解析几何体节点
    */
-  parse(input: GeometryParserInput, context: IParsingContext): GeometryParserOutput {
+  parse (input: GeometryParserInput, context: IParsingContext): GeometryParserOutput {
     const { geometryNode, id, deformerInfo, materialMapping } = input;
 
     this.log(`开始解析几何体节点: ${geometryNode.GeometryName?.value || `Geometry_${id}`}`);
@@ -117,10 +117,11 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
         attributes: geometryAttributes,
         morphTargets: this.createMorphTargets(geometry, deformerInfo || []),
         skinInfo: skinInfo || undefined,
-        stats
+        stats,
       };
 
       this.log(`成功解析几何体: ${output.name} (${stats.vertexCount} 顶点, ${stats.faceCount} 面)`);
+
       return output;
 
     } catch (error) {
@@ -132,11 +133,12 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 提取层元素数据
    */
-  private extractLayerElements(layer?: FBXLayerNode): Map<string, LayerElementData> {
+  private extractLayerElements (layer?: FBXLayerNode): Map<string, LayerElementData> {
     const layerElements = new Map<string, LayerElementData>();
 
     if (!layer || !layer.LayerElement) {
       this.log('几何体没有层元素', 'warn');
+
       return layerElements;
     }
 
@@ -147,32 +149,35 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
         indices: this.parseArray(element.Indexes),
         data: this.parseArray(element.Direct),
         dataByPolygonVertex: this.parseArray(element.Vertices || element.Normals || element.UV || element.Colors),
-        name: element.Name?.value || 'Unknown'
+        name: element.Name?.value || 'Unknown',
       };
 
       layerElements.set(elementData.name, elementData);
     });
 
     this.log(`提取 ${layerElements.size} 个层元素`);
+
     return layerElements;
   }
 
   /**
    * 解析数组数据
    */
-  private parseArray(arrayData: any): number[] {
-    if (!arrayData) return [];
-    if (Array.isArray(arrayData.a)) return arrayData.a;
-    if (Array.isArray(arrayData)) return arrayData;
+  private parseArray (arrayData: any): number[] {
+    if (!arrayData) {return [];}
+    if (Array.isArray(arrayData.a)) {return arrayData.a;}
+    if (Array.isArray(arrayData)) {return arrayData;}
+
     return [];
   }
 
   /**
    * 解析顶点位置
    */
-  private parseVertices(verticesData: any): THREE.Vector3[] {
+  private parseVertices (verticesData: any): THREE.Vector3[] {
     if (!verticesData || !verticesData.a) {
       this.log('几何体没有顶点数据', 'warn');
+
       return [];
     }
 
@@ -184,15 +189,17 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     }
 
     this.log(`解析 ${vertices.length} 个顶点`);
+
     return vertices;
   }
 
   /**
    * 解析多边形顶点索引
    */
-  private parsePolygonVertexIndex(indexData: any): number[] {
+  private parsePolygonVertexIndex (indexData: any): number[] {
     if (!indexData || !indexData.a) {
       this.log('几何体没有索引数据', 'warn');
+
       return [];
     }
 
@@ -201,6 +208,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
 
     for (let i = 0; i < indexArray.length; i++) {
       const index = indexArray[i];
+
       if (index < 0) {
         // 负索引表示面的结束
         indices.push(~index); // 位运算取反得到正数
@@ -210,13 +218,14 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     }
 
     this.log(`解析 ${indices.length} 个顶点索引`);
+
     return indices;
   }
 
   /**
    * 构建几何体属性
    */
-  private buildGeometryAttributes(
+  private buildGeometryAttributes (
     layerElements: Map<string, LayerElementData>,
     vertices: THREE.Vector3[],
     faceIndices: number[]
@@ -226,6 +235,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     // 顶点位置
     if (vertices.length > 0) {
       const positions = new Float32Array(vertices.length * 3);
+
       vertices.forEach((vertex, i) => {
         positions[i * 3] = vertex.x;
         positions[i * 3 + 1] = vertex.y;
@@ -239,13 +249,16 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       switch (elementName.toLowerCase()) {
         case 'normal':
           attributes.normal = this.parseNormals(elementData, faceIndices, vertices.length);
+
           break;
         case 'uv':
         case 'uvmap':
           attributes.uv = this.parseUVs(elementData, faceIndices, vertices.length);
+
           break;
         case 'color':
           attributes.color = this.parseColors(elementData, faceIndices, vertices.length);
+
           break;
         case 'material':
           // 材质索引通常不作为属性存储
@@ -259,18 +272,19 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     });
 
     this.log(`构建几何体属性: ${Object.keys(attributes).length} 个属性`);
+
     return attributes;
   }
 
   /**
    * 解析法线
    */
-  private parseNormals(
+  private parseNormals (
     elementData: LayerElementData,
     faceIndices: number[],
     vertexCount: number
   ): THREE.BufferAttribute | undefined {
-    if (!elementData.dataByPolygonVertex) return undefined;
+    if (!elementData.dataByPolygonVertex) {return undefined;}
 
     const normals = new Float32Array(vertexCount * 3);
 
@@ -278,15 +292,19 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     switch (elementData.mappingType) {
       case MappingInformationType.ByPolygonVertex:
         this.parseByPolygonVertexData(elementData, faceIndices, normals, 3);
+
         break;
       case MappingInformationType.ByPolygon:
         this.parseByPolygonData(elementData, faceIndices, normals, 3);
+
         break;
       case MappingInformationType.ByVertice:
         this.parseByVertexData(elementData, normals, 3);
+
         break;
       case MappingInformationType.AllSame:
         this.parseAllSameData(elementData, normals, 3);
+
         break;
     }
 
@@ -296,12 +314,12 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 解析UV坐标
    */
-  private parseUVs(
+  private parseUVs (
     elementData: LayerElementData,
     faceIndices: number[],
     vertexCount: number
   ): THREE.BufferAttribute | undefined {
-    if (!elementData.dataByPolygonVertex) return undefined;
+    if (!elementData.dataByPolygonVertex) {return undefined;}
 
     const uvs = new Float32Array(vertexCount * 2);
 
@@ -309,15 +327,19 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     switch (elementData.mappingType) {
       case MappingInformationType.ByPolygonVertex:
         this.parseByPolygonVertexData(elementData, faceIndices, uvs, 2);
+
         break;
       case MappingInformationType.ByPolygon:
         this.parseByPolygonData(elementData, faceIndices, uvs, 2);
+
         break;
       case MappingInformationType.ByVertice:
         this.parseByVertexData(elementData, uvs, 2);
+
         break;
       case MappingInformationType.AllSame:
         this.parseAllSameData(elementData, uvs, 2);
+
         break;
     }
 
@@ -327,12 +349,12 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 解析顶点颜色
    */
-  private parseColors(
+  private parseColors (
     elementData: LayerElementData,
     faceIndices: number[],
     vertexCount: number
   ): THREE.BufferAttribute | undefined {
-    if (!elementData.dataByPolygonVertex) return undefined;
+    if (!elementData.dataByPolygonVertex) {return undefined;}
 
     const colors = new Float32Array(vertexCount * 3);
 
@@ -340,15 +362,19 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     switch (elementData.mappingType) {
       case MappingInformationType.ByPolygonVertex:
         this.parseByPolygonVertexData(elementData, faceIndices, colors, 3);
+
         break;
       case MappingInformationType.ByPolygon:
         this.parseByPolygonData(elementData, faceIndices, colors, 3);
+
         break;
       case MappingInformationType.ByVertice:
         this.parseByVertexData(elementData, colors, 3);
+
         break;
       case MappingInformationType.AllSame:
         this.parseAllSameData(elementData, colors, 3);
+
         break;
     }
 
@@ -358,7 +384,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 解析按多边形顶点映射的数据
    */
-  private parseByPolygonVertexData(
+  private parseByPolygonVertexData (
     elementData: LayerElementData,
     faceIndices: number[],
     outputArray: Float32Array,
@@ -373,6 +399,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
 
       // 根据引用类型获取数据
       let dataIndex: number;
+
       if (elementData.referenceType === ReferenceInformationType.IndexToDirect) {
         dataIndex = elementData.indices ? elementData.indices[faceVertexIndex] : faceVertexIndex;
       } else {
@@ -382,6 +409,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       // 复制数据到输出数组
       for (let j = 0; j < componentCount; j++) {
         const sourceIndex = dataIndex * componentCount + j;
+
         if (sourceIndex < sourceData.length) {
           outputArray[vertexIndex * componentCount + j] = sourceData[sourceIndex];
         }
@@ -401,7 +429,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 解析按多边形映射的数据
    */
-  private parseByPolygonData(
+  private parseByPolygonData (
     elementData: LayerElementData,
     faceIndices: number[],
     outputArray: Float32Array,
@@ -416,6 +444,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
 
       // 根据引用类型获取数据
       let dataIndex: number;
+
       if (elementData.referenceType === ReferenceInformationType.IndexToDirect) {
         dataIndex = elementData.indices ? elementData.indices[faceIndex] : faceIndex;
       } else {
@@ -425,6 +454,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       // 复制数据到输出数组
       for (let j = 0; j < componentCount; j++) {
         const sourceIndex = dataIndex * componentCount + j;
+
         if (sourceIndex < sourceData.length) {
           outputArray[vertexIndex * componentCount + j] = sourceData[sourceIndex];
         }
@@ -443,7 +473,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 解析按顶点映射的数据
    */
-  private parseByVertexData(
+  private parseByVertexData (
     elementData: LayerElementData,
     outputArray: Float32Array,
     componentCount: number
@@ -452,6 +482,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
 
     for (let i = 0; i < outputArray.length / componentCount; i++) {
       let dataIndex: number;
+
       if (elementData.referenceType === ReferenceInformationType.IndexToDirect) {
         dataIndex = elementData.indices ? elementData.indices[i] : i;
       } else {
@@ -460,6 +491,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
 
       for (let j = 0; j < componentCount; j++) {
         const sourceIndex = dataIndex * componentCount + j;
+
         if (sourceIndex < sourceData.length) {
           outputArray[i * componentCount + j] = sourceData[sourceIndex];
         }
@@ -470,7 +502,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 解析所有顶点相同的数据
    */
-  private parseAllSameData(
+  private parseAllSameData (
     elementData: LayerElementData,
     outputArray: Float32Array,
     componentCount: number
@@ -489,7 +521,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 检查是否是面的结束
    */
-  private isFaceEnd(faceIndices: number[], currentIndex: number): boolean {
+  private isFaceEnd (faceIndices: number[], currentIndex: number): boolean {
     return currentIndex < faceIndices.length - 1 &&
            (faceIndices[currentIndex + 1] === -1 ||
             (faceIndices[currentIndex + 1] < 0 &&
@@ -499,7 +531,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 创建缓冲几何体
    */
-  private createBufferGeometry(
+  private createBufferGeometry (
     attributes: GeometryAttributes,
     faceIndices: number[]
   ): THREE.BufferGeometry {
@@ -534,6 +566,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     // 设置索引
     if (this.config.useIndex && faceIndices.length > 0) {
       const indices = this.buildIndexArray(faceIndices);
+
       geometry.setIndex(new THREE.BufferAttribute(indices, 1));
     }
 
@@ -543,12 +576,13 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 构建索引数组
    */
-  private buildIndexArray(faceIndices: number[]): Uint32Array {
+  private buildIndexArray (faceIndices: number[]): Uint32Array {
     const indices: number[] = [];
     let currentFace: number[] = [];
 
     for (let i = 0; i < faceIndices.length; i++) {
       const vertexIndex = faceIndices[i];
+
       currentFace.push(vertexIndex);
 
       // 检查是否是面的结束
@@ -556,6 +590,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
         // 三角化面
         if (currentFace.length >= 3) {
           const triangles = this.triangulateFace(currentFace);
+
           indices.push(...triangles);
         }
         currentFace = [];
@@ -568,7 +603,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 三角化面
    */
-  private triangulateFace(faceVertices: number[]): number[] {
+  private triangulateFace (faceVertices: number[]): number[] {
     const triangles: number[] = [];
 
     if (faceVertices.length === 3) {
@@ -591,13 +626,14 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 应用变形器数据
    */
-  private applyDeformerData(geometry: THREE.BufferGeometry, deformerInfo: DeformerData[]): SkinInfo | undefined {
+  private applyDeformerData (geometry: THREE.BufferGeometry, deformerInfo: DeformerData[]): SkinInfo | undefined {
     const skinDeformers = deformerInfo.filter(d => d.type === 'skin') as SkinData[];
     const blendShapeDeformers = deformerInfo.filter(d => d.type === 'blendshape') as BlendShapeData[];
 
     // 应用皮肤数据
     if (skinDeformers.length > 0) {
       const skinData = skinDeformers[0]; // 通常只有一个皮肤变形器
+
       return this.applySkinData(geometry, skinData);
     }
 
@@ -612,13 +648,13 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 应用皮肤数据
    */
-  private applySkinData(geometry: THREE.BufferGeometry, skinData: SkinData): SkinInfo {
+  private applySkinData (geometry: THREE.BufferGeometry, skinData: SkinData): SkinInfo {
     if (skinData.skinWeightData.length === 0) {
       return {
         boneCount: 0,
         maxBonesPerVertex: 0,
         weightMap: new Map(),
-        boneIndexMap: new Map()
+        boneIndexMap: new Map(),
       };
     }
 
@@ -676,18 +712,19 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       boneCount: boneIndexMap.size,
       maxBonesPerVertex: this.config.maxBonesPerVertex!,
       weightMap,
-      boneIndexMap
+      boneIndexMap,
     };
   }
 
   /**
    * 应用混合形状数据
    */
-  private applyBlendShapeData(geometry: THREE.BufferGeometry, blendShapeDeformers: BlendShapeData[]): void {
-    if (!this.config.enableMorphTargets) return;
+  private applyBlendShapeData (geometry: THREE.BufferGeometry, blendShapeDeformers: BlendShapeData[]): void {
+    if (!this.config.enableMorphTargets) {return;}
 
     const positionAttribute = geometry.getAttribute('position');
-    if (!positionAttribute) return;
+
+    if (!positionAttribute) {return;}
 
     const vertexCount = positionAttribute.count;
 
@@ -696,12 +733,13 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
         if (channel.targetGeometry) {
           // 使用目标几何体创建变形目标
           const targetPositions = channel.targetGeometry.getAttribute('position');
+
           if (targetPositions && targetPositions.count === vertexCount) {
-            geometry.morphAttributes!.position = geometry.morphAttributes!.position || [];
-            geometry.morphAttributes!.position.push(targetPositions.clone());
+            geometry.morphAttributes.position = geometry.morphAttributes.position || [];
+            geometry.morphAttributes.position.push(targetPositions.clone());
             geometry.morphTargets!.push({
               name: channel.name,
-              positions: targetPositions.array as Float32Array
+              positions: targetPositions.array as Float32Array,
             });
           }
         }
@@ -712,7 +750,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 生成缺失的属性
    */
-  private generateMissingAttributes(
+  private generateMissingAttributes (
     geometry: THREE.BufferGeometry,
     attributes: GeometryAttributes,
     skinInfo?: SkinInfo
@@ -737,7 +775,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 优化几何体
    */
-  private optimizeGeometry(geometry: THREE.BufferGeometry): void {
+  private optimizeGeometry (geometry: THREE.BufferGeometry): void {
     // 合并重复顶点
     if (this.config.vertexTolerance! > 0) {
       // 这里可以实现顶点合并逻辑
@@ -754,10 +792,11 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 创建变形目标
    */
-  private createMorphTargets(geometry: THREE.BufferGeometry, deformerInfo: DeformerData[]): THREE.MorphTarget[] {
+  private createMorphTargets (geometry: THREE.BufferGeometry, deformerInfo: DeformerData[]): THREE.MorphTarget[] {
     const morphTargets: THREE.MorphTarget[] = [];
 
     const blendShapeDeformers = deformerInfo.filter(d => d.type === 'blendshape') as BlendShapeData[];
+
     blendShapeDeformers.forEach(blendShape => {
       blendShape.channels.forEach(channel => {
         if (channel.targetGeometry) {
@@ -765,7 +804,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
             name: channel.name,
             positions: channel.targetGeometry.getAttribute('position')?.array as Float32Array,
             normals: channel.targetGeometry.getAttribute('normal')?.array as Float32Array,
-            colors: channel.targetGeometry.getAttribute('color')?.array as Float32Array
+            colors: channel.targetGeometry.getAttribute('color')?.array as Float32Array,
           });
         }
       });
@@ -777,7 +816,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 生成几何体统计信息
    */
-  private generateGeometryStats(
+  private generateGeometryStats (
     geometry: THREE.BufferGeometry,
     attributes: GeometryAttributes,
     skinInfo?: SkinInfo
@@ -791,14 +830,14 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       triangleCount: indexAttribute ? indexAttribute.count / 3 : 0,
       attributeCount: Object.keys(attributes).length,
       morphTargetCount: geometry.morphTargets ? geometry.morphTargets.length : 0,
-      boneCount: skinInfo ? skinInfo.boneCount : 0
+      boneCount: skinInfo ? skinInfo.boneCount : 0,
     };
   }
 
   /**
    * 生成几何体元数据
    */
-  private generateGeometryMetadata(
+  private generateGeometryMetadata (
     geometryNode: FBXGeometryNode,
     attributes: GeometryAttributes,
     skinInfo?: SkinInfo
@@ -811,14 +850,14 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       hasMorphTargets: attributes.position ? false : false, // 将在后续阶段更新
       hasVertexColors: !!attributes.color,
       hasUV: !!attributes.uv,
-      hasNormals: !!attributes.normal
+      hasNormals: !!attributes.normal,
     };
   }
 
   /**
    * 验证几何体节点
    */
-  protected validateInput(input: GeometryParserInput): void {
+  protected validateInput (input: GeometryParserInput): void {
     super.validateInput(input);
 
     if (!input.geometryNode) {
@@ -833,14 +872,14 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 获取配置
    */
-  public getConfig(): GeometryParserConfig {
+  public getConfig (): GeometryParserConfig {
     return { ...this.config };
   }
 
   /**
    * 更新配置
    */
-  public updateConfig(newConfig: Partial<GeometryParserConfig>): void {
+  public updateConfig (newConfig: Partial<GeometryParserConfig>): void {
     this.config = { ...this.config, ...newConfig };
     this.log('更新几何解析器配置');
   }
@@ -852,22 +891,23 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
 export class GeometryParserFactory {
   private defaultConfig: GeometryParserConfig;
 
-  constructor(defaultConfig?: GeometryParserConfig) {
+  constructor (defaultConfig?: GeometryParserConfig) {
     this.defaultConfig = defaultConfig || {};
   }
 
   /**
    * 创建几何解析器实例
    */
-  create(context: IParsingContext, config?: GeometryParserConfig): GeometryParser {
+  create (context: IParsingContext, config?: GeometryParserConfig): GeometryParser {
     const mergedConfig = { ...this.defaultConfig, ...config };
+
     return new GeometryParser(context, mergedConfig);
   }
 
   /**
    * 获取默认配置
    */
-  public getDefaultConfig(): GeometryParserConfig {
+  public getDefaultConfig (): GeometryParserConfig {
     return { ...this.defaultConfig };
   }
 }

@@ -11,21 +11,21 @@ import type { FBXNode, FBXValue, FBXGeometryData, FBXArrayData } from '../core/f
  */
 export interface FBXGeometryNode extends FBXNode {
   /** 几何体类型 */
-  Type: 'Geometry';
+  Type: 'Geometry',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 几何体名称 */
-  GeometryName?: FBXValue<string>;
+  GeometryName?: FBXValue<string>,
   /** 顶点位置 */
-  Vertices?: FBXArrayData;
+  Vertices?: FBXArrayData,
   /** 顶点索引 */
-  PolygonVertexIndex?: FBXArrayData;
+  PolygonVertexIndex?: FBXArrayData,
   /** 边信息 */
-  Edges?: FBXArrayData;
+  Edges?: FBXArrayData,
   /** 层信息 */
-  Layer?: FBXLayerNode;
+  Layer?: FBXLayerNode,
   /** 几何体属性 */
-  GeometryProperties?: Record<string, any>;
+  GeometryProperties?: Record<string, any>,
 }
 
 /**
@@ -33,15 +33,15 @@ export interface FBXGeometryNode extends FBXNode {
  */
 export interface FBXLayerNode extends FBXNode {
   /** 层类型 */
-  Type: 'Layer';
+  Type: 'Layer',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 层元素 */
-  LayerElement?: FBXLayerElementNode[];
+  LayerElement?: FBXLayerElementNode[],
   /** 层ID */
-  LayerID?: FBXValue<number>;
+  LayerID?: FBXValue<number>,
   /** 层名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
 }
 
 /**
@@ -49,47 +49,47 @@ export interface FBXLayerNode extends FBXNode {
  */
 export interface FBXLayerElementNode extends FBXNode {
   /** 层元素类型 */
-  Type: string;
+  Type: string,
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 层元素名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
   /** 映射信息类型 */
-  MappingInformationType?: FBXValue<string>;
+  MappingInformationType?: FBXValue<string>,
   /** 引用信息类型 */
-  ReferenceInformationType?: FBXValue<string>;
+  ReferenceInformationType?: FBXValue<string>,
   /** 索引数据 */
-  Indexes?: FBXArrayData;
+  Indexes?: FBXArrayData,
   /** 直接数据 */
-  Direct?: FBXArrayData;
+  Direct?: FBXArrayData,
   /** 顶点位置 */
-  Vertices?: FBXArrayData;
+  Vertices?: FBXArrayData,
   /** 法线 */
-  Normals?: FBXArrayData;
+  Normals?: FBXArrayData,
   /** UV 坐标 */
-  UV?: FBXArrayData;
+  UV?: FBXArrayData,
   /** UV 索引 */
-  UVIndex?: FBXArrayData;
+  UVIndex?: FBXArrayData,
   /** 顶点颜色 */
-  Colors?: FBXArrayData;
+  Colors?: FBXArrayData,
   /** 颜色索引 */
-  ColorIndex?: FBXArrayData;
+  ColorIndex?: FBXArrayData,
   /** 材质索引 */
-  Materials?: FBXArrayData;
+  Materials?: FBXArrayData,
   /** 材质索引 */
-  MaterialIndex?: FBXArrayData;
+  MaterialIndex?: FBXArrayData,
   /** 平滑组 */
-  Smoothing?: FBXArrayData;
+  Smoothing?: FBXArrayData,
   /** 平滑组索引 */
-  SmoothingIndex?: FBXArrayData;
+  SmoothingIndex?: FBXArrayData,
   /** 用户数据 */
-  UserData?: FBXArrayData;
+  UserData?: FBXArrayData,
   /** 用户数据索引 */
-  UserDataIndex?: FBXArrayData;
+  UserDataIndex?: FBXArrayData,
   /** 可见性 */
-  Visibility?: FBXArrayData;
+  Visibility?: FBXArrayData,
   /** 可见性索引 */
-  VisibilityIndex?: FBXArrayData;
+  VisibilityIndex?: FBXArrayData,
 }
 
 /**
@@ -97,11 +97,11 @@ export interface FBXLayerElementNode extends FBXNode {
  */
 export interface FBXSkinWeightInfo {
   /** 骨骼索引 */
-  boneIndices: number[];
+  boneIndices: number[],
   /** 权重值 */
-  weights: number[];
+  weights: number[],
   /** 顶点索引 */
-  vertexIndex: number;
+  vertexIndex: number,
 }
 
 /**
@@ -109,15 +109,15 @@ export interface FBXSkinWeightInfo {
  */
 export interface FBXMorphTargetInfo {
   /** 变形目标名称 */
-  name: string;
+  name: string,
   /** 权重 */
-  weight?: number;
+  weight?: number,
   /** 顶点位置偏移 */
-  vertices?: FBXArrayData;
+  vertices?: FBXArrayData,
   /** 法线偏移 */
-  normals?: FBXArrayData;
+  normals?: FBXArrayData,
   /** 切线偏移 */
-  tangents?: FBXArrayData;
+  tangents?: FBXArrayData,
 }
 
 /**
@@ -125,13 +125,13 @@ export interface FBXMorphTargetInfo {
  */
 export interface GeometryParserInput {
   /** FBX 几何体节点 */
-  geometryNode: FBXGeometryNode;
+  geometryNode: FBXGeometryNode,
   /** 节点ID */
-  id: number;
+  id: number,
   /** 关联的变形器信息 */
-  deformerInfo?: FBXDeformerInfo[];
+  deformerInfo?: FBXDeformerInfo[],
   /** 材质索引映射 */
-  materialMapping?: Map<number, number>;
+  materialMapping?: Map<number, number>,
 }
 
 /**
@@ -139,17 +139,17 @@ export interface GeometryParserInput {
  */
 export interface GeometryParserOutput {
   /** Three.js 缓冲几何体 */
-  geometry: THREE.BufferGeometry;
+  geometry: THREE.BufferGeometry,
   /** 几何体名称 */
-  name: string;
+  name: string,
   /** 几何体属性 */
-  attributes: GeometryAttributes;
+  attributes: GeometryAttributes,
   /** 变形目标 */
-  morphTargets?: THREE.MorphTarget[];
+  morphTargets?: THREE.MorphTarget[],
   /** 皮肤信息 */
-  skinInfo?: SkinInfo;
+  skinInfo?: SkinInfo,
   /** 几何体统计信息 */
-  stats: GeometryStats;
+  stats: GeometryStats,
 }
 
 /**
@@ -157,23 +157,23 @@ export interface GeometryParserOutput {
  */
 export interface GeometryAttributes {
   /** 顶点位置 */
-  position?: THREE.BufferAttribute;
+  position?: THREE.BufferAttribute,
   /** 顶点索引 */
-  index?: THREE.BufferAttribute;
+  index?: THREE.BufferAttribute,
   /** 法线 */
-  normal?: THREE.BufferAttribute;
+  normal?: THREE.BufferAttribute,
   /** UV 坐标 */
-  uv?: THREE.BufferAttribute;
+  uv?: THREE.BufferAttribute,
   /** UV2 坐标 */
-  uv2?: THREE.BufferAttribute;
+  uv2?: THREE.BufferAttribute,
   /** 顶点颜色 */
-  color?: THREE.BufferAttribute;
+  color?: THREE.BufferAttribute,
   /** 切线 */
-  tangent?: THREE.BufferAttribute;
+  tangent?: THREE.BufferAttribute,
   /** 皮肤权重 */
-  skinWeight?: THREE.BufferAttribute;
+  skinWeight?: THREE.BufferAttribute,
   /** 皮肤索引 */
-  skinIndex?: THREE.BufferAttribute;
+  skinIndex?: THREE.BufferAttribute,
 }
 
 /**
@@ -181,13 +181,13 @@ export interface GeometryAttributes {
  */
 export interface SkinInfo {
   /** 骨骼数量 */
-  boneCount: number;
+  boneCount: number,
   /** 每个顶点影响的最大骨骼数 */
-  maxBonesPerVertex: number;
+  maxBonesPerVertex: number,
   /** 皮肤权重映射 */
-  weightMap: Map<number, FBXSkinWeightInfo[]>;
+  weightMap: Map<number, FBXSkinWeightInfo[]>,
   /** 骨骼索引映射 */
-  boneIndexMap: Map<number, number>;
+  boneIndexMap: Map<number, number>,
 }
 
 /**
@@ -195,17 +195,17 @@ export interface SkinInfo {
  */
 export interface GeometryStats {
   /** 顶点数量 */
-  vertexCount: number;
+  vertexCount: number,
   /** 面数量 */
-  faceCount: number;
+  faceCount: number,
   /** 三角形数量 */
-  triangleCount: number;
+  triangleCount: number,
   /** 属性数量 */
-  attributeCount: number;
+  attributeCount: number,
   /** 变形目标数量 */
-  morphTargetCount: number;
+  morphTargetCount: number,
   /** 骨骼数量 */
-  boneCount: number;
+  boneCount: number,
 }
 
 /**
@@ -213,21 +213,21 @@ export interface GeometryStats {
  */
 export interface GeometryMetadata {
   /** 几何体名称 */
-  name: string;
+  name: string,
   /** 几何体类型 */
-  type: string;
+  type: string,
   /** 是否为网格几何体 */
-  isMesh: boolean;
+  isMesh: boolean,
   /** 是否为蒙皮几何体 */
-  isSkinned: boolean;
+  isSkinned: boolean,
   /** 是否有变形目标 */
-  hasMorphTargets: boolean;
+  hasMorphTargets: boolean,
   /** 是否有顶点颜色 */
-  hasVertexColors: boolean;
+  hasVertexColors: boolean,
   /** 是否有UV坐标 */
-  hasUV: boolean;
+  hasUV: boolean,
   /** 是否有法线 */
-  hasNormals: boolean;
+  hasNormals: boolean,
 }
 
 /**
@@ -235,23 +235,23 @@ export interface GeometryMetadata {
  */
 export interface GeometryParserConfig {
   /** 是否生成法线 */
-  generateNormals?: boolean;
+  generateNormals?: boolean,
   /** 是否生成切线 */
-  generateTangents?: boolean;
+  generateTangents?: boolean,
   /** 是否使用索引 */
-  useIndex?: boolean;
+  useIndex?: boolean,
   /** 顶点合并容差 */
-  vertexTolerance?: number;
+  vertexTolerance?: number,
   /** 法线平滑角度 */
-  normalSmoothingAngle?: number;
+  normalSmoothingAngle?: number,
   /** 是否优化几何体 */
-  optimizeGeometry?: boolean;
+  optimizeGeometry?: boolean,
   /** 最大骨骼影响数 */
-  maxBonesPerVertex?: number;
+  maxBonesPerVertex?: number,
   /** 权重阈值 */
-  weightThreshold?: number;
+  weightThreshold?: number,
   /** 是否支持变形目标 */
-  enableMorphTargets?: boolean;
+  enableMorphTargets?: boolean,
 }
 
 /**
@@ -259,14 +259,14 @@ export interface GeometryParserConfig {
  */
 interface FBXDeformerInfo {
   /** 变形器类型 */
-  type: 'skin' | 'blendshape' | 'cache';
+  type: 'skin' | 'blendshape' | 'cache',
   /** 索引 */
-  indices?: FBXArrayData;
+  indices?: FBXArrayData,
   /** 权重 */
-  weights?: FBXArrayData;
+  weights?: FBXArrayData,
   /** 变形目标 */
   blendShapes?: Array<{
-    name: string;
-    geometry: FBXGeometryData;
-  }>;
+    name: string,
+    geometry: FBXGeometryData,
+  }>,
 }

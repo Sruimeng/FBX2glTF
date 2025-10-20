@@ -11,32 +11,32 @@ import type { FBXNode, FBXValue, FBXTextureInfo } from '../core/fbx-types';
  */
 export interface FBXTextureNode extends FBXNode {
   /** 纹理类型 */
-  Type: 'Texture';
+  Type: 'Texture',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 纹理名称 */
-  TextureName?: FBXValue<string>;
+  TextureName?: FBXValue<string>,
   /** 材质类型 */
-  MaterialType?: FBXValue<string>;
+  MaterialType?: FBXValue<string>,
   /** 纹理类型 */
-  TextureType?: FBXValue<string>;
+  TextureType?: FBXValue<string>,
   /** 使用方式 */
-  Usage?: FBXValue<string>;
+  Usage?: FBXValue<string>,
   /** 纹理坐标集 */
-  UVSet?: FBXValue<string>;
+  UVSet?: FBXValue<string>,
   /** 纹理映射模式 */
-  WrapModeU?: FBXValue<string>;
-  WrapModeV?: FBXValue<string>;
+  WrapModeU?: FBXValue<string>,
+  WrapModeV?: FBXValue<string>,
   /** 纹理混合模式 */
-  BlendMode?: FBXValue<string>;
+  BlendMode?: FBXValue<string>,
   /** 纹理透明度 */
-  Alpha?: FBXValue<number>;
+  Alpha?: FBXValue<number>,
   /** 纹理变换 */
-  TextureRotation?: FBXValue<number>;
-  TextureScaling?: FBXValue<number[]>;
-  TextureTranslation?: FBXValue<number[]>;
+  TextureRotation?: FBXValue<number>,
+  TextureScaling?: FBXValue<number[]>,
+  TextureTranslation?: FBXValue<number[]>,
   /** 纹理CRGB */
-  CrColor?: FBXValue<number[]>;
+  CrColor?: FBXValue<number[]>,
 }
 
 /**
@@ -44,19 +44,19 @@ export interface FBXTextureNode extends FBXNode {
  */
 export interface FBXVideoNode extends FBXNode {
   /** 视频类型 */
-  Type: 'Video';
+  Type: 'Video',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 相对路径 */
-  RelativeFilename?: FBXValue<string>;
+  RelativeFilename?: FBXValue<string>,
   /** 绝对路径 */
-  Filename?: FBXValue<string>;
+  Filename?: FBXValue<string>,
   /** 视频内容 */
-  Content?: FBXValue<string>;
+  Content?: FBXValue<string>,
   /** 视频时长 */
-  Duration?: FBXValue<number>;
+  Duration?: FBXValue<number>,
   /** 帧率 */
-  FrameRate?: FBXValue<number>;
+  FrameRate?: FBXValue<number>,
 }
 
 /**
@@ -64,13 +64,13 @@ export interface FBXVideoNode extends FBXNode {
  */
 export interface TextureParserInput {
   /** FBX 纹理节点 */
-  textureNode: FBXTextureNode;
+  textureNode: FBXTextureNode,
   /** FBX 视频节点 (如果存在) */
-  videoNode?: FBXVideoNode;
+  videoNode?: FBXVideoNode,
   /** 节点ID */
-  id: number;
+  id: number,
   /** 已解析的图像纹理 (如果存在) */
-  baseTexture?: THREE.Texture;
+  baseTexture?: THREE.Texture,
 }
 
 /**
@@ -78,30 +78,30 @@ export interface TextureParserInput {
  */
 export interface TextureParserOutput {
   /** Three.js 纹理对象 */
-  texture: THREE.Texture;
+  texture: THREE.Texture,
   /** 纹理名称 */
-  name: string;
+  name: string,
   /** 纹理类型 */
-  textureType: string;
+  textureType: string,
   /** UV 坐标集 */
-  uvSet: string;
+  uvSet: string,
   /** 纹理变换信息 */
   transform?: {
-    rotation: number;
-    scaling: THREE.Vector2;
-    translation: THREE.Vector2;
-  };
+    rotation: number,
+    scaling: THREE.Vector2,
+    translation: THREE.Vector2,
+  },
   /** 纹理包装模式 */
   wrapMode: {
-    u: THREE.Wrapping;
-    v: THREE.Wrapping;
-  };
+    u: THREE.Wrapping,
+    v: THREE.Wrapping,
+  },
   /** 混合模式 */
-  blendMode?: string;
+  blendMode?: string,
   /** 透明度 */
-  alpha?: number;
+  alpha?: number,
   /** 是否为视频纹理 */
-  isVideo: boolean;
+  isVideo: boolean,
 }
 
 /**
@@ -109,20 +109,20 @@ export interface TextureParserOutput {
  */
 export interface TextureMetadata {
   /** 纹理名称 */
-  name: string;
+  name: string,
   /** 纹理类型 */
-  type: string;
+  type: string,
   /** 材质类型 */
-  materialType?: string;
+  materialType?: string,
   /** 使用方式 */
-  usage?: string;
+  usage?: string,
   /** UV 坐标集 */
-  uvSet: string;
+  uvSet: string,
   /** 文件路径信息 */
   filepaths?: {
-    relative?: string;
-    absolute?: string;
-  };
+    relative?: string,
+    absolute?: string,
+  },
 }
 
 /**
@@ -130,21 +130,21 @@ export interface TextureMetadata {
  */
 export interface TextureParserConfig {
   /** 是否启用Mipmap */
-  generateMipmaps?: boolean;
+  generateMipmaps?: boolean,
   /** 纹理过滤模式 */
-  magFilter?: THREE.MagnificationTextureFilter;
-  minFilter?: THREE.MinificationTextureFilter;
+  magFilter?: THREE.MagnificationTextureFilter,
+  minFilter?: THREE.MinificationTextureFilter,
   /** 默认包装模式 */
-  defaultWrapS?: THREE.Wrapping;
-  defaultWrapT?: THREE.Wrapping;
+  defaultWrapS?: THREE.Wrapping,
+  defaultWrapT?: THREE.Wrapping,
   /** 颜色空间 */
-  colorSpace?: THREE.ColorSpace;
+  colorSpace?: THREE.ColorSpace,
   /** 是否翻转Y轴 */
-  flipY?: boolean;
+  flipY?: boolean,
   /** 是否支持视频纹理 */
-  enableVideoTextures?: boolean;
+  enableVideoTextures?: boolean,
   /** 视频自动播放 */
-  videoAutoplay?: boolean;
+  videoAutoplay?: boolean,
   /** 视频循环播放 */
-  videoLoop?: boolean;
+  videoLoop?: boolean,
 }

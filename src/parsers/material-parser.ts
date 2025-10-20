@@ -8,7 +8,7 @@ import type {
   IParsingContext,
   IParser,
   BaseParser,
-  ParserMetadata
+  ParserMetadata,
 } from '../types/core';
 import type {
   MaterialParserInput,
@@ -16,12 +16,12 @@ import type {
   MaterialProperties,
   MaterialTextureMap,
   MaterialMetadata,
-  MaterialParserConfig
+  MaterialParserConfig,
 } from '../types/parsers/material-parser';
 import type {
   FBXMaterialNode,
   FBXMaterialPropertyNode,
-  FBXTextureConnection
+  FBXTextureConnection,
 } from '../types/parsers/material-parser';
 import { TextureParser } from './texture-parser';
 
@@ -44,12 +44,12 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   private config: MaterialParserConfig;
   private textureParser: TextureParser;
 
-  constructor(context: IParsingContext, config?: MaterialParserConfig) {
+  constructor (context: IParsingContext, config?: MaterialParserConfig) {
     super(context, {
       name: 'MaterialParser',
       version: '1.0.0',
       description: '解析 FBX 材质节点为 Three.js 材质',
-      dependencies: ['THREE', 'TextureParser']
+      dependencies: ['THREE', 'TextureParser'],
     });
 
     this.config = {
@@ -61,7 +61,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
       aoMapIntensity: 1.0,
       roughnessFactor: 1.0,
       metallicFactor: 0.0,
-      ...config
+      ...config,
     };
 
     this.textureParser = new TextureParser(context);
@@ -70,7 +70,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   /**
    * 解析材质节点
    */
-  parse(input: MaterialParserInput, context: IParsingContext): MaterialParserOutput {
+  parse (input: MaterialParserInput, context: IParsingContext): MaterialParserOutput {
     const { materialNode, id, textureConnections, textureMap } = input;
 
     this.log(`开始解析材质节点: ${materialNode.MaterialName?.value || `Material_${id}`}`);
@@ -97,10 +97,11 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
         shadingModel: metadata.shadingModel,
         properties: materialProperties,
         textures,
-        isPBR: material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial
+        isPBR: material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial,
       };
 
       this.log(`成功解析材质: ${output.name} (${output.shadingModel})`);
+
       return output;
 
     } catch (error) {
@@ -112,38 +113,41 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   /**
    * 提取材质元数据
    */
-  private extractMaterialMetadata(materialNode: FBXMaterialNode): MaterialMetadata {
+  private extractMaterialMetadata (materialNode: FBXMaterialNode): MaterialMetadata {
     const shadingModel = materialNode.ShadingModel?.value || FBXShadingModel.LAMBERT;
     const multiLayer = materialNode.MultiLayer?.value || false;
 
     const metadata: MaterialMetadata = {
       name: materialNode.MaterialName?.value || 'UnknownMaterial',
-      shadingModel: shadingModel as string,
+      shadingModel: shadingModel,
       multiLayer: multiLayer,
       textureCount: 0, // 将在后续步骤中计算
       isTransparent: false, // 将在后续步骤中确定
-      isDoubleSided: false // 将在后续步骤中确定
+      isDoubleSided: false, // 将在后续步骤中确定
     };
 
     this.log(`提取材质元数据: ${JSON.stringify(metadata)}`);
+
     return metadata;
   }
 
   /**
    * 解析材质属性
    */
-  private parseMaterialProperties(materialNode: FBXMaterialNode): MaterialProperties {
+  private parseMaterialProperties (materialNode: FBXMaterialNode): MaterialProperties {
     const properties: MaterialProperties = {};
     const materialProperties = materialNode.Properties;
 
     if (!materialProperties) {
       this.log('材质节点没有属性，使用默认值', 'warn');
+
       return properties;
     }
 
     // 解析漫反射颜色
     if (materialProperties.DiffuseColor) {
       const diffuseColor = this.parseColorValue(materialProperties.DiffuseColor);
+
       if (diffuseColor) {
         properties.diffuseColor = diffuseColor;
       }
@@ -152,6 +156,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     // 解析高光颜色
     if (materialProperties.SpecularColor) {
       const specularColor = this.parseColorValue(materialProperties.SpecularColor);
+
       if (specularColor) {
         properties.specularColor = specularColor;
       }
@@ -160,6 +165,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     // 解析高光强度
     if (materialProperties.Shininess) {
       const shininess = this.parseNumericValue(materialProperties.Shininess);
+
       if (shininess !== undefined) {
         properties.shininess = shininess;
       }
@@ -168,6 +174,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     // 解析自发光颜色
     if (materialProperties.EmissiveColor) {
       const emissiveColor = this.parseColorValue(materialProperties.EmissiveColor);
+
       if (emissiveColor) {
         properties.emissiveColor = emissiveColor;
       }
@@ -176,6 +183,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     // 解析透明度
     if (materialProperties.Transparency) {
       const transparency = this.parseNumericValue(materialProperties.Transparency);
+
       if (transparency !== undefined) {
         properties.opacity = 1.0 - transparency; // FBX 透明度与 Three.js 不透明度相反
       }
@@ -184,19 +192,21 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     // 解析反射度
     if (materialProperties.Reflectivity) {
       const reflectivity = this.parseNumericValue(materialProperties.Reflectivity);
+
       if (reflectivity !== undefined) {
         properties.reflectivity = reflectivity;
       }
     }
 
     this.log(`解析材质属性: ${JSON.stringify(properties)}`);
+
     return properties;
   }
 
   /**
    * 解析纹理连接
    */
-  private parseTextureConnections(
+  private parseTextureConnections (
     connections: FBXTextureConnection[],
     textureMap: Map<number, THREE.Texture>
   ): MaterialTextureMap {
@@ -204,8 +214,10 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
 
     connections.forEach(connection => {
       const texture = textureMap.get(connection.textureId);
+
       if (!texture) {
         this.log(`纹理 ID ${connection.textureId} 未找到对应的纹理`, 'warn');
+
         return;
       }
 
@@ -214,37 +226,46 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
         case 'diffusecolor':
         case 'basecolor':
           textures.diffuse = texture;
+
           break;
         case 'specularcolor':
         case 'specular':
           textures.specular = texture;
+
           break;
         case 'emissivecolor':
         case 'emissive':
           textures.emissive = texture;
+
           break;
         case 'transparency':
         case 'alpha':
         case 'opacity':
           textures.alpha = texture;
+
           break;
         case 'normalmap':
         case 'normal':
           textures.normal = texture;
+
           break;
         case 'roughness':
           textures.roughness = texture;
+
           break;
         case 'metallic':
           textures.metallic = texture;
+
           break;
         case 'ambientocclusion':
         case 'ao':
           textures.ao = texture;
+
           break;
         case 'reflectioncolor':
         case 'reflection':
           textures.reflection = texture;
+
           break;
         default:
           // 对于未知属性，使用属性名作为键
@@ -254,13 +275,14 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     });
 
     this.log(`解析纹理连接: ${Object.keys(textures).length} 个纹理`);
+
     return textures;
   }
 
   /**
    * 创建 Three.js 材质
    */
-  private createThreeMaterial(
+  private createThreeMaterial (
     metadata: MaterialMetadata,
     properties: MaterialProperties,
     textures: MaterialTextureMap
@@ -293,7 +315,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   /**
    * 创建 PBR 材质
    */
-  private createPBRMaterial(
+  private createPBRMaterial (
     metadata: MaterialMetadata,
     properties: MaterialProperties,
     textures: MaterialTextureMap
@@ -343,13 +365,14 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     }
 
     this.log(`创建 PBR 材质: ${needsPhysicalMaterial ? 'Physical' : 'Standard'}`);
+
     return material;
   }
 
   /**
    * 创建传统材质
    */
-  private createTraditionalMaterial(
+  private createTraditionalMaterial (
     metadata: MaterialMetadata,
     properties: MaterialProperties,
     textures: MaterialTextureMap
@@ -360,16 +383,20 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     switch (metadata.shadingModel.toLowerCase()) {
       case FBXShadingModel.PHONG.toLowerCase():
         material = new THREE.MeshPhongMaterial();
+
         break;
       case FBXShadingModel.BLINN.toLowerCase():
         material = new THREE.MeshPhongMaterial(); // Three.js 没有 Blinn 材质，使用 Phong 代替
+
         break;
       case FBXShadingModel.CONSTANT.toLowerCase():
         material = new THREE.MeshBasicMaterial();
+
         break;
       case FBXShadingModel.LAMBERT.toLowerCase():
       default:
         material = new THREE.MeshLambertMaterial();
+
         break;
     }
 
@@ -399,13 +426,14 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     }
 
     this.log(`创建传统材质: ${metadata.shadingModel}`);
+
     return material;
   }
 
   /**
    * 应用纹理到材质
    */
-  private applyTexturesToMaterial(
+  private applyTexturesToMaterial (
     material: THREE.Material,
     textures: MaterialTextureMap,
     properties: MaterialProperties
@@ -467,7 +495,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   /**
    * 应用纹理到材质属性
    */
-  private applyTextureToProperty(material: THREE.Material, property: string, texture: THREE.Texture): void {
+  private applyTextureToProperty (material: THREE.Material, property: string, texture: THREE.Texture): void {
     (material as any)[property] = texture;
     texture.needsUpdate = true;
   }
@@ -475,12 +503,13 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   /**
    * 解析颜色值
    */
-  private parseColorValue(colorValue: any): THREE.Color | undefined {
-    if (!colorValue) return undefined;
+  private parseColorValue (colorValue: any): THREE.Color | undefined {
+    if (!colorValue) {return undefined;}
 
     // 处理不同的颜色值格式
     if (typeof colorValue === 'object' && colorValue.value) {
       const colorArray = colorValue.value;
+
       if (Array.isArray(colorArray) && colorArray.length >= 3) {
         return new THREE.Color(colorArray[0], colorArray[1], colorArray[2]);
       }
@@ -491,14 +520,15 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     }
 
     this.log(`无法解析颜色值: ${JSON.stringify(colorValue)}`, 'warn');
+
     return undefined;
   }
 
   /**
    * 解析数值
    */
-  private parseNumericValue(numericValue: any): number | undefined {
-    if (numericValue === undefined || numericValue === null) return undefined;
+  private parseNumericValue (numericValue: any): number | undefined {
+    if (numericValue === undefined || numericValue === null) {return undefined;}
 
     if (typeof numericValue === 'object' && numericValue.value !== undefined) {
       return parseFloat(numericValue.value);
@@ -510,17 +540,19 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
 
     if (typeof numericValue === 'string') {
       const parsed = parseFloat(numericValue);
+
       return isNaN(parsed) ? undefined : parsed;
     }
 
     this.log(`无法解析数值: ${JSON.stringify(numericValue)}`, 'warn');
+
     return undefined;
   }
 
   /**
    * 判断材质是否透明
    */
-  private isMaterialTransparent(properties: MaterialProperties, textures: MaterialTextureMap): boolean {
+  private isMaterialTransparent (properties: MaterialProperties, textures: MaterialTextureMap): boolean {
     // 检查透明度属性
     if (properties.opacity !== undefined && properties.opacity < 1.0) {
       return true;
@@ -542,7 +574,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   /**
    * 判断材质是否应该双面渲染
    */
-  private shouldBeDoubleSided(properties: MaterialProperties, textures: MaterialTextureMap): boolean {
+  private shouldBeDoubleSided (properties: MaterialProperties, textures: MaterialTextureMap): boolean {
     // 如果材质是透明的，通常需要双面渲染
     return this.isMaterialTransparent(properties, textures);
   }
@@ -550,7 +582,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   /**
    * 验证材质节点
    */
-  protected validateInput(input: MaterialParserInput): void {
+  protected validateInput (input: MaterialParserInput): void {
     super.validateInput(input);
 
     if (!input.materialNode) {
@@ -565,14 +597,14 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   /**
    * 获取配置
    */
-  public getConfig(): MaterialParserConfig {
+  public getConfig (): MaterialParserConfig {
     return { ...this.config };
   }
 
   /**
    * 更新配置
    */
-  public updateConfig(newConfig: Partial<MaterialParserConfig>): void {
+  public updateConfig (newConfig: Partial<MaterialParserConfig>): void {
     this.config = { ...this.config, ...newConfig };
     this.log('更新材质解析器配置');
   }
@@ -584,22 +616,23 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
 export class MaterialParserFactory {
   private defaultConfig: MaterialParserConfig;
 
-  constructor(defaultConfig?: MaterialParserConfig) {
+  constructor (defaultConfig?: MaterialParserConfig) {
     this.defaultConfig = defaultConfig || {};
   }
 
   /**
    * 创建材质解析器实例
    */
-  create(context: IParsingContext, config?: MaterialParserConfig): MaterialParser {
+  create (context: IParsingContext, config?: MaterialParserConfig): MaterialParser {
     const mergedConfig = { ...this.defaultConfig, ...config };
+
     return new MaterialParser(context, mergedConfig);
   }
 
   /**
    * 获取默认配置
    */
-  public getDefaultConfig(): MaterialParserConfig {
+  public getDefaultConfig (): MaterialParserConfig {
     return { ...this.defaultConfig };
   }
 }

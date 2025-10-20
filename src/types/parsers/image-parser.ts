@@ -11,25 +11,25 @@ import type { FBXNode, FBXValue } from '../core/fbx-types';
  */
 export interface FBXImageNode extends FBXNode {
   /** 图像类型 */
-  Type: 'Texture' | 'Video';
+  Type: 'Texture' | 'Video',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 图像名称 */
-  TextureName?: FBXValue<string>;
+  TextureName?: FBXValue<string>,
   /** 文件类型 */
-  Type_s?: FBXValue<string>;
+  Type_s?: FBXValue<string>,
   /** 相对路径 */
-  RelativeFilename?: FBXValue<string>;
+  RelativeFilename?: FBXValue<string>,
   /** 绝对路径 */
-  Filename?: FBXValue<string>;
+  Filename?: FBXValue<string>,
   /** 图片宽度 */
-  Width?: FBXValue<number>;
+  Width?: FBXValue<number>,
   /** 图片高度 */
-  Height?: FBXValue<number>;
+  Height?: FBXValue<number>,
   /** 图像内容 (Base64) */
-  Content?: FBXValue<string>;
+  Content?: FBXValue<string>,
   /** 图像格式 */
-  ImageFormat?: FBXValue<string>;
+  ImageFormat?: FBXValue<string>,
 }
 
 /**
@@ -37,9 +37,9 @@ export interface FBXImageNode extends FBXNode {
  */
 export interface ImageParserInput {
   /** FBX 图像节点 */
-  imageNode: FBXImageNode;
+  imageNode: FBXImageNode,
   /** 节点ID */
-  id: number;
+  id: number,
 }
 
 /**
@@ -47,18 +47,18 @@ export interface ImageParserInput {
  */
 export interface ImageParserOutput {
   /** Three.js 纹理对象 */
-  texture: THREE.Texture;
+  texture: THREE.Texture,
   /** 图片名称 */
-  name: string;
+  name: string,
   /** 图片尺寸信息 */
   size?: {
-    width: number;
-    height: number;
-  };
+    width: number,
+    height: number,
+  },
   /** 图片格式 */
-  format?: string;
+  format?: string,
   /** 是否为视频纹理 */
-  isVideo: boolean;
+  isVideo: boolean,
 }
 
 /**
@@ -66,17 +66,17 @@ export interface ImageParserOutput {
  */
 export interface ImageMetadata {
   /** 原始文件名 */
-  filename?: string;
+  filename?: string,
   /** 相对文件名 */
-  relativeFilename?: string;
+  relativeFilename?: string,
   /** 图片宽度 */
-  width?: number;
+  width?: number,
   /** 图片高度 */
-  height?: number;
+  height?: number,
   /** 图片格式 */
-  format?: string;
+  format?: string,
   /** 是否为视频 */
-  isVideo: boolean;
+  isVideo: boolean,
 }
 
 /**
@@ -84,19 +84,19 @@ export interface ImageMetadata {
  */
 export interface ImageParserConfig {
   /** 是否启用Mipmap */
-  generateMipmaps?: boolean;
+  generateMipmaps?: boolean,
   /** 纹理过滤模式 */
-  magFilter?: THREE.MagnificationTextureFilter;
-  minFilter?: THREE.MinificationTextureFilter;
+  magFilter?: THREE.MagnificationTextureFilter,
+  minFilter?: THREE.MinificationTextureFilter,
   /** 纹理包装模式 */
-  wrapS?: THREE.Wrapping;
-  wrapT?: THREE.Wrapping;
+  wrapS?: THREE.Wrapping,
+  wrapT?: THREE.Wrapping,
   /** 颜色空间 */
-  colorSpace?: THREE.ColorSpace;
+  colorSpace?: THREE.ColorSpace,
   /** 是否翻转Y轴 */
-  flipY?: boolean;
+  flipY?: boolean,
   /** 图像加载超时时间 (毫秒) */
-  timeout?: number;
+  timeout?: number,
   /** 是否使用缓存 */
-  useCache?: boolean;
+  useCache?: boolean,
 }

@@ -11,17 +11,17 @@ import type { FBXNode, FBXValue, FBXMaterialProperties } from '../core/fbx-types
  */
 export interface FBXMaterialNode extends FBXNode {
   /** 材质类型 */
-  Type: 'Material';
+  Type: 'Material',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 材质名称 */
-  MaterialName?: FBXValue<string>;
+  MaterialName?: FBXValue<string>,
   /** 材质类型 (Lambert、Phong、Blinn等) */
-  ShadingModel?: FBXValue<string>;
+  ShadingModel?: FBXValue<string>,
   /** 多边形绘制模式 */
-  MultiLayer?: FBXValue<boolean>;
+  MultiLayer?: FBXValue<boolean>,
   /** 材质属性 */
-  Properties?: Record<string, FBXMaterialProperties>;
+  Properties?: Record<string, FBXMaterialProperties>,
 }
 
 /**
@@ -29,15 +29,15 @@ export interface FBXMaterialNode extends FBXNode {
  */
 export interface FBXMaterialPropertyNode extends FBXNode {
   /** 属性类型 */
-  Type: 'MaterialProperty';
+  Type: 'MaterialProperty',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 属性名称 */
-  PropertyName?: FBXValue<string>;
+  PropertyName?: FBXValue<string>,
   /** 属性值 */
-  PropertyValue?: FBXValue<any>;
+  PropertyValue?: FBXValue<any>,
   /** 属性类型 */
-  PropertyType?: FBXValue<string>;
+  PropertyType?: FBXValue<string>,
 }
 
 /**
@@ -45,13 +45,13 @@ export interface FBXMaterialPropertyNode extends FBXNode {
  */
 export interface FBXTextureConnection {
   /** 纹理节点ID */
-  textureId: number;
+  textureId: number,
   /** 连接类型 */
-  connectionType: string;
+  connectionType: string,
   /** 属性名称 */
-  propertyName: string;
+  propertyName: string,
   /** UV 坐标集 */
-  uvSet?: string;
+  uvSet?: string,
 }
 
 /**
@@ -59,13 +59,13 @@ export interface FBXTextureConnection {
  */
 export interface MaterialParserInput {
   /** FBX 材质节点 */
-  materialNode: FBXMaterialNode;
+  materialNode: FBXMaterialNode,
   /** 节点ID */
-  id: number;
+  id: number,
   /** 关联的纹理连接 */
-  textureConnections?: FBXTextureConnection[];
+  textureConnections?: FBXTextureConnection[],
   /** 已解析的纹理映射 */
-  textureMap?: Map<number, THREE.Texture>;
+  textureMap?: Map<number, THREE.Texture>,
 }
 
 /**
@@ -73,17 +73,17 @@ export interface MaterialParserInput {
  */
 export interface MaterialParserOutput {
   /** Three.js 材质对象 */
-  material: THREE.Material;
+  material: THREE.Material,
   /** 材质名称 */
-  name: string;
+  name: string,
   /** 材质类型 */
-  shadingModel: string;
+  shadingModel: string,
   /** 材质属性 */
-  properties: MaterialProperties;
+  properties: MaterialProperties,
   /** 关联的纹理 */
-  textures: MaterialTextureMap;
+  textures: MaterialTextureMap,
   /** 是否为PBR材质 */
-  isPBR: boolean;
+  isPBR: boolean,
 }
 
 /**
@@ -91,39 +91,39 @@ export interface MaterialParserOutput {
  */
 export interface MaterialProperties {
   /** 漫反射颜色 */
-  diffuseColor?: THREE.Color;
+  diffuseColor?: THREE.Color,
   /** 漫反射纹理 */
-  diffuseMap?: THREE.Texture;
+  diffuseMap?: THREE.Texture,
   /** 高光颜色 */
-  specularColor?: THREE.Color;
+  specularColor?: THREE.Color,
   /** 高光强度 */
-  shininess?: number;
+  shininess?: number,
   /** 高光纹理 */
-  specularMap?: THREE.Texture;
+  specularMap?: THREE.Texture,
   /** 自发光颜色 */
-  emissiveColor?: THREE.Color;
+  emissiveColor?: THREE.Color,
   /** 自发光纹理 */
-  emissiveMap?: THREE.Texture;
+  emissiveMap?: THREE.Texture,
   /** 透明度 */
-  opacity?: number;
+  opacity?: number,
   /** 透明度纹理 */
-  alphaMap?: THREE.Texture;
+  alphaMap?: THREE.Texture,
   /** 法线纹理 */
-  normalMap?: THREE.Texture;
+  normalMap?: THREE.Texture,
   /** 粗糙度 */
-  roughness?: number;
+  roughness?: number,
   /** 粗糙度纹理 */
-  roughnessMap?: THREE.Texture;
+  roughnessMap?: THREE.Texture,
   /** 金属度 */
-  metallic?: number;
+  metallic?: number,
   /** 金属度纹理 */
-  metallicMap?: THREE.Texture;
+  metallicMap?: THREE.Texture,
   /** 环境光遮蔽 */
-  aoMap?: THREE.Texture;
+  aoMap?: THREE.Texture,
   /** 反射度 */
-  reflectivity?: number;
+  reflectivity?: number,
   /** 环境反射 */
-  envMap?: THREE.Texture;
+  envMap?: THREE.Texture,
 }
 
 /**
@@ -131,25 +131,25 @@ export interface MaterialProperties {
  */
 export interface MaterialTextureMap {
   /** 漫反射纹理 */
-  diffuse?: THREE.Texture;
+  diffuse?: THREE.Texture,
   /** 高光纹理 */
-  specular?: THREE.Texture;
+  specular?: THREE.Texture,
   /** 自发光纹理 */
-  emissive?: THREE.Texture;
+  emissive?: THREE.Texture,
   /** 透明度纹理 */
-  alpha?: THREE.Texture;
+  alpha?: THREE.Texture,
   /** 法线纹理 */
-  normal?: THREE.Texture;
+  normal?: THREE.Texture,
   /** 粗糙度纹理 */
-  roughness?: THREE.Texture;
+  roughness?: THREE.Texture,
   /** 金属度纹理 */
-  metallic?: THREE.Texture;
+  metallic?: THREE.Texture,
   /** 环境光遮蔽纹理 */
-  ao?: THREE.Texture;
+  ao?: THREE.Texture,
   /** 环境反射纹理 */
-  reflection?: THREE.Texture;
+  reflection?: THREE.Texture,
   /** 自定义纹理 */
-  [key: string]: THREE.Texture | undefined;
+  [key: string]: THREE.Texture | undefined,
 }
 
 /**
@@ -157,17 +157,17 @@ export interface MaterialTextureMap {
  */
 export interface MaterialMetadata {
   /** 材质名称 */
-  name: string;
+  name: string,
   /** 着色模型 */
-  shadingModel: string;
+  shadingModel: string,
   /** 是否为多层材质 */
-  multiLayer: boolean;
+  multiLayer: boolean,
   /** 关联的纹理数量 */
-  textureCount: number;
+  textureCount: number,
   /** 是否为透明材质 */
-  isTransparent: boolean;
+  isTransparent: boolean,
   /** 是否为双面材质 */
-  isDoubleSided: boolean;
+  isDoubleSided: boolean,
 }
 
 /**
@@ -175,19 +175,19 @@ export interface MaterialMetadata {
  */
 export interface MaterialParserConfig {
   /** 默认着色模型 */
-  defaultShadingModel?: 'lambert' | 'phong' | 'blinn' | 'physical' | 'standard';
+  defaultShadingModel?: 'lambert' | 'phong' | 'blinn' | 'physical' | 'standard',
   /** 是否启用PBR转换 */
-  enablePBRConversion?: boolean;
+  enablePBRConversion?: boolean,
   /** 是否使用顶点颜色 */
-  useVertexColors?: boolean;
+  useVertexColors?: boolean,
   /** 透明度阈值 */
-  alphaTest?: number;
+  alphaTest?: number,
   /** 法线贴图强度 */
-  normalScale?: THREE.Vector2;
+  normalScale?: THREE.Vector2,
   /** 环境光遮蔽强度 */
-  aoMapIntensity?: number;
+  aoMapIntensity?: number,
   /** 粗糙度因子 */
-  roughnessFactor?: number;
+  roughnessFactor?: number,
   /** 金属度因子 */
-  metallicFactor?: number;
+  metallicFactor?: number,
 }

@@ -11,21 +11,21 @@ import type { FBXNode, FBXValue, FBXDeformerInfo, FBXArrayData } from '../core/f
  */
 export interface FBXDeformerNode extends FBXNode {
   /** 变形器类型 */
-  Type: 'Deformer';
+  Type: 'Deformer',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 变形器名称 */
-  DeformerName?: FBXValue<string>;
+  DeformerName?: FBXValue<string>,
   /** 变形器类型 */
-  SubType?: FBXValue<string>;
+  SubType?: FBXValue<string>,
   /** 索引 */
-  Indexes?: FBXArrayData;
+  Indexes?: FBXArrayData,
   /** 权重 */
-  Weights?: FBXArrayData;
+  Weights?: FBXArrayData,
   /** 变形方法 */
-  Method?: FBXValue<string>;
+  Method?: FBXValue<string>,
   /** 变形精度 */
-  Precision?: FBXValue<number>;
+  Precision?: FBXValue<number>,
 }
 
 /**
@@ -33,21 +33,21 @@ export interface FBXDeformerNode extends FBXNode {
  */
 export interface FBXClusterNode extends FBXNode {
   /** 集群类型 */
-  Type: 'Cluster';
+  Type: 'Cluster',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 集群名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
   /** 骨骼索引 */
-  Indices?: FBXArrayData;
+  Indices?: FBXArrayData,
   /** 权重 */
-  Weights?: FBXArrayData;
+  Weights?: FBXArrayData,
   /** 变换矩阵 */
-  Transform?: FBXArrayData;
+  Transform?: FBXArrayData,
   /** 变换链接矩阵 */
-  TransformLink?: FBXArrayData;
+  TransformLink?: FBXArrayData,
   /** 父集群索引 */
-  ParentIndex?: FBXValue<number>;
+  ParentIndex?: FBXValue<number>,
 }
 
 /**
@@ -55,17 +55,17 @@ export interface FBXClusterNode extends FBXNode {
  */
 export interface FBXSkinNode extends FBXNode {
   /** 皮肤类型 */
-  Type: 'Skin';
+  Type: 'Skin',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 皮肤名称 */
-  SkinName?: FBXValue<string>;
+  SkinName?: FBXValue<string>,
   /** 骨骼数量 */
-  BoneCount?: FBXValue<number>;
+  BoneCount?: FBXValue<number>,
   /** 变形精度 */
-  DeformPrecision?: FBXValue<number>;
+  DeformPrecision?: FBXValue<number>,
   /** 变形方法 */
-  DeformMethod?: FBXValue<string>;
+  DeformMethod?: FBXValue<string>,
 }
 
 /**
@@ -73,13 +73,13 @@ export interface FBXSkinNode extends FBXNode {
  */
 export interface FBXBlendShapeNode extends FBXNode {
   /** 混合形状类型 */
-  Type: 'BlendShape';
+  Type: 'BlendShape',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 混合形状名称 */
-  BlendShapeName?: FBXValue<string>;
+  BlendShapeName?: FBXValue<string>,
   /** 混合形状通道 */
-  BlendShapeChannels?: FBXBlendShapeChannelNode[];
+  BlendShapeChannels?: FBXBlendShapeChannelNode[],
 }
 
 /**
@@ -87,17 +87,17 @@ export interface FBXBlendShapeNode extends FBXNode {
  */
 export interface FBXBlendShapeChannelNode extends FBXNode {
   /** 通道类型 */
-  Type: 'BlendShapeChannel';
+  Type: 'BlendShapeChannel',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 通道名称 */
-  ChannelName?: FBXValue<string>;
+  ChannelName?: FBXValue<string>,
   /** 完整形状 */
-  FullWeights?: FBXArrayData;
+  FullWeights?: FBXArrayData,
   /** 目标几何体ID */
-  TargetShapeId?: FBXValue<number>;
+  TargetShapeId?: FBXValue<number>,
   /** 混合形状权重 */
-  DefaultWeights?: FBXArrayData;
+  DefaultWeights?: FBXArrayData,
 }
 
 /**
@@ -105,15 +105,15 @@ export interface FBXBlendShapeChannelNode extends FBXNode {
  */
 export interface DeformerParserInput {
   /** FBX 变形器节点 */
-  deformerNode: FBXDeformerNode;
+  deformerNode: FBXDeformerNode,
   /** 节点ID */
-  id: number;
+  id: number,
   /** 子变形器节点 */
-  childDeformers?: FBXDeformerNode[];
+  childDeformers?: FBXDeformerNode[],
   /** 关联的几何体ID */
-  geometryId?: number;
+  geometryId?: number,
   /** 关联的骨骼节点 */
-  boneNodes?: Map<number, THREE.Bone>;
+  boneNodes?: Map<number, THREE.Bone>,
 }
 
 /**
@@ -121,9 +121,9 @@ export interface DeformerParserInput {
  */
 export interface DeformerParserOutput {
   /** 变形器数据 */
-  deformerData: DeformerData;
+  deformerData: DeformerData,
   /** 变形器元数据 */
-  metadata: DeformerMetadata;
+  metadata: DeformerMetadata,
 }
 
 /**
@@ -131,15 +131,15 @@ export interface DeformerParserOutput {
  */
 export interface SkinData {
   /** 骨骼数组 */
-  bones: THREE.Bone[];
+  bones: THREE.Bone[],
   /** 骨骼逆矩阵 */
-  boneInverses: THREE.Matrix4[];
+  boneInverses: THREE.Matrix4[],
   /** 骨骼矩阵 */
-  bindMatrix?: THREE.Matrix4;
+  bindMatrix?: THREE.Matrix4,
   /** 骨骼矩阵世界 */
-  bindMatrixWorld?: THREE.Matrix4;
+  bindMatrixWorld?: THREE.Matrix4,
   /** 皮肤权重 */
-  skinWeights?: SkinWeightData[];
+  skinWeights?: SkinWeightData[],
 }
 
 /**
@@ -147,11 +147,11 @@ export interface SkinData {
  */
 export interface SkinWeightData {
   /** 顶点索引 */
-  vertexIndex: number;
+  vertexIndex: number,
   /** 骨骼索引数组 */
-  boneIndices: number[];
+  boneIndices: number[],
   /** 权重数组 */
-  weights: number[];
+  weights: number[],
 }
 
 /**
@@ -159,11 +159,11 @@ export interface SkinWeightData {
  */
 export interface BlendShapeData {
   /** 混合形状名称 */
-  name: string;
+  name: string,
   /** 混合形状通道 */
-  channels: BlendShapeChannelData[];
+  channels: BlendShapeChannelData[],
   /** 影响的几何体ID */
-  targetGeometryId?: number;
+  targetGeometryId?: number,
 }
 
 /**
@@ -171,15 +171,15 @@ export interface BlendShapeData {
  */
 export interface BlendShapeChannelData {
   /** 通道名称 */
-  name: string;
+  name: string,
   /** 目标几何体 */
-  targetGeometry?: THREE.BufferGeometry;
+  targetGeometry?: THREE.BufferGeometry,
   /** 权重 */
-  weight: number;
+  weight: number,
   /** 完整权重 */
-  fullWeights?: number[];
+  fullWeights?: number[],
   /** 默认权重 */
-  defaultWeights?: number[];
+  defaultWeights?: number[],
 }
 
 /**
@@ -192,13 +192,13 @@ export type DeformerData = SkinData | BlendShapeData | CacheDeformerData;
  */
 export interface CacheDeformerData {
   /** 缓存类型 */
-  type: 'cache';
+  type: 'cache',
   /** 缓存数据 */
-  cacheData: Float32Array;
+  cacheData: Float32Array,
   /** 缓存时间 */
-  cacheTime: number;
+  cacheTime: number,
   /** 缓存精度 */
-  precision: number;
+  precision: number,
 }
 
 /**
@@ -206,15 +206,15 @@ export interface CacheDeformerData {
  */
 export interface DeformerMetadata {
   /** 变形器名称 */
-  name: string;
+  name: string,
   /** 变形器类型 */
-  type: 'skin' | 'blendshape' | 'cache';
+  type: 'skin' | 'blendshape' | 'cache',
   /** 影响的顶点数量 */
-  vertexCount: number;
+  vertexCount: number,
   /** 权重总和 */
-  totalWeight: number;
+  totalWeight: number,
   /** 是否有效 */
-  isValid: boolean;
+  isValid: boolean,
 }
 
 /**
@@ -222,15 +222,15 @@ export interface DeformerMetadata {
  */
 export interface DeformerParserConfig {
   /** 最大骨骼影响数 */
-  maxBonesPerVertex?: number;
+  maxBonesPerVertex?: number,
   /** 权重阈值 */
-  weightThreshold?: number;
+  weightThreshold?: number,
   /** 是否归一化权重 */
-  normalizeWeights?: boolean;
+  normalizeWeights?: boolean,
   /** 是否优化皮肤权重 */
-  optimizeSkinWeights?: boolean;
+  optimizeSkinWeights?: boolean,
   /** 混合形状精度 */
-  blendShapePrecision?: number;
+  blendShapePrecision?: number,
   /** 是否启用混合形状缓存 */
-  enableBlendShapeCache?: boolean;
+  enableBlendShapeCache?: boolean,
 }

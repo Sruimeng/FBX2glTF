@@ -11,21 +11,21 @@ import type { FBXNode, FBXValue } from '../core/fbx-types';
  */
 export interface FBXModelNode extends FBXNode {
   /** 模型类型 */
-  Type: 'Model';
+  Type: 'Model',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 模型名称 */
-  ModelName?: FBXValue<string>;
+  ModelName?: FBXValue<string>,
   /** 模型类型 */
-  ModelType?: FBXValue<string>;
+  ModelType?: FBXValue<string>,
   /** 变换属性 */
-  Properties?: FBXTransformProperties;
+  Properties?: FBXTransformProperties,
   /** 子节点 */
-  Children?: number[];
+  Children?: number[],
   /** 父节点 */
-  Parent?: number;
+  Parent?: number,
   /** 默认属性 */
-  DefaultAttributeIndex?: FBXValue<number>;
+  DefaultAttributeIndex?: FBXValue<number>,
 }
 
 /**
@@ -33,17 +33,17 @@ export interface FBXModelNode extends FBXNode {
  */
 export interface FBXTransformProperties {
   /** 位置 */
-  LclTranslation?: FBXValue<number[]>;
+  LclTranslation?: FBXValue<number[]>,
   /** 旋转 */
-  LclRotation?: FBXValue<number[]>;
+  LclRotation?: FBXValue<number[]>,
   /** 缩放 */
-  LclScaling?: FBXValue<number[]>;
+  LclScaling?: FBXValue<number[]>,
   /** 四元数旋转 */
-  LclRotationQuaternion?: FBXValue<number[]>;
+  LclRotationQuaternion?: FBXValue<number[]>,
   /** 可见性 */
-  Visibility?: FBXValue<boolean>;
+  Visibility?: FBXValue<boolean>,
   /** 继承类型 */
-  InheritType?: FBXValue<number>;
+  InheritType?: FBXValue<number>,
 }
 
 /**
@@ -51,17 +51,17 @@ export interface FBXTransformProperties {
  */
 export interface FBXNullNode extends FBXNode {
   /** 空节点类型 */
-  Type: 'Null';
+  Type: 'Null',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 节点名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
   /** 变换属性 */
-  Properties?: FBXTransformProperties;
+  Properties?: FBXTransformProperties,
   /** 子节点 */
-  Children?: number[];
+  Children?: number[],
   /** 父节点 */
-  Parent?: number;
+  Parent?: number,
 }
 
 /**
@@ -69,19 +69,19 @@ export interface FBXNullNode extends FBXNode {
  */
 export interface FBXBoneNode extends FBXNode {
   /** 骨骼类型 */
-  Type: 'Skeleton' | 'Limb';
+  Type: 'Skeleton' | 'Limb',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 骨骼名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
   /** 变换属性 */
-  Properties?: FBXTransformProperties;
+  Properties?: FBXTransformProperties,
   /** 骨骼长度 */
-  Size?: FBXValue<number>;
+  Size?: FBXValue<number>,
   /** 子骨骼 */
-  Children?: number[];
+  Children?: number[],
   /** 父骨骼 */
-  Parent?: number;
+  Parent?: number,
 }
 
 /**
@@ -89,15 +89,15 @@ export interface FBXBoneNode extends FBXNode {
  */
 export interface FCBCameraNode extends FBXNode {
   /** 摄像机类型 */
-  Type: 'Camera';
+  Type: 'Camera',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 摄像机名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
   /** 摄像机属性 */
-  Properties?: FCBCameraProperties;
+  Properties?: FCBCameraProperties,
   /** 视口信息 */
-  ViewFrustum?: FBXViewFrustumProperties;
+  ViewFrustum?: FBXViewFrustumProperties,
 }
 
 /**
@@ -105,19 +105,19 @@ export interface FCBCameraNode extends FBXNode {
  */
 export interface FCBCameraProperties {
   /** 视野角度 */
-  FieldOfView?: FBXValue<number>;
+  FieldOfView?: FBXValue<number>,
   /** 近裁剪面 */
-  NearPlane?: FBXValue<number>;
+  NearPlane?: FBXValue<number>,
   /** 远裁剪面 */
-  FarPlane?: FBXValue<number>;
+  FarPlane?: FBXValue<number>,
   /** 焦距 */
-  FocalLength?: FBXValue<number>;
+  FocalLength?: FBXValue<number>,
   /** 胶片宽度 */
-  FilmWidth?: FBXValue<number>;
+  FilmWidth?: FBXValue<number>,
   /** 胶片高度 */
-  FilmHeight?: FBXValue<number>;
+  FilmHeight?: FBXValue<number>,
   /** 摄像机类型 */
-  CameraType?: FBXValue<string>;
+  CameraType?: FBXValue<string>,
 }
 
 /**
@@ -125,11 +125,11 @@ export interface FCBCameraProperties {
  */
 export interface FBXViewFrustumProperties {
   /** 视锥体类型 */
-  FrustumType?: FBXValue<string>;
+  FrustumType?: FBXValue<string>,
   /** 正交投影宽度 */
-  OrthoWidth?: FBXValue<number>;
+  OrthoWidth?: FBXValue<number>,
   /** 正交投影高度 */
-  OrthoHeight?: FBXValue<number>;
+  OrthoHeight?: FBXValue<number>,
 }
 
 /**
@@ -137,13 +137,13 @@ export interface FBXViewFrustumProperties {
  */
 export interface FBXLightNode extends FBXNode {
   /** 灯光类型 */
-  Type: 'Light';
+  Type: 'Light',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 灯光名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
   /** 灯光属性 */
-  Properties?: FBXLightProperties;
+  Properties?: FBXLightProperties,
 }
 
 /**
@@ -151,21 +151,21 @@ export interface FBXLightNode extends FBXNode {
  */
 export interface FBXLightProperties {
   /** 灯光类型 */
-  LightType?: FBXValue<string>;
+  LightType?: FBXValue<string>,
   /** 颜色 */
-  Color?: FBXValue<number[]>;
+  Color?: FBXValue<number[]>,
   /** 强度 */
-  Intensity?: FBXValue<number>;
+  Intensity?: FBXValue<number>,
   /** 内锥角 */
-  InnerAngle?: FBXValue<number>;
+  InnerAngle?: FBXValue<number>,
   /** 外锥角 */
-  OuterAngle?: FBXValue<number>;
+  OuterAngle?: FBXValue<number>,
   /** 衰减 */
-  Decay?: FBXValue<number>;
+  Decay?: FBXValue<number>,
   /** 范围 */
-  Range?: FBXValue<number>;
+  Range?: FBXValue<number>,
   /** 是否投射阴影 */
-  CastShadows?: FBXValue<boolean>;
+  CastShadows?: FBXValue<boolean>,
 }
 
 /**
@@ -173,25 +173,25 @@ export interface FBXLightProperties {
  */
 export interface SceneParserInput {
   /** FBX 模型节点映射 */
-  modelNodes: Map<number, FBXModelNode>;
+  modelNodes: Map<number, FBXModelNode>,
   /** FBX 空节点映射 */
-  nullNodes: Map<number, FBXNullNode>;
+  nullNodes: Map<number, FBXNullNode>,
   /** FBX 骨骼节点映射 */
-  boneNodes: Map<number, FBXBoneNode>;
+  boneNodes: Map<number, FBXBoneNode>,
   /** FBX 摄像机节点映射 */
-  cameraNodes: Map<number, FCBCameraNode>;
+  cameraNodes: Map<number, FCBCameraNode>,
   /** FBX 灯光节点映射 */
-  lightNodes: Map<number, FBXLightNode>;
+  lightNodes: Map<number, FBXLightNode>,
   /** 已解析的几何体 */
-  geometries: Map<number, THREE.BufferGeometry>;
+  geometries: Map<number, THREE.BufferGeometry>,
   /** 已解析的材质 */
-  materials: Map<number, THREE.Material>;
+  materials: Map<number, THREE.Material>,
   /** 已解析的骨骼 */
-  skeletons: Map<number, THREE.Skeleton>;
+  skeletons: Map<number, THREE.Skeleton>,
   /** 节点层级关系 */
-  hierarchy: Map<number, number[]>;
+  hierarchy: Map<number, number[]>,
   /** 根节点ID */
-  rootNodeIds: number[];
+  rootNodeIds: number[],
 }
 
 /**
@@ -199,13 +199,13 @@ export interface SceneParserInput {
  */
 export interface SceneParserOutput {
   /** Three.js 场景对象 */
-  scene: THREE.Scene;
+  scene: THREE.Scene,
   /** 场景根对象 */
-  root: THREE.Group;
+  root: THREE.Group,
   /** 场景元数据 */
-  metadata: SceneMetadata;
+  metadata: SceneMetadata,
   /** 解析统计 */
-  stats: SceneParserStats;
+  stats: SceneParserStats,
 }
 
 /**
@@ -213,17 +213,17 @@ export interface SceneParserOutput {
  */
 export interface SceneMetadata {
   /** 场景名称 */
-  name: string;
+  name: string,
   /** 场景版本 */
-  version: string;
+  version: string,
   /** 单位信息 */
-  units: SceneUnits;
+  units: SceneUnits,
   /** 上方向向量 */
-  upAxis: 'X' | 'Y' | 'Z';
+  upAxis: 'X' | 'Y' | 'Z',
   /** 前方向向量 */
-  frontAxis: 'X' | 'Y' | 'Z';
+  frontAxis: 'X' | 'Y' | 'Z',
   /** 坐标系类型 */
-  coordSystem: 'right-handed' | 'left-handed';
+  coordSystem: 'right-handed' | 'left-handed',
 }
 
 /**
@@ -231,11 +231,11 @@ export interface SceneMetadata {
  */
 export interface SceneUnits {
   /** 单位类型 */
-  type: 'millimeters' | 'centimeters' | 'meters' | 'kilometers' | 'inches' | 'feet' | 'yards' | 'miles';
+  type: 'millimeters' | 'centimeters' | 'meters' | 'kilometers' | 'inches' | 'feet' | 'yards' | 'miles',
   /** 缩放因子 */
-  scaleFactor: number;
+  scaleFactor: number,
   /** 单位名称 */
-  name: string;
+  name: string,
 }
 
 /**
@@ -243,25 +243,25 @@ export interface SceneUnits {
  */
 export interface SceneParserStats {
   /** 总节点数 */
-  totalNodes: number;
+  totalNodes: number,
   /** 模型节点数 */
-  modelNodes: number;
+  modelNodes: number,
   /** 空节点数 */
-  nullNodes: number;
+  nullNodes: number,
   /** 骨骼节点数 */
-  boneNodes: number;
+  boneNodes: number,
   /** 摄像机节点数 */
-  cameraNodes: number;
+  cameraNodes: number,
   /** 灯光节点数 */
-  lightNodes: number;
+  lightNodes: number,
   /** 几何体数量 */
-  geometryCount: number;
+  geometryCount: number,
   /** 材质数量 */
-  materialCount: number;
+  materialCount: number,
   /** 骨骼数量 */
-  skeletonCount: number;
+  skeletonCount: number,
   /** 场景深度 */
-  maxDepth: number;
+  maxDepth: number,
 }
 
 /**
@@ -269,23 +269,23 @@ export interface SceneParserStats {
  */
 export interface SceneParserConfig {
   /** 是否应用全局变换 */
-  applyGlobalTransform?: boolean;
+  applyGlobalTransform?: boolean,
   /** 全局缩放因子 */
-  globalScale?: number;
+  globalScale?: number,
   /** 是否翻转Y轴 */
-  flipY?: boolean;
+  flipY?: boolean,
   /** 是否使用左手坐标系 */
-  useLeftHanded?: boolean;
+  useLeftHanded?: boolean,
   /** 是否自动创建摄像机 */
-  createCamera?: boolean;
+  createCamera?: boolean,
   /** 是否自动创建环境光 */
-  createAmbientLight?: boolean;
+  createAmbientLight?: boolean,
   /** 环境光颜色 */
-  ambientLightColor?: THREE.Color;
+  ambientLightColor?: THREE.Color,
   /** 环境光强度 */
-  ambientLightIntensity?: number;
+  ambientLightIntensity?: number,
   /** 是否启用节点可见性 */
-  enableVisibility?: boolean;
+  enableVisibility?: boolean,
   /** 是否处理用户属性 */
-  processUserData?: boolean;
+  processUserData?: boolean,
 }

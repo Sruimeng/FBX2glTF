@@ -14,10 +14,10 @@ export namespace MatrixUtils {
    * @param matrix 输入矩阵
    * @returns 包含位置、旋转、缩放的对象
    */
-  export function decomposeMatrix(matrix: THREE.Matrix4): {
-    position: THREE.Vector3;
-    rotation: THREE.Euler;
-    scale: THREE.Vector3;
+  export function decomposeMatrix (matrix: THREE.Matrix4): {
+    position: THREE.Vector3,
+    rotation: THREE.Euler,
+    scale: THREE.Vector3,
   } {
     const position = new THREE.Vector3();
     const quaternion = new THREE.Quaternion();
@@ -39,7 +39,7 @@ export namespace MatrixUtils {
    * @param order 旋转顺序（可选）
    * @returns 组合后的矩阵
    */
-  export function composeMatrix(
+  export function composeMatrix (
     position: THREE.Vector3,
     rotation: THREE.Quaternion | THREE.Euler,
     scale?: THREE.Vector3,
@@ -68,7 +68,7 @@ export namespace MatrixUtils {
    * @param matrix 输入矩阵
    * @returns 转置后的矩阵
    */
-  export function transposeMatrix(matrix: THREE.Matrix4): THREE.Matrix4 {
+  export function transposeMatrix (matrix: THREE.Matrix4): THREE.Matrix4 {
     return new THREE.Matrix4().copy(matrix).transpose();
   }
 
@@ -77,11 +77,13 @@ export namespace MatrixUtils {
    * @param matrix 输入矩阵
    * @returns 逆矩阵
    */
-  export function invertMatrix(matrix: THREE.Matrix4): THREE.Matrix4 | null {
+  export function invertMatrix (matrix: THREE.Matrix4): THREE.Matrix4 | null {
     const result = new THREE.Matrix4().copy(matrix);
+
     if (!result.invert()) {
       return null;
     }
+
     return result;
   }
 
@@ -91,7 +93,7 @@ export namespace MatrixUtils {
    * @param b 矩阵B
    * @returns 乘积矩阵
    */
-  export function multiplyMatrices(a: THREE.Matrix4, b: THREE.Matrix4): THREE.Matrix4 {
+  export function multiplyMatrices (a: THREE.Matrix4, b: THREE.Matrix4): THREE.Matrix4 {
     return new THREE.Matrix4().multiplyMatrices(b, a);
   }
 
@@ -99,7 +101,7 @@ export namespace MatrixUtils {
    * 创建单位矩阵
    * @returns 单位矩阵
    */
-  export function createIdentityMatrix(): THREE.Matrix4 {
+  export function createIdentityMatrix (): THREE.Matrix4 {
     return new THREE.Matrix4();
   }
 
@@ -110,7 +112,7 @@ export namespace MatrixUtils {
    * @param z Z轴平移量
    * @returns 平移矩阵
    */
-  export function createTranslationMatrix(x: number, y: number, z: number): THREE.Matrix4 {
+  export function createTranslationMatrix (x: number, y: number, z: number): THREE.Matrix4 {
     return new THREE.Matrix4().makeTranslation(x, y, z);
   }
 
@@ -120,7 +122,7 @@ export namespace MatrixUtils {
    * @param angle 旋转角度（弧度）
    * @returns 旋转矩阵
    */
-  export function createRotationMatrix(axis: THREE.Vector3, angle: number): THREE.Matrix4 {
+  export function createRotationMatrix (axis: THREE.Vector3, angle: number): THREE.Matrix4 {
     return new THREE.Matrix4().makeRotationAxis(axis, angle);
   }
 
@@ -131,7 +133,7 @@ export namespace MatrixUtils {
    * @param z Z轴缩放因子
    * @returns 缩放矩阵
    */
-  export function createScaleMatrix(x: number, y: number, z: number): THREE.Matrix4 {
+  export function createScaleMatrix (x: number, y: number, z: number): THREE.Matrix4 {
     return new THREE.Matrix4().makeScale(x, y, z);
   }
 
@@ -141,13 +143,13 @@ export namespace MatrixUtils {
    * @param tolerance 容差值
    * @returns 是否为单位矩阵
    */
-  export function isIdentityMatrix(matrix: THREE.Matrix4, tolerance: number = 1e-6): boolean {
+  export function isIdentityMatrix (matrix: THREE.Matrix4, tolerance: number = 1e-6): boolean {
     const elements = matrix.elements;
     const identityElements = [
       1, 0, 0, 0,
       0, 1, 0, 0,
       0, 0, 1, 0,
-      0, 0, 0, 1
+      0, 0, 0, 1,
     ];
 
     return elements.every((value, index) => Math.abs(value - identityElements[index]) < tolerance);
@@ -160,7 +162,7 @@ export namespace MatrixUtils {
    * @param tolerance 容差值
    * @returns 是否相等
    */
-  export function matricesEqual(
+  export function matricesEqual (
     a: THREE.Matrix4,
     b: THREE.Matrix4,
     tolerance: number = 1e-6

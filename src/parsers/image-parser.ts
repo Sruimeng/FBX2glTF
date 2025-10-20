@@ -8,13 +8,13 @@ import type {
   IParsingContext,
   IAsyncParser,
   AsyncBaseParser,
-  ParserMetadata
+  ParserMetadata,
 } from '../types/core';
 import type {
   ImageParserInput,
   ImageParserOutput,
   ImageMetadata,
-  ImageParserConfig
+  ImageParserConfig,
 } from '../types/parsers/image-parser';
 import type { FBXImageNode } from '../types/parsers/image-parser';
 
@@ -25,12 +25,12 @@ import type { FBXImageNode } from '../types/parsers/image-parser';
 export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOutput> {
   private config: ImageParserConfig;
 
-  constructor(context: IParsingContext, config?: ImageParserConfig) {
+  constructor (context: IParsingContext, config?: ImageParserConfig) {
     super(context, {
       name: 'ImageParser',
       version: '1.0.0',
       description: '解析 FBX 图像节点为 Three.js 纹理',
-      dependencies: ['THREE']
+      dependencies: ['THREE'],
     });
 
     this.config = {
@@ -43,14 +43,14 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
       flipY: true,
       timeout: 10000,
       useCache: true,
-      ...config
+      ...config,
     };
   }
 
   /**
    * 解析图像节点
    */
-  async parse(input: ImageParserInput, context: IParsingContext): Promise<ImageParserOutput> {
+  async parse (input: ImageParserInput, context: IParsingContext): Promise<ImageParserOutput> {
     const { imageNode, id } = input;
 
     this.log(`开始解析图像节点: ${imageNode.name || `Image_${id}`}`);
@@ -70,13 +70,14 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
         name: imageNode.TextureName?.value || `Image_${id}`,
         size: metadata.width && metadata.height ? {
           width: metadata.width,
-          height: metadata.height
+          height: metadata.height,
         } : undefined,
         format: metadata.format,
-        isVideo: metadata.isVideo
+        isVideo: metadata.isVideo,
       };
 
       this.log(`成功解析图像: ${output.name}`);
+
       return output;
 
     } catch (error) {
@@ -88,24 +89,25 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
   /**
    * 提取图像元数据
    */
-  private extractImageMetadata(imageNode: FBXImageNode): ImageMetadata {
+  private extractImageMetadata (imageNode: FBXImageNode): ImageMetadata {
     const metadata: ImageMetadata = {
       filename: imageNode.Filename?.value,
       relativeFilename: imageNode.RelativeFilename?.value,
       width: imageNode.Width?.value,
       height: imageNode.Height?.value,
       format: imageNode.ImageFormat?.value,
-      isVideo: imageNode.Type === 'Video'
+      isVideo: imageNode.Type === 'Video',
     };
 
     this.log(`提取图像元数据: ${JSON.stringify(metadata)}`);
+
     return metadata;
   }
 
   /**
    * 加载图像
    */
-  private async loadImage(metadata: ImageMetadata): Promise<THREE.Texture> {
+  private async loadImage (metadata: ImageMetadata): Promise<THREE.Texture> {
     // 如果有 Base64 内容，直接加载
     if (metadata.format && metadata.filename?.startsWith('data:')) {
       return this.loadBase64Image(metadata);
@@ -122,7 +124,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
   /**
    * 从 Base64 内容加载图像
    */
-  private async loadBase64Image(metadata: ImageMetadata): Promise<THREE.Texture> {
+  private async loadBase64Image (metadata: ImageMetadata): Promise<THREE.Texture> {
     return new Promise((resolve, reject) => {
       const loader = new THREE.TextureLoader();
       const imageSrc = metadata.filename!;
@@ -130,9 +132,11 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
       // 检查缓存
       if (this.config.useCache) {
         const cached = this.context.getCacheValue(`texture_${imageSrc}`);
+
         if (cached) {
           this.log('使用缓存的纹理');
           resolve(cached.clone());
+
           return;
         }
       }
@@ -143,7 +147,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
 
       loader.load(
         imageSrc,
-        (texture) => {
+        texture => {
           clearTimeout(timeoutId);
           this.log(`成功加载 Base64 图像: ${metadata.format}`);
 
@@ -153,10 +157,10 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
 
           resolve(texture);
         },
-        (progress) => {
+        progress => {
           this.log(`Base64 图像加载进度: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
         },
-        (error) => {
+        error => {
           clearTimeout(timeoutId);
           this.log(`Base64 图像加载失败: ${error.message}`, 'error');
           reject(error);
@@ -168,7 +172,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
   /**
    * 从文件路径加载图像
    */
-  private async loadImageFromFile(metadata: ImageMetadata): Promise<THREE.Texture> {
+  private async loadImageFromFile (metadata: ImageMetadata): Promise<THREE.Texture> {
     return new Promise((resolve, reject) => {
       const loader = new THREE.TextureLoader();
       const imagePath = metadata.relativeFilename || metadata.filename!;
@@ -176,9 +180,11 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
       // 检查缓存
       if (this.config.useCache) {
         const cached = this.context.getCacheValue(`texture_${imagePath}`);
+
         if (cached) {
           this.log('使用缓存的纹理');
           resolve(cached.clone());
+
           return;
         }
       }
@@ -189,7 +195,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
 
       loader.load(
         imagePath,
-        (texture) => {
+        texture => {
           clearTimeout(timeoutId);
           this.log(`成功加载图像文件: ${imagePath}`);
 
@@ -199,17 +205,18 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
 
           resolve(texture);
         },
-        (progress) => {
+        progress => {
           if (progress.total > 0) {
             this.log(`图像加载进度: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
           }
         },
-        (error) => {
+        error => {
           clearTimeout(timeoutId);
           this.log(`图像加载失败: ${error.message}`, 'error');
 
           // 尝试创建默认纹理
           const defaultTexture = this.createDefaultTexture();
+
           resolve(defaultTexture);
         }
       );
@@ -219,10 +226,11 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
   /**
    * 创建默认纹理
    */
-  private createDefaultTexture(): THREE.Texture {
+  private createDefaultTexture (): THREE.Texture {
     this.log('创建默认纹理', 'warn');
 
     const canvas = document.createElement('canvas');
+
     canvas.width = 256;
     canvas.height = 256;
 
@@ -230,6 +238,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
 
     // 创建棋盘格图案
     const size = 16;
+
     for (let i = 0; i < canvas.width; i += size) {
       for (let j = 0; j < canvas.height; j += size) {
         context.fillStyle = ((i / size) + (j / size)) % 2 === 0 ? '#ffffff' : '#cccccc';
@@ -238,14 +247,16 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
     }
 
     const texture = new THREE.CanvasTexture(canvas);
+
     texture.name = 'DefaultTexture';
+
     return texture;
   }
 
   /**
    * 配置纹理属性
    */
-  private configureTexture(texture: THREE.Texture, metadata: ImageMetadata): void {
+  private configureTexture (texture: THREE.Texture, metadata: ImageMetadata): void {
     // 设置纹理名称
     texture.name = metadata.filename || 'UnknownTexture';
 
@@ -277,7 +288,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
   /**
    * 验证图像节点
    */
-  protected validateInput(input: ImageParserInput): void {
+  protected validateInput (input: ImageParserInput): void {
     super.validateInput(input);
 
     if (!input.imageNode) {
@@ -292,14 +303,14 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
   /**
    * 获取配置
    */
-  public getConfig(): ImageParserConfig {
+  public getConfig (): ImageParserConfig {
     return { ...this.config };
   }
 
   /**
    * 更新配置
    */
-  public updateConfig(newConfig: Partial<ImageParserConfig>): void {
+  public updateConfig (newConfig: Partial<ImageParserConfig>): void {
     this.config = { ...this.config, ...newConfig };
     this.log('更新图像解析器配置');
   }
@@ -311,22 +322,23 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
 export class ImageParserFactory {
   private defaultConfig: ImageParserConfig;
 
-  constructor(defaultConfig?: ImageParserConfig) {
+  constructor (defaultConfig?: ImageParserConfig) {
     this.defaultConfig = defaultConfig || {};
   }
 
   /**
    * 创建图像解析器实例
    */
-  create(context: IParsingContext, config?: ImageParserConfig): ImageParser {
+  create (context: IParsingContext, config?: ImageParserConfig): ImageParser {
     const mergedConfig = { ...this.defaultConfig, ...config };
+
     return new ImageParser(context, mergedConfig);
   }
 
   /**
    * 获取默认配置
    */
-  public getDefaultConfig(): ImageParserConfig {
+  public getDefaultConfig (): ImageParserConfig {
     return { ...this.defaultConfig };
   }
 }

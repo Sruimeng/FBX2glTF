@@ -9,17 +9,17 @@
  */
 export interface FBXValue<T = unknown> {
   /** 标志位 */
-  flag?: string;
+  flag?: string,
   /** 主类型（如 KString、double、int、ColorRGB 等） */
-  type?: string;
+  type?: string,
   /** 副类型（如 Url、Time、Color 等） */
-  type2?: string;
+  type2?: string,
   /** 实际数值 */
-  value?: T;
+  value?: T,
   /** 数组数据（用于某些特殊情况） */
-  a?: T extends (infer R)[] ? R[] : T;
+  a?: T extends (infer R)[] ? R[] : T,
   /** 兼容性访问器 */
-  [key: string]: unknown;
+  [key: string]: unknown,
 }
 
 /**
@@ -27,13 +27,13 @@ export interface FBXValue<T = unknown> {
  */
 export interface FBXNodeBase<T = unknown> {
   /** 节点名称 */
-  name: string;
+  name: string,
   /** 是否为单一属性节点 */
-  singleProperty: boolean;
+  singleProperty: boolean,
   /** 属性列表 */
-  propertyList?: unknown[];
+  propertyList?: unknown[],
   /** 可扩展附加字段 */
-  extra?: T;
+  extra?: T,
 }
 
 /**
@@ -46,14 +46,14 @@ export type FBXNode<T extends object = {}> = FBXNodeBase<T>;
  * 用于描述顶点、索引、法线等大数据数组的结构
  */
 export interface FBXArrayData {
-  a: number[];
+  a: number[],
 }
 
 /**
  * 用于描述FBX中的时间类型
  */
 export interface FBXTimeData {
-  a: bigint[]; // FBX时间戳通常是64位整数
+  a: bigint[], // FBX时间戳通常是64位整数
 }
 
 /**
@@ -61,32 +61,32 @@ export interface FBXTimeData {
  */
 export interface FBXTreeNode {
   /** 节点名称 */
-  name?: string;
+  name?: string,
   /** 节点ID */
-  id?: number;
+  id?: number,
   /** 属性名称 */
-  attrName?: string;
+  attrName?: string,
   /** 属性类型 */
-  attrType?: string;
+  attrType?: string,
   /** 是否为单一属性节点 */
-  singleProperty?: boolean;
+  singleProperty?: boolean,
   /** 属性列表 */
-  propertyList?: unknown[];
+  propertyList?: unknown[],
   /** 可扩展字段 */
-  [key: string]: unknown;
+  [key: string]: unknown,
 }
 
 /**
  * FBX 节点基础信息
  */
 export interface BaseInfo {
-  id: number;
-  name: string;
-  type?: string;
-  polygons?: number;
-  quads?: number;
-  triangles?: number;
-  vertices?: number;
+  id: number,
+  name: string,
+  type?: string,
+  polygons?: number,
+  quads?: number,
+  triangles?: number,
+  vertices?: number,
 }
 
 /**
@@ -94,27 +94,27 @@ export interface BaseInfo {
  */
 export interface IFBXTree {
   /** 对象集合 */
-  objects?: Record<string, unknown>;
+  objects?: Record<string, unknown>,
   /** 连接信息 */
   connections?: {
-    C: Array<[number, number, string]>;
-  };
+    C: Array<[number, number, string]>,
+  },
   /** 全局设置 */
-  settings?: Record<string, unknown>;
+  settings?: Record<string, unknown>,
   /** 时间轴信息 */
-  time?: Record<string, unknown>;
+  time?: Record<string, unknown>,
   /** 版本信息 */
-  version?: number;
+  version?: number,
   /** 根节点 */
-  root?: FBXTreeNode;
+  root?: FBXTreeNode,
 }
 
 /**
  * FBX 连接节点
  */
 export interface FBXConnectionNode {
-  children: Array<{ ID: number }>;
-  parents: Array<{ ID: number }>;
+  children: Array<{ ID: number }>,
+  parents: Array<{ ID: number }>,
 }
 
 /**
@@ -122,21 +122,21 @@ export interface FBXConnectionNode {
  */
 export interface FBXMaterialProperties {
   /** 漫反射颜色 */
-  DiffuseColor?: FBXValue<number[]> | { r: number; g: number; b: number };
+  DiffuseColor?: FBXValue<number[]> | { r: number, g: number, b: number },
   /** 高光颜色 */
-  SpecularColor?: FBXValue<number[]> | { r: number; g: number; b: number };
+  SpecularColor?: FBXValue<number[]> | { r: number, g: number, b: number },
   /** 高光强度 */
-  Shininess?: FBXValue<number> | number;
+  Shininess?: FBXValue<number> | number,
   /** 自发光颜色 */
-  EmissiveColor?: FBXValue<number[]> | { r: number; g: number; b: number };
+  EmissiveColor?: FBXValue<number[]> | { r: number, g: number, b: number },
   /** 透明度 */
-  Transparency?: FBXValue<number> | number;
+  Transparency?: FBXValue<number> | number,
   /** 反射度 */
-  Reflectivity?: FBXValue<number> | number;
+  Reflectivity?: FBXValue<number> | number,
   /** 粗糙度 */
-  Roughness?: FBXValue<number> | number;
+  Roughness?: FBXValue<number> | number,
   /** 金属度 */
-  Metallic?: FBXValue<number> | number;
+  Metallic?: FBXValue<number> | number,
 }
 
 /**
@@ -144,23 +144,23 @@ export interface FBXMaterialProperties {
  */
 export interface FBXGeometryData {
   /** 顶点位置 */
-  vertices?: FBXArrayData;
+  vertices?: FBXArrayData,
   /** 顶点索引 */
-  indices?: FBXArrayData;
+  indices?: FBXArrayData,
   /** 法线 */
-  normals?: FBXArrayData;
+  normals?: FBXArrayData,
   /** UV 坐标 */
-  uvs?: FBXArrayData;
+  uvs?: FBXArrayData,
   /** 顶点颜色 */
-  colors?: FBXArrayData;
+  colors?: FBXArrayData,
   /** 皮肤权重 */
-  skinWeights?: FBXArrayData;
+  skinWeights?: FBXArrayData,
   /** 变形目标 */
   morphTargets?: Array<{
-    name: string;
-    vertices?: FBXArrayData;
-    normals?: FBXArrayData;
-  }>;
+    name: string,
+    vertices?: FBXArrayData,
+    normals?: FBXArrayData,
+  }>,
 }
 
 /**
@@ -168,15 +168,15 @@ export interface FBXGeometryData {
  */
 export interface FBXKeyframe {
   /** 时间 */
-  time: number;
+  time: number,
   /** 值 */
-  value: number | number[];
+  value: number | number[],
   /** 切线类型 */
-  tangentType?: string;
+  tangentType?: string,
   /** 切线输入 */
-  tangentIn?: number | number[];
+  tangentIn?: number | number[],
   /** 切线输出 */
-  tangentOut?: number | number[];
+  tangentOut?: number | number[],
 }
 
 /**
@@ -184,11 +184,11 @@ export interface FBXKeyframe {
  */
 export interface FBXAnimationCurve {
   /** 关键帧列表 */
-  keys: FBXKeyframe[];
+  keys: FBXKeyframe[],
   /** 插值类型 */
-  interpolationType?: string;
+  interpolationType?: string,
   /** 曲线类型 */
-  curveType?: 'position' | 'rotation' | 'scale' | 'other';
+  curveType?: 'position' | 'rotation' | 'scale' | 'other',
 }
 
 /**
@@ -196,19 +196,19 @@ export interface FBXAnimationCurve {
  */
 export interface FBXTextureInfo {
   /** 文件路径 */
-  filename?: string;
+  filename?: string,
   /** 相对路径 */
-  relativeFilename?: string;
+  relativeFilename?: string,
   /** 纹理类型 */
-  type?: string;
+  type?: string,
   /** 纹理坐标 */
-  uvSet?: string;
+  uvSet?: string,
   /** 纹理变换 */
   transform?: {
-    translation: number[];
-    rotation: number;
-    scaling: number[];
-  };
+    translation: number[],
+    rotation: number,
+    scaling: number[],
+  },
 }
 
 /**
@@ -216,14 +216,14 @@ export interface FBXTextureInfo {
  */
 export interface FBXDeformerInfo {
   /** 变形器类型 */
-  type: 'skin' | 'blendshape' | 'cache';
+  type: 'skin' | 'blendshape' | 'cache',
   /** 索引 */
-  indices?: FBXArrayData;
+  indices?: FBXArrayData,
   /** 权重 */
-  weights?: FBXArrayData;
+  weights?: FBXArrayData,
   /** 变形目标 */
   blendShapes?: Array<{
-    name: string;
-    geometry: FBXGeometryData;
-  }>;
+    name: string,
+    geometry: FBXGeometryData,
+  }>,
 }

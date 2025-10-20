@@ -14,40 +14,39 @@ export type { FBXAnimationCurve } from '../core/fbx-types';
  */
 export interface FBXAnimationCurveNode extends FBXNode {
   /** 动画曲线节点类型 */
-  Type: 'AnimationCurveNode';
+  Type: 'AnimationCurveNode',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 曲线节点名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
   /** 动画属性 */
-  d?: FBXValue<string>;
+  d?: FBXValue<string>,
   /** 曲线节点ID */
-  ID?: FBXValue<number>;
+  ID?: FBXValue<number>,
   /** 连接的曲线 */
-  curves?: Map<string, FBXAnimationCurve>;
+  curves?: Map<string, FBXAnimationCurve>,
 }
-
 
 /**
  * FBX 动画层节点接口
  */
 export interface FBXAnimationLayerNode extends FBXNode {
   /** 动画层类型 */
-  Type: 'AnimationLayer';
+  Type: 'AnimationLayer',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 层名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
   /** 混合模式 */
-  MixMode?: FBXValue<string>;
+  MixMode?: FBXValue<string>,
   /** 权重 */
-  Weight?: FBXValue<number>;
+  Weight?: FBXValue<number>,
   /** 是否静音 */
-  Mute?: FBXValue<boolean>;
+  Mute?: FBXValue<boolean>,
   /** 是否独奏 */
-  Solo?: FBXValue<boolean>;
+  Solo?: FBXValue<boolean>,
   /** 是否锁定 */
-  Lock?: FBXValue<boolean>;
+  Lock?: FBXValue<boolean>,
 }
 
 /**
@@ -55,15 +54,15 @@ export interface FBXAnimationLayerNode extends FBXNode {
  */
 export interface FBXAnimationStackNode extends FBXNode {
   /** 动画堆栈类型 */
-  Type: 'AnimationStack';
+  Type: 'AnimationStack',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 堆栈名称 */
-  Name?: FBXValue<string>;
+  Name?: FBXValue<string>,
   /** 描述 */
-  Description?: FBXValue<string>;
+  Description?: FBXValue<string>,
   /** 动画层 */
-  AnimationLayers?: FBXAnimationLayerNode[];
+  AnimationLayers?: FBXAnimationLayerNode[],
 }
 
 /**
@@ -71,15 +70,15 @@ export interface FBXAnimationStackNode extends FBXNode {
  */
 export interface FBXPoseNode extends FBXNode {
   /** 姿势类型 */
-  Type: 'Pose';
+  Type: 'Pose',
   /** 版本 */
-  Version: number;
+  Version: number,
   /** 姿势名称 */
-  PoseName?: FBXValue<string>;
+  PoseName?: FBXValue<string>,
   /** 姿势子类型 */
-  PoseType?: FBXValue<string>;
+  PoseType?: FBXValue<string>,
   /** 姿势节点 */
-  PoseNode?: FBXPoseNodeData[];
+  PoseNode?: FBXPoseNodeData[],
 }
 
 /**
@@ -87,9 +86,9 @@ export interface FBXPoseNode extends FBXNode {
  */
 export interface FBXPoseNodeData {
   /** 节点ID */
-  ID: number;
+  ID: number,
   /** 矩阵 */
-  Matrix: Float32Array;
+  Matrix: Float32Array,
 }
 
 /**
@@ -97,17 +96,17 @@ export interface FBXPoseNodeData {
  */
 export interface AnimationParserInput {
   /** FBX 动画堆栈节点 */
-  animationStackNode: FBXAnimationStackNode;
+  animationStackNode: FBXAnimationStackNode,
   /** 堆栈ID */
-  stackId: number;
+  stackId: number,
   /** 关联的动画层 */
-  animationLayers: Map<number, FBXAnimationLayerNode>;
+  animationLayers: Map<number, FBXAnimationLayerNode>,
   /** 关联的动画曲线节点 */
-  animationCurveNodes: Map<number, FBXAnimationCurveNode>;
+  animationCurveNodes: Map<number, FBXAnimationCurveNode>,
   /** 关联的动画曲线 */
-  animationCurves: Map<number, FBXAnimationCurve>;
+  animationCurves: Map<number, FBXAnimationCurve>,
   /** 关联的模型节点 */
-  modelNodes: Map<number, THREE.Object3D>;
+  modelNodes: Map<number, THREE.Object3D>,
 }
 
 /**
@@ -115,15 +114,15 @@ export interface AnimationParserInput {
  */
 export interface AnimationParserOutput {
   /** Three.js 动画剪辑 */
-  animationClips: THREE.AnimationClip[];
+  animationClips: THREE.AnimationClip[],
   /** 动画名称 */
-  name: string;
+  name: string,
   /** 动画时长 */
-  duration: number;
+  duration: number,
   /** 帧率 */
-  fps: number;
+  fps: number,
   /** 动画元数据 */
-  metadata: AnimationMetadata;
+  metadata: AnimationMetadata,
 }
 
 /**
@@ -131,19 +130,19 @@ export interface AnimationParserOutput {
  */
 export interface AnimationTrackData {
   /** 轨道名称 */
-  name: string;
+  name: string,
   /** 轨道类型 */
-  type: 'position' | 'rotation' | 'scale' | 'morphTargetInfluences' | 'other';
+  type: 'position' | 'rotation' | 'scale' | 'morphTargetInfluences' | 'other',
   /** 轴向（可选） */
-  axis?: 'x' | 'y' | 'z';
+  axis?: 'x' | 'y' | 'z',
   /** 关键帧时间数组 */
-  times: number[];
+  times: number[],
   /** 关键帧值数组 */
-  values: number[];
+  values: number[],
   /** 插值类型 */
-  interpolation?: number;
+  interpolation?: number,
   /** 目标对象 */
-  target?: THREE.Object3D;
+  target?: THREE.Object3D,
 }
 
 /**
@@ -151,19 +150,19 @@ export interface AnimationTrackData {
  */
 export interface AnimationMetadata {
   /** 动画名称 */
-  name: string;
+  name: string,
   /** 动画类型 */
-  type: 'skeletal' | 'morph' | 'transform' | 'mixed';
+  type: 'skeletal' | 'morph' | 'transform' | 'mixed',
   /** 动画时长 */
-  duration: number;
+  duration: number,
   /** 帧率 */
-  fps: number;
+  fps: number,
   /** 轨道数量 */
-  trackCount: number;
+  trackCount: number,
   /** 影响的模型数量 */
-  modelCount: number;
+  modelCount: number,
   /** 是否循环 */
-  isLoop: boolean;
+  isLoop: boolean,
 }
 
 /**
@@ -171,26 +170,26 @@ export interface AnimationMetadata {
  */
 export interface AnimationParserConfig {
   /** 默认帧率 */
-  defaultFPS?: number;
+  defaultFPS?: number,
   /** 是否优化关键帧 */
-  optimizeKeyframes?: boolean;
+  optimizeKeyframes?: boolean,
   /** 关键帧误差阈值 */
-  keyframeTolerance?: number;
+  keyframeTolerance?: number,
   /** 是否自动生成插值 */
-  generateInterpolation?: boolean;
+  generateInterpolation?: boolean,
   /** 默认插值类型 */
-  defaultInterpolation?: number;
+  defaultInterpolation?: number,
   /** 是否强制使用线性插值 */
-  forceLinearInterpolation?: boolean;
+  forceLinearInterpolation?: boolean,
   /** 是否启用循环 */
-  enableLoop?: boolean;
+  enableLoop?: boolean,
   /** 时间缩放因子 */
-  timeScale?: number;
+  timeScale?: number,
 }
 
 /**
  * FBX 数组数据接口 (动画专用)
  */
 interface FBXArrayData {
-  a: number[];
+  a: number[],
 }

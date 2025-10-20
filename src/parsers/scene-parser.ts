@@ -8,7 +8,7 @@ import type {
   IParsingContext,
   IParser,
   BaseParser,
-  ParserMetadata
+  ParserMetadata,
 } from '../types/core';
 import type {
   SceneParserInput,
@@ -16,14 +16,14 @@ import type {
   SceneMetadata,
   SceneStats,
   SceneUnits,
-  SceneParserConfig
+  SceneParserConfig,
 } from '../types/parsers/scene-parser';
 import type {
   FBXModelNode,
   FBXNullNode,
   FBXBoneNode,
   FCBCameraNode,
-  FBXLightNode
+  FBXLightNode,
 } from '../types/parsers/scene-parser';
 import { MatrixUtils } from '../utils/transform/matrix-utils';
 
@@ -34,12 +34,12 @@ import { MatrixUtils } from '../utils/transform/matrix-utils';
 export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput> {
   private config: SceneParserConfig;
 
-  constructor(context: IParsingContext, config?: SceneParserConfig) {
+  constructor (context: IParsingContext, config?: SceneParserConfig) {
     super(context, {
       name: 'SceneParser',
       version: '1.0.0',
       description: '解析 FBX 场景结构并构建 Three.js 场景',
-      dependencies: ['THREE', 'MatrixUtils']
+      dependencies: ['THREE', 'MatrixUtils'],
     });
 
     this.config = {
@@ -53,14 +53,14 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
       ambientLightIntensity: 0.5,
       enableVisibility: true,
       processUserData: true,
-      ...config
+      ...config,
     };
   }
 
   /**
    * 解析场景
    */
-  parse(input: SceneParserInput, context: IParsingContext): SceneParserOutput {
+  parse (input: SceneParserInput, context: IParsingContext): SceneParserOutput {
     const { modelNodes, nullNodes, boneNodes, cameraNodes, lightNodes, geometries, materials, skeletons, hierarchy, rootNodeIds } = input;
 
     this.log('开始解析 FBX 场景');
@@ -110,10 +110,11 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
         scene,
         root,
         metadata,
-        stats
+        stats,
       };
 
       this.log(`成功解析场景: ${stats.totalNodes} 节点`);
+
       return output;
 
     } catch (error) {
@@ -125,11 +126,13 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 创建场景和根对象
    */
-  private createScene(): { scene: THREE.Scene; root: THREE.Group } {
+  private createScene (): { scene: THREE.Scene, root: THREE.Group } {
     const scene = new THREE.Scene();
+
     scene.name = 'FBX_Scene';
 
     const root = new THREE.Group();
+
     root.name = 'FBX_Root';
 
     scene.add(root);
@@ -140,7 +143,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 解析场景元数据
    */
-  private parseSceneMetadata(): SceneMetadata {
+  private parseSceneMetadata (): SceneMetadata {
     // 从 FBX 全局设置中解析元数据
     // 在实际实现中，需要解析 FBX 的全局设置节点
 
@@ -150,18 +153,18 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
       units: {
         type: 'meters',
         scaleFactor: 1.0,
-        name: 'meter'
+        name: 'meter',
       },
       upAxis: 'Y',
       frontAxis: '-Z',
-      coordSystem: 'right-handed'
+      coordSystem: 'right-handed',
     };
   }
 
   /**
    * 构建场景层级结构
    */
-  private buildSceneHierarchy(
+  private buildSceneHierarchy (
     scene: THREE.Scene,
     root: THREE.Group,
     modelNodes: Map<number, FBXModelNode>,
@@ -177,6 +180,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   ): void {
     // 创建节点映射
     const allNodes = new Map<number, FBXModelNode | FBXNullNode | FBXBoneNode | FCBCameraNode | FBXLightNode>();
+
     modelNodes.forEach((node, id) => allNodes.set(id, node));
     nullNodes.forEach((node, id) => allNodes.set(id, node));
     boneNodes.forEach((node, id) => allNodes.set(id, node));
@@ -229,7 +233,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 处理节点
    */
-  private processNode(
+  private processNode (
     nodeId: number,
     allNodes: Map<number, FBXModelNode | FBXNullNode | FBXBoneNode | FCBCameraNode | FBXLightNode>,
     geometries: Map<number, THREE.BufferGeometry>,
@@ -243,8 +247,10 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
     }
 
     const nodeData = allNodes.get(nodeId);
+
     if (!nodeData) {
       this.log(`节点 ${nodeId} 数据不存在`, 'warn');
+
       return null;
     }
 
@@ -280,6 +286,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
 
     // 递归处理子节点
     const childIds = hierarchy.get(nodeId) || [];
+
     childIds.forEach(childId => {
       const childObject = this.processNode(
         childId,
@@ -302,29 +309,33 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 创建模型对象
    */
-  private createModelObject(
+  private createModelObject (
     modelNode: FBXModelNode,
     geometries: Map<number, THREE.BufferGeometry>,
     materials: Map<number, THREE.Material>,
     skeletons: Map<number, THREE.Skeleton>
   ): THREE.Object3D {
     const object = new THREE.Object3D();
+
     object.name = modelNode.ModelName?.value || `Model_${Object.id}`;
 
     // 检查是否是网格
     const geometryId = this.getGeometryId(modelNode);
+
     if (geometryId && geometries.has(geometryId)) {
       const geometry = geometries.get(geometryId)!;
       const materialId = this.getMaterialId(modelNode);
       const material = materialId && materials.has(materialId) ? materials.get(materialId) : new THREE.MeshStandardMaterial();
 
       const mesh = new THREE.Mesh(geometry, material);
+
       mesh.name = object.name;
       mesh.userData = { ...object.userData, isMesh: true };
 
       // 检查是否需要蒙皮
       if (skeletons.has(geometryId)) {
         const skeleton = skeletons.get(geometryId)!;
+
         mesh.bind(new THREE.Skeleton(skeleton.bones, skeleton.boneInverses));
         mesh.userData = { ...mesh.userData, isSkinned: true };
       }
@@ -338,16 +349,18 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 创建骨骼对象
    */
-  private createBoneObject(boneNode: FBXBoneNode): THREE.Bone {
+  private createBoneObject (boneNode: FBXBoneNode): THREE.Bone {
     const bone = new THREE.Bone();
+
     bone.name = boneNode.Name?.value || `Bone_${bone.id}`;
+
     return bone;
   }
 
   /**
    * 创建摄像机对象
    */
-  private createCameraObject(cameraNode: FCBCameraNode): THREE.PerspectiveCamera | THREE.OrthographicCamera {
+  private createCameraObject (cameraNode: FCBCameraNode): THREE.PerspectiveCamera | THREE.OrthographicCamera {
     const name = cameraNode.Name?.value || `Camera_${cameraNode.id}`;
 
     // 解析摄像机属性
@@ -363,6 +376,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
     if (cameraType === 'orthographic') {
       const orthoWidth = props?.OrthoWidth?.value || 10;
       const orthoHeight = props?.OrthoHeight?.value || 10;
+
       camera = new THREE.OrthographicCamera(
         -orthoWidth / 2, orthoWidth / 2,
         orthoHeight / 2, -orthoHeight / 2,
@@ -373,13 +387,14 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
     }
 
     camera.name = name;
+
     return camera;
   }
 
   /**
    * 创建灯光对象
    */
-  private createLightObject(lightNode: FBXLightNode): THREE.Light {
+  private createLightObject (lightNode: FBXLightNode): THREE.Light {
     const name = lightNode.Name?.value || `Light_${lightNode.id}`;
     const props = lightNode.Properties;
 
@@ -392,45 +407,55 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
     switch (lightType.toLowerCase()) {
       case 'directional':
         light = new THREE.DirectionalLight(color, intensity);
+
         break;
       case 'spot':
         const angle = props?.OuterAngle?.value || Math.PI / 4;
         const penumbra = props?.InnerAngle?.value || 0;
+
         light = new THREE.SpotLight(color, intensity, 0, angle, penumbra);
+
         break;
       case 'ambient':
         light = new THREE.AmbientLight(color, intensity);
+
         break;
       case 'point':
       default:
         light = new THREE.PointLight(color, intensity);
+
         break;
     }
 
     light.name = name;
+
     return light;
   }
 
   /**
    * 创建空对象
    */
-  private createNullObject(nullNode: FBXNullNode): THREE.Object3D {
+  private createNullObject (nullNode: FBXNullNode): THREE.Object3D {
     const object = new THREE.Object3D();
+
     object.name = nullNode.Name?.value || `Null_${nullNode.id}`;
     object.userData = { isNull: true };
+
     return object;
   }
 
   /**
    * 设置变换属性
    */
-  private setTransformProperties(object: THREE.Object3D, nodeData: any): void {
+  private setTransformProperties (object: THREE.Object3D, nodeData: any): void {
     const properties = nodeData.Properties;
-    if (!properties) return;
+
+    if (!properties) {return;}
 
     // 位置
     if (properties.LclTranslation?.value) {
       const translation = properties.LclTranslation.value;
+
       if (Array.isArray(translation) && translation.length >= 3) {
         object.position.set(translation[0], translation[1], translation[2]);
       }
@@ -439,6 +464,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
     // 旋转
     if (properties.LclRotation?.value) {
       const rotation = properties.LclRotation.value;
+
       if (Array.isArray(rotation) && rotation.length >= 3) {
         // FBX 使用度数，转换为弧度
         object.rotation.x = rotation[0] * Math.PI / 180;
@@ -450,6 +476,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
     // 缩放
     if (properties.LclScaling?.value) {
       const scaling = properties.LclScaling.value;
+
       if (Array.isArray(scaling) && scaling.length >= 3) {
         object.scale.set(scaling[0], scaling[1], scaling[2]);
       }
@@ -458,6 +485,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
     // 四元数旋转（如果存在）
     if (properties.LclRotationQuaternion?.value) {
       const quaternion = properties.LclRotationQuaternion.value;
+
       if (Array.isArray(quaternion) && quaternion.length >= 4) {
         object.quaternion.set(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
       }
@@ -467,8 +495,9 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 设置可见性
    */
-  private setVisibility(object: THREE.Object3D, nodeData: any): void {
+  private setVisibility (object: THREE.Object3D, nodeData: any): void {
     const properties = nodeData.Properties;
+
     if (properties?.Visibility?.value !== undefined) {
       object.visible = Boolean(properties.Visibility.value);
     }
@@ -477,20 +506,20 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 设置用户数据
    */
-  private setUserData(object: THREE.Object3D, nodeData: any): void {
+  private setUserData (object: THREE.Object3D, nodeData: any): void {
     object.userData = {
       ...object.userData,
       fbxId: nodeData.id,
       fbxType: nodeData.Type,
       fbxName: nodeData.Name?.value,
-      properties: nodeData.Properties
+      properties: nodeData.Properties,
     };
   }
 
   /**
    * 查找根节点
    */
-  private findRootNodes(
+  private findRootNodes (
     allNodes: Map<number, any>,
     hierarchy: Map<number, number[]>
   ): number[] {
@@ -509,7 +538,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 应用全局变换
    */
-  private applyGlobalTransform(root: THREE.Group): void {
+  private applyGlobalTransform (root: THREE.Group): void {
     // 应用全局缩放
     root.scale.multiplyScalar(this.config.globalScale!);
 
@@ -527,8 +556,9 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 创建默认摄像机
    */
-  private createDefaultCamera(scene: THREE.Scene): void {
+  private createDefaultCamera (scene: THREE.Scene): void {
     const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+
     camera.name = 'DefaultCamera';
     camera.position.set(0, 0, 10);
     camera.lookAt(0, 0, 0);
@@ -538,11 +568,12 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 创建默认环境光
    */
-  private createDefaultAmbientLight(scene: THREE.Scene): void {
+  private createDefaultAmbientLight (scene: THREE.Scene): void {
     const ambientLight = new THREE.AmbientLight(
-      this.config.ambientLightColor!,
-      this.config.ambientLightIntensity!
+      this.config.ambientLightColor,
+      this.config.ambientLightIntensity
     );
+
     ambientLight.name = 'DefaultAmbientLight';
     scene.add(ambientLight);
   }
@@ -550,7 +581,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 生成场景统计
    */
-  private generateSceneStats(scene: THREE.Scene, input: SceneParserInput): SceneStats {
+  private generateSceneStats (scene: THREE.Scene, input: SceneParserInput): SceneStats {
     const stats: SceneStats = {
       totalNodes: 0,
       modelNodes: 0,
@@ -561,7 +592,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
       geometryCount: input.geometries.size,
       materialCount: input.materials.size,
       skeletonCount: input.skeletons.size,
-      maxDepth: 0
+      maxDepth: 0,
     };
 
     // 递归计算节点统计
@@ -573,7 +604,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 递归计算节点统计
    */
-  private calculateNodeStats(object: THREE.Object3D, stats: SceneStats, depth: number): void {
+  private calculateNodeStats (object: THREE.Object3D, stats: SceneStats, depth: number): void {
     stats.totalNodes++;
     stats.maxDepth = Math.max(stats.maxDepth, depth);
 
@@ -581,18 +612,23 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
       switch (object.userData.fbxType) {
         case 'Model':
           stats.modelNodes++;
+
           break;
         case 'Null':
           stats.nullNodes++;
+
           break;
         case 'Skeleton':
           stats.boneNodes++;
+
           break;
         case 'Camera':
           stats.cameraNodes++;
+
           break;
         case 'Light':
           stats.lightNodes++;
+
           break;
       }
     }
@@ -603,59 +639,64 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   }
 
   // 辅助方法
-  private isModelNode(node: any): boolean {
+  private isModelNode (node: any): boolean {
     return node.Type === 'Model';
   }
 
-  private isBoneNode(node: any): boolean {
+  private isBoneNode (node: any): boolean {
     return node.Type === 'Skeleton' || node.Type === 'Limb';
   }
 
-  private isCameraNode(node: any): boolean {
+  private isCameraNode (node: any): boolean {
     return node.Type === 'Camera';
   }
 
-  private isLightNode(node: any): boolean {
+  private isLightNode (node: any): boolean {
     return node.Type === 'Light';
   }
 
-  private getGeometryId(modelNode: FBXModelNode): number | undefined {
+  private getGeometryId (modelNode: FBXModelNode): number | undefined {
     // 在实际实现中，需要解析连接关系
     return undefined;
   }
 
-  private getMaterialId(modelNode: FBXModelNode): number | undefined {
+  private getMaterialId (modelNode: FBXModelNode): number | undefined {
     // 在实际实现中，需要解析连接关系
     return undefined;
   }
 
-  private parseColor(colorValue: any): THREE.Color {
+  private parseColor (colorValue: any): THREE.Color {
     if (Array.isArray(colorValue) && colorValue.length >= 3) {
       return new THREE.Color(colorValue[0], colorValue[1], colorValue[2]);
     }
+
     return new THREE.Color(0xffffff);
   }
 
-  private getCameraCount(scene: THREE.Scene): number {
+  private getCameraCount (scene: THREE.Scene): number {
     let count = 0;
+
     scene.traverse(object => {
-      if (object instanceof THREE.Camera) count++;
+      if (object instanceof THREE.Camera) {count++;}
     });
+
     return count;
   }
 
-  private getLightCount(scene: THREE.Scene): number {
+  private getLightCount (scene: THREE.Scene): number {
     let count = 0;
+
     scene.traverse(object => {
-      if (object instanceof THREE.Light) count++;
+      if (object instanceof THREE.Light) {count++;}
     });
+
     return count;
   }
 
   /**
    * 验证输入数据
    */
-  protected validateInput(input: SceneParserInput): void {
+  protected validateInput (input: SceneParserInput): void {
     super.validateInput(input);
 
     if (!input.modelNodes) {
@@ -666,14 +707,14 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 获取配置
    */
-  public getConfig(): SceneParserConfig {
+  public getConfig (): SceneParserConfig {
     return { ...this.config };
   }
 
   /**
    * 更新配置
    */
-  public updateConfig(newConfig: Partial<SceneParserConfig>): void {
+  public updateConfig (newConfig: Partial<SceneParserConfig>): void {
     this.config = { ...this.config, ...newConfig };
     this.log('更新场景解析器配置');
   }
@@ -685,22 +726,23 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
 export class SceneParserFactory {
   private defaultConfig: SceneParserConfig;
 
-  constructor(defaultConfig?: SceneParserConfig) {
+  constructor (defaultConfig?: SceneParserConfig) {
     this.defaultConfig = defaultConfig || {};
   }
 
   /**
    * 创建场景解析器实例
    */
-  create(context: IParsingContext, config?: SceneParserConfig): SceneParser {
+  create (context: IParsingContext, config?: SceneParserConfig): SceneParser {
     const mergedConfig = { ...this.defaultConfig, ...config };
+
     return new SceneParser(context, mergedConfig);
   }
 
   /**
    * 获取默认配置
    */
-  public getDefaultConfig(): SceneParserConfig {
+  public getDefaultConfig (): SceneParserConfig {
     return { ...this.defaultConfig };
   }
 }
