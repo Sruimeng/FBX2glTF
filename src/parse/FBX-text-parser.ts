@@ -1,75 +1,61 @@
-/**
- * @file parse/FBX-text-parser.ts
- * @description FBX文本格式解析器 - 基于Three.js FBXLoader源码
- */
+import { parseNumberArray } from '../util';
+import { FBXTree } from '../constants';
 
-import type { IFBXTree, FBXTreeNode } from '../types/core/fbx-types';
+type TextNode = {
+  [key: string]: unknown, // 添加索引签名以支持动态属性
+  attrName?: string,
+  attrType?: string,
+  id?: number,
+  name: string,
+  PoseNode?: TextNode[],
+};
 
-/**
- * FBX文本解析器
- */
+// parse an FBX file in ASCII format
 export class TextParser {
-  private currentIndent: number = 0;
-  private allNodes: FBXTree;
-  private nodeStack: FBXTreeNode[];
-  private currentProp: unknown[] = [];
-  private currentPropName: string = '';
+  nodeStack: TextNode[];
+  currentIndent: number;
+  currentProp: { [key: string]: unknown } | unknown[];
+  currentPropName: string;
+  allNodes: FBXTree;
 
   constructor () {
-    this.allNodes = new FBXTree();
     this.nodeStack = [];
+    this.currentIndent = 0;
+    this.currentProp = [];
+    this.currentPropName = '';
+    this.allNodes = new FBXTree();
   }
 
-  /**
-   * 获取前一个节点
-   */
-  getPrevNode (): FBXTreeNode | undefined {
+  getPrevNode () {
     return this.nodeStack[this.currentIndent - 2];
   }
 
-  /**
-   * 获取当前节点
-   */
-  getCurrentNode (): FBXTreeNode | undefined {
+  getCurrentNode () {
     return this.nodeStack[this.currentIndent - 1];
   }
 
-  /**
-   * 获取当前属性
-   */
-  getCurrentProp (): unknown[] {
+  getCurrentProp () {
     return this.currentProp;
   }
 
-  /**
-   * 推入节点栈
-   */
-  pushStack (node: FBXTreeNode): void {
+  pushStack (node: TextNode) {
     this.nodeStack.push(node);
     this.currentIndent += 1;
   }
 
-  /**
-   * 弹出节点栈
-   */
-  popStack (): void {
+  popStack () {
     this.nodeStack.pop();
     this.currentIndent -= 1;
   }
 
-  /**
-   * 设置当前属性
-   */
-  setCurrentProp (val: unknown[], name: string): void {
+  setCurrentProp (val: TextNode, name: string) {
     this.currentProp = val;
     this.currentPropName = name;
   }
 
-  /**
-   * 解析文本
-   */
-  parse (text: string): IFBXTree {
+  parse (text: string) {
     this.currentIndent = 0;
+
     this.allNodes = new FBXTree();
     this.nodeStack = [];
     this.currentProp = [];
@@ -77,14 +63,16 @@ export class TextParser {
 
     const split = text.split(/[\r\n]+/);
 
-    split.forEach((line: string, i: number) => {
+    split.forEach((line, i) => {
       const matchComment = line.match(/^[\s\t]*;/);
       const matchEmpty = line.match(/^[\s\t]*$/);
 
-      if (matchComment || matchEmpty) {return;}
+      if (matchComment || matchEmpty) {
+        return;
+      }
 
       const matchBeginning = line.match('^\\t{' + this.currentIndent + '}(\\w+):(.*){');
-      const matchProperty = line.match('^\\t{' + (this.currentIndent) + '}(\\w+):[\\s\\t\\r\\n](.*)');
+      const matchProperty = line.match('^\\t{' + this.currentIndent + '}(\\w+):[\\s\\t\\r\\n](.*)');
       const matchEnd = line.match('^\\t{' + (this.currentIndent - 1) + '}}');
 
       if (matchBeginning) {
@@ -94,183 +82,233 @@ export class TextParser {
       } else if (matchEnd) {
         this.popStack();
       } else if (line.match(/^[^\s\t}]/)) {
-        // 大数组被分割成多行，以','字符结尾
-        // 如果遇到这种情况，该行需要连接到前一行
+        // large arrays are split over multiple lines terminated with a ',' character
+        // if this is encountered the line needs to be joined to the previous line
         this.parseNodePropertyContinued(line);
       }
     });
 
-    return this.allNodes.build();
+    return this.allNodes;
   }
 
-  /**
-   * 解析节点开始
-   */
-  private parseNodeBegin (line: string, property: RegExpMatchArray): void {
-    const nodeName = property[1].trim().replace(/^"/, '').replace(/"$/, '');
+  parseNodeBegin (_line: string, property: string[]) {
+    const nodeName = (property[1]).trim().replace(/^"/, '').replace(/"$/, '');
 
-    const nodeAttrs = property[2].split(',').map(function (attr: string) {
+    const nodeAttrs = (property[2]).split(',').map(function (attr) {
       return attr.trim().replace(/^"/, '').replace(/"$/, '');
     });
 
-    const node: Partial<FBXTreeNode> = { name: nodeName };
+    const node: TextNode = {
+      name: nodeName,
+    };
     const attrs = this.parseNodeAttr(nodeAttrs);
 
     const currentNode = this.getCurrentNode();
 
-    // 顶级节点
+    // a top node
     if (this.currentIndent === 0) {
-      this.allNodes.add(nodeName, node as FBXTreeNode);
+      this.allNodes.add(nodeName, node);
     } else {
-      // 子节点
-      // 如果子节点已存在，则追加它
-      if (nodeName in currentNode!) {
-        // 特殊情况Pose需要PoseNodes作为数组
+      // a subnode
+
+      // if the subnode already exists, append it
+      if (nodeName in currentNode) {
+        // special case Pose needs PoseNodes as an array
         if (nodeName === 'PoseNode') {
-          if (!(currentNode as any).PoseNode) {
-            (currentNode as any).PoseNode = [];
-          }
-          (currentNode as any).PoseNode.push(node);
-        } else if ((currentNode as any)[nodeName].id !== undefined) {
-          (currentNode as any)[nodeName] = {};
-          (currentNode as any)[nodeName][(currentNode as any)[nodeName].id] = (currentNode as any)[nodeName];
+          currentNode.PoseNode?.push(node);
+        } else if ((currentNode[nodeName] as { id?: number }).id !== undefined) {
+          const existing = currentNode[nodeName] as { id: number };
+
+          currentNode[nodeName] = {};
+          (currentNode[nodeName] as Record<string, { id: number }>)[existing.id] = existing;
         }
 
         if (attrs.id !== '') {
-          (currentNode as any)[nodeName][attrs.id] = node;
+          (currentNode[nodeName] as Record<string, unknown>)[attrs.id] = node;
         }
       } else if (typeof attrs.id === 'number') {
-        (currentNode as any)[nodeName] = {};
-        (currentNode as any)[nodeName][attrs.id] = node;
+        currentNode[nodeName] = {};
+        (currentNode[nodeName] as Record<string, unknown>)[attrs.id] = node;
       } else if (nodeName !== 'Properties70') {
         if (nodeName === 'PoseNode') {
-          (currentNode as any)[nodeName] = [node];
+          currentNode[nodeName] = [node];
         } else {
-          (currentNode as any)[nodeName] = node;
+          currentNode[nodeName] = node;
         }
       }
     }
 
-    if (typeof attrs.id === 'number') {node.id = attrs.id;}
-    if (attrs.name !== '') {node.attrName = attrs.name;}
-    if (attrs.type !== '') {node.attrType = attrs.type;}
+    if (typeof attrs.id === 'number') {
+      node.id = attrs.id;
+    }
+    if (attrs.name !== '') {
+      node.attrName = attrs.name;
+    }
+    if (attrs.type !== '') {
+      node.attrType = attrs.type;
+    }
 
-    this.pushStack(node as FBXTreeNode);
+    this.pushStack(node);
   }
 
-  /**
-   * 解析节点属性
-   */
-  private parseNodeAttr (attrs: string[]): any {
-    let id: string | number = '';
-    let attrName = '';
-    let attrType = '';
+  parseNodeAttr (attrs: string[]) {
+    let id: string | number = attrs[0] as string | number;
 
     if (attrs[0] !== '') {
-      const parsedId = parseInt(attrs[0]);
+      id = parseInt(attrs[0]);
 
-      if (isNaN(parsedId)) {
+      if (isNaN(id)) {
         id = attrs[0];
-      } else {
-        id = parsedId;
       }
     }
 
-    if (attrs[1] !== '') {
-      attrName = attrs[1].replace(/^(\w+_)/, '');
+    let name = '',
+      type = '';
+
+    if (attrs.length > 1) {
+      name = (attrs[1]).replace(/^(\w+)::/, '');
+      type = attrs[2];
     }
 
-    if (attrs[2] !== '') {
-      attrType = attrs[2];
-    }
-
-    return {
-      id: id,
-      name: attrName,
-      type: attrType,
-    };
+    return { id: id, name: name, type: type };
   }
 
-  /**
-   * 解析节点属性
-   */
-  private parseNodeProperty (line: string, property: RegExpMatchArray, nextLine: string): void {
-    const propName = property[1].trim().replace(/^"/, '').replace(/"$/, '');
-    const propValue = property[2].trim().replace(/^"/, '').replace(/"$/, '');
+  parseNodeProperty (line: string, property: string[], contentLine: string) {
+    const property1 = property[1];
+    const property2 = property[2];
+    let propName = property1.replace(/^"/, '').replace(/"$/, '').trim();
+    let propValue: string | number[] | number = property2.replace(/^"/, '').replace(/"$/, '').trim();
 
     // for special case: base64 image data follows "Content: ," line
-    // in this case next line will be the data
+    // Content: ,
+    // "/9j/4RDaRXhpZgAATU0A..."
     if (propName === 'Content' && propValue === ',') {
-      this.currentProp.push(nextLine.trim());
+      propValue = contentLine.replace(/"/g, '').replace(/,$/, '').trim();
+    }
+
+    const currentNode = this.getCurrentNode();
+    const parentName = currentNode.name;
+
+    if (parentName === 'Properties70') {
+      this.parseNodeSpecialProperty(line, propName, propValue);
 
       return;
     }
 
-    let nodes = [];
+    // Connections
+    if (propName === 'C') {
+      const connProps = propValue.split(',').slice(1) as [string, string];
+      const from = parseInt(connProps[0]);
+      const to = parseInt(connProps[1]);
 
-    // 连接字符串数组
-    if (propValue.length > 1 && propValue[0] === '"' && propValue[propValue.length - 1] === '"') {
-      propValue.split(',').map((v: string) => {
-        nodes.push(v.trim().replace(/^"/, '').replace(/"$/, ''));
+      let rest = propValue.split(',').slice(3);
+
+      rest = rest.map(function (elem) {
+        return elem.trim().replace(/^"/, '');
       });
-    } else if (propValue !== '') {
-      nodes.push(propValue);
+
+      propName = 'connections';
+      propValue = [from, to];
+      append(propValue, rest);
+
+      if (currentNode[propName] === undefined) {
+        currentNode[propName] = [];
+      }
     }
 
-    this.setCurrentProp(nodes, propName);
+    // Node
+    if (propName === 'Node') {
+      currentNode.id = propValue as unknown as number;
+    }
 
-    // 读取多行属性
-    let currentLine: string | undefined = nextLine;
+    // connections
+    if (propName in currentNode && Array.isArray(currentNode[propName])) {
+      (currentNode[propName] as unknown[]).push(propValue);
+    } else {
+      if (propName !== 'a') {
+        currentNode[propName] = propValue;
+      } else {
+        currentNode.a = propValue;
+      }
+    }
 
-    while ((currentLine = this.getNextLine(currentLine)) !== undefined) {
-      nodes = this.parseNodePropertyContinued(currentLine);
+    this.setCurrentProp(currentNode, propName);
+
+    // convert string to array, unless it ends in ',' in which case more will be added to it
+    if (propName === 'a' && propValue.slice(-1) !== ',') {
+      currentNode.a = parseNumberArray(propValue as string);
     }
   }
 
-  /**
-   * 解析多行属性
-   */
-  private parseNodePropertyContinued (line: string): unknown[] {
-    const propValue = line.trim().replace(/^"/, '').replace(/"$/, '');
+  parseNodePropertyContinued (line: string) {
+    const currentNode = this.getCurrentNode();
 
-    if (propValue !== '') {
-      this.currentProp.push(propValue);
+    currentNode.a += line;
+
+    // if the line doesn't end in ',' we have reached the end of the property value
+    // so convert the string to an array
+    if (line.slice(-1) !== ',') {
+      currentNode.a = parseNumberArray(currentNode.a as string);
     }
-
-    return this.currentProp;
   }
 
-  /**
-   * 获取下一行
-   */
-  private getNextLine (line: string): string | undefined {
-    if (line[line.length - 1] === ',') {
-      return line;
+  // parse "Property70"
+  parseNodeSpecialProperty (_line: string, _propName: string, propValue: string) {
+    // split this
+    // P: "Lcl Scaling", "Lcl Scaling", "", "A",1,1,1
+    // into array like below
+    // ["Lcl Scaling", "Lcl Scaling", "", "A", "1,1,1" ]
+    const props = propValue.split('",').map(function (prop) {
+      return prop.trim().replace(/^"/, '').replace(/\s/, '_');
+    });
+
+    const innerPropName = props[0];
+    const innerPropType1 = props[1];
+    const innerPropType2 = props[2];
+    const innerPropFlag = props[3];
+    let innerPropValue = props[4] as number | string | number[];
+
+    // cast values where needed, otherwise leave as strings
+    switch (innerPropType1) {
+      case 'int':
+      case 'enum':
+      case 'bool':
+      case 'ULongLong':
+      case 'double':
+      case 'Number':
+      case 'FieldOfView':
+        innerPropValue = parseFloat(innerPropValue as string);
+
+        break;
+      case 'Color':
+      case 'ColorRGB':
+      case 'Vector3D':
+      case 'Lcl_Translation':
+      case 'Lcl_Rotation':
+      case 'Lcl_Scaling':
+        innerPropValue = parseNumberArray(innerPropValue as string);
+
+        break;
     }
 
-    return undefined;
+    // CAUTION: these props must append to parent's parent
+    const prevNode = this.getPrevNode();
+
+    if (prevNode) {
+      prevNode[innerPropName] = {
+        flag: innerPropFlag,
+        type: innerPropType1,
+        type2: innerPropType2,
+        value: innerPropValue,
+      };
+
+      this.setCurrentProp(prevNode, innerPropName);
+    }
   }
 }
 
-/**
- * 简单的FBX树实现
- */
-class FBXTree {
-  private tree: Partial<IFBXTree> = {};
-
-  add (key: string, val: any): void {
-    (this.tree as any)[key] = val;
-  }
-
-  build (): IFBXTree {
-    return {
-      objects: this.tree.Objects || {},
-      connections: this.tree.connections || { C: [] },
-      settings: this.tree.settings || {},
-      time: this.tree.time || {},
-      version: this.tree.version,
-      root: this.tree.root,
-      Objects: this.tree.Objects || {},
-    };
+function append (a: unknown[], b: unknown[]): void {
+  for (let i = 0, j = a.length, l = b.length; i < l; i++, j++) {
+    a[j] = b[i];
   }
 }

@@ -3,36 +3,62 @@ import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxForma
 import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
 import { TextParser } from './parse/FBX-text-parser';
-import type { ModelLoaderResult } from './types/core';
+import {
+  global,
+} from './constants';
 
 /**
- * 重构后的 FBX 加载器
+ * A loader for the FBX format.
  *
- * 使用新的模块化解析器架构，提供更好的类型安全性和可维护性
+ * Requires FBX file to be >= 7.0 and in ASCII or >= 6400 in Binary format.
+ * Versions lower than this may load but will probably have errors.
+ *
+ * Needs Support:
+ * - Morph normals / blend shape normals
+ *
+ * FBX format references:
+ * - [C++ SDK reference]{@link https://help.autodesk.com/view/FBX/2017/ENU/?guid=__cpp_ref_index_html}
+ *
+ * Binary format specification:
+ * - [FBX binary file format specification]{@link https://code.blender.org/2013/08/fbx-binary-file-format-specification/}
  *
  * ```js
- * const loader = new FBXLoaderRefactored();
+ * const loader = new FBXLoader();
  * const object = await loader.loadAsync( 'models/fbx/stanford-bunny.fbx' );
  * scene.add( object );
  * ```
+ *
+ * @augments Loader
+ * @three_import import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
  */
-export class FBXLoaderRefactored extends Loader {
+export class FBXLoaderRefactored extends Loader<any> {
+  result?: any;
   /**
-   * 构造函数
+   * Constructs a new FBX loader.
+   *
+   * @param {LoaderOptions} [options] - The loading options.
    */
-  constructor () {
-    super();
+  constructor (options?: any) {
+    const { manager } = options || {};
+
+    super(manager);
   }
 
   /**
-   * 从 URL 加载 FBX 文件
+   * Starts loading from the given URL and passes the loaded FBX asset
+   * to the `onLoad()` callback.
+   *
+   * @param {string} url - The path/URL of the file to be loaded. This can also be a data URI.
+   * @param {function(Group)} onLoad - Executed when the loading process has been finished.
+   * @param {onProgressCallback} onProgress - Executed while the loading is in progress.
+   * @param {onErrorCallback} onError - Executed when errors occur.
    */
   override load (
     url: string,
-    onLoad: (group: ModelLoaderResult) => void,
+    onLoad: (group: any) => void,
     onProgress?: (event: ProgressEvent) => void,
     onError?: (event: unknown) => void,
-  ): void {
+  ) {
     const path = this.path === '' ? LoaderUtils.extractUrlBase(url) : this.path;
 
     const loader = new FileLoader(this.manager);
@@ -45,19 +71,21 @@ export class FBXLoaderRefactored extends Loader {
     loader.load(
       url,
       async (buffer: string | ArrayBuffer) => {
-        try {
+        return onLoad(await this.parse(buffer as ArrayBuffer, path));
 
-          const result = await this.parse(buffer as ArrayBuffer, path);
+        // try {
+        //   onLoad(scope.parse(buffer, path));
+        // }
+        // catch (e) {
+        //   if (onError) {
+        //     onError(e);
+        //   }
+        //   else {
+        //     console.error(e);
+        //   }
 
-          onLoad(result);
-        } catch (error) {
-          if (onError) {
-            onError(error);
-          } else {
-            console.error('FBXLoaderRefactored:', error);
-          }
-          this.manager.itemError(url);
-        }
+        //   scope.manager.itemError(url);
+        // }
       },
       onProgress,
       onError,
@@ -65,62 +93,34 @@ export class FBXLoaderRefactored extends Loader {
   }
 
   /**
-   * 解析 FBX 数据
+   * Parses the given FBX data and returns the resulting group.
+   *
+   * @param {ArrayBuffer} FBXBuffer - The raw FBX data as an array buffer.
+   * @param {string} path - The URL base path.
+   * @return {Group} An object representing the parsed asset.
    */
-  async parse (
-    FBXBuffer: ArrayBuffer | string,
-    path: string,
-  ): Promise<ModelLoaderResult> {
-    try {
-      // 解析 FBX 树结构
-      let fbxTree: any;
+  parse (FBXBuffer: ArrayBuffer | string, path: string) {
+    if (isFbxFormatBinary(FBXBuffer as ArrayBuffer)) {
+      global.fbxTree = new BinaryParser().parse(FBXBuffer as ArrayBuffer);
+    } else {
+      const FBXText = convertArrayBufferToString(FBXBuffer as ArrayBuffer);
 
-      if (isFbxFormatBinary(FBXBuffer as ArrayBuffer)) {
-        fbxTree = new BinaryParser().parse(FBXBuffer as ArrayBuffer);
-      } else {
-        const FBXText = convertArrayBufferToString(FBXBuffer as ArrayBuffer);
-
-        if (!isFbxFormatASCII(FBXText)) {
-          throw new Error('FBXLoaderRefactored: Unknown format.');
-        }
-
-        if (getFbxVersion(FBXText) < 7000) {
-          throw new Error(
-            'FBXLoaderRefactored: FBX version not supported, FileVersion: ' + getFbxVersion(FBXText),
-          );
-        }
-
-        fbxTree = new TextParser().parse(FBXText);
+      if (!isFbxFormatASCII(FBXText)) {
+        throw new Error('THREE.FBXLoader: Unknown format.');
       }
 
-      // 创建纹理加载器
-      const textureLoader = new TextureLoader(this.manager)
-        .setPath(this.resourcePath || path)
-        .setCrossOrigin(this.crossOrigin);
+      if (getFbxVersion(FBXText) < 7000) {
+        throw new Error(
+          'THREE.FBXLoader: FBX version not supported, FileVersion: ' + getFbxVersion(FBXText),
+        );
+      }
 
-      // 使用重构后的解析器
-      const treeParser = new FBXTreeParser(textureLoader, this.manager);
-      const result = treeParser.parse(fbxTree);
-
-      return result;
-
-    } catch (error) {
-      console.error('FBXLoaderRefactored: Failed to parse FBX file', error);
-      throw error;
+      global.fbxTree = new TextParser().parse(FBXText);
     }
-  }
+    const textureLoader = new TextureLoader(this.manager)
+      .setPath(this.resourcePath || path)
+      .setCrossOrigin(this.crossOrigin);
 
-  /**
-   * 异步加载方法
-   */
-  override async loadAsync (url: string): Promise<ModelLoaderResult> {
-    return new Promise((resolve, reject) => {
-      this.load(
-        url,
-        result => resolve(result),
-        undefined,
-        error => reject(error)
-      );
-    });
+    return new FBXTreeParser(textureLoader, this.manager).parse();
   }
 }
