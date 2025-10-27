@@ -12,48 +12,7 @@ import {
   VectorKeyframeTrack,
 } from 'three';
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
-import { BaseParser, type IParsingContext } from '../types';
-
-interface AnimationCurve {
-  id: number,
-  times: number[],
-  values: number[],
-}
-
-interface AnimationCurveRelationship {
-  morph?: AnimationCurve,
-  x: AnimationCurve,
-  y: AnimationCurve,
-  z: AnimationCurve,
-}
-
-interface AnimationNode {
-  DeformPercent?: CurveNode,
-  eulerOrder?: EulerOrder,
-  ID: number,
-  initialPosition: number[],
-  initialRotation: number[],
-  initialScale: number[],
-  modelName: string,
-  morphName?: string,
-  postRotation?: [number, number, number],
-  preRotation?: [number, number, number],
-  R?: CurveNode,
-  S?: CurveNode,
-  T?: CurveNode,
-  transform?: Matrix4,
-}
-
-interface CurveNode {
-  attr: string,
-  curves?: AnimationCurveRelationship,
-  id: number,
-}
-
-interface RawClip {
-  layer: AnimationNode[],
-  name: string,
-}
+import { BaseParser, type IParsingContext, type AnimationCurve, type AnimationCurveRelationship, type AnimationNode, type CurveNode, type RawClip } from '../types';
 
 // parse animation data from FBXTree
 export class AnimationParser extends BaseParser<any, any> {

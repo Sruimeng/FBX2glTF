@@ -1,6 +1,6 @@
 import type { LoadingManager, Group, AnimationClip } from 'three';
-import type { FBXConnectionNode } from '../connection';
-import type { IFBXTree } from '../document';
+import type { IFBXTree } from '../nodes/document';
+import type { FBXConnectionNode } from '../nodes/connection';
 
 /**
  * FBX 解析上下文接口

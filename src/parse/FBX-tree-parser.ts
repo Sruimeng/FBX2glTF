@@ -2,8 +2,6 @@ import type {
   BufferGeometry,
   EulerOrder,
   LoadingManager,
-  MeshPhongMaterial,
-  MeshStandardMaterialParameters,
   TextureLoader,
 } from 'three';
 import {
@@ -36,41 +34,10 @@ import {
   Texture,
   Vector3,
 } from 'three';
-import { BaseParser, type IParsingContext } from '../types';
-import type {
-  FBXConnectionNode,
-  FBXConnectionReference,
-  FBXLightNodeAttribute,
-  FBXMaterialNode,
-  FBXMeshNode,
-  FBXModelNode,
-  FBXMorphTarget,
-  FBXRawTargets,
-  FBXSkeleton,
-  FBXTextureNode,
-  FBXVideoNode,
-  IFBXPropertyValue,
-  RawBone,
-  UserDataTransform,
-} from '../types';
+import { BaseParser, type IParsingContext, type FBXConnectionNode, type FBXConnectionReference, type FBXLightNodeAttribute, type FBXMaterialNode, type FBXMeshNode, type FBXModelNode, type FBXMorphTarget, type FBXRawTargets, type FBXSkeleton, type FBXTextureNode, type FBXVideoNode, type IFBXPropertyValue, type RawBone, type UserDataTransform, type FBXMeshStandardMaterialParameters, type FBXSceneParserOptions } from '../types';
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './FBX-geometry-parser';
-
-interface FBXMeshStandardMaterialParameters extends MeshStandardMaterialParameters {
-  reflectivity?: number,
-  specularMap?: Texture,
-}
-
-export interface FBXSceneParserOptions {
-  deformers: {
-    morphTargets: Record<string, FBXMorphTarget>,
-    skeletons: Record<string, FBXSkeleton>,
-  },
-  geoInfoMap?: Map<number, any>,
-  geometryMap?: Map<number, BufferGeometry>,
-  materialMap?: Map<number, MeshPhongMaterial | MeshStandardMaterial | LineBasicMaterial>,
-}
 
 // Parse the FBXTree object returned by the BinaryParser or TextParser and return a Group
 export class FBXTreeParser extends BaseParser<any, any> {

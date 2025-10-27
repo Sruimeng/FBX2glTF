@@ -199,7 +199,7 @@ export class BinaryParser extends BaseParser<ArrayBuffer, IFBXTree> {
     } else {
       if (subNode.name === 'PoseNode') {
         if (!Array.isArray(node[subNode.name])) {
-          node[subNode.name] = [node[subNode.name]];
+          (node as any)[subNode.name] = [node[subNode.name]];
         }
 
         ((node as Record<string, unknown>)[subNode.name] as unknown[]).push(subNode);

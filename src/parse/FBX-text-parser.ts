@@ -1,21 +1,12 @@
 import { parseNumberArray } from '../util';
 import { FBXTree, BaseParser } from '../types';
-import type { IParsingContext } from '../types';
-
-type TextNode = {
-  [key: string]: unknown, // 添加索引签名以支持动态属性
-  attrName?: string,
-  attrType?: string,
-  id?: number,
-  name: string,
-  PoseNode?: TextNode[],
-};
+import type { IParsingContext, TextNodeWithIndex } from '../types';
 
 // parse an FBX file in ASCII format
 export class TextParser extends BaseParser<string, FBXTree> {
-  nodeStack: TextNode[];
+  nodeStack: TextNodeWithIndex[];
   currentIndent: number;
-  currentProp: { [key: string]: unknown } | unknown[];
+  currentProp: TextNodeWithIndex | unknown[];
   currentPropName: string;
   allNodes: FBXTree;
 
@@ -28,11 +19,11 @@ export class TextParser extends BaseParser<string, FBXTree> {
     this.allNodes = new FBXTree();
   }
 
-  getPrevNode () {
+  getPrevNode (): TextNodeWithIndex {
     return this.nodeStack[this.currentIndent - 2];
   }
 
-  getCurrentNode () {
+  getCurrentNode (): TextNodeWithIndex {
     return this.nodeStack[this.currentIndent - 1];
   }
 
@@ -40,7 +31,7 @@ export class TextParser extends BaseParser<string, FBXTree> {
     return this.currentProp;
   }
 
-  pushStack (node: TextNode) {
+  pushStack (node: TextNodeWithIndex) {
     this.nodeStack.push(node);
     this.currentIndent += 1;
   }
@@ -50,7 +41,7 @@ export class TextParser extends BaseParser<string, FBXTree> {
     this.currentIndent -= 1;
   }
 
-  setCurrentProp (val: TextNode, name: string) {
+  setCurrentProp (val: TextNodeWithIndex, name: string) {
     this.currentProp = val;
     this.currentPropName = name;
   }
@@ -100,8 +91,10 @@ export class TextParser extends BaseParser<string, FBXTree> {
       return attr.trim().replace(/^"/, '').replace(/"$/, '');
     });
 
-    const node: TextNode = {
+    const node: TextNodeWithIndex = {
       name: nodeName,
+      properties: [],
+      children: [],
     };
     const attrs = this.parseNodeAttr(nodeAttrs);
 

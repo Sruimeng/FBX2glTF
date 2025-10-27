@@ -17,7 +17,7 @@ export interface FBXMaterial {
   MultiLayer: number,
   name: string,
   Opacity: FBXTypedProperty,
-  propertyList: object[],
+  propertyList: (string | number | boolean)[],
   ShadingModel: string,
   singleProperty: boolean,
   TransparencyFactor: FBXTypedProperty,

@@ -13,13 +13,13 @@ export interface FBXConnectionNode {
 }
 
 export interface FBXConnectionDocument {
-  Description: any,
-  LocalStart: any,
-  LocalStop: any,
+  Description: string,
+  LocalStart: number,
+  LocalStop: number,
   name: string,
   propertyList: string[],
-  ReferenceStart: any,
-  ReferenceStop: any,
+  ReferenceStart: number,
+  ReferenceStop: number,
   singleProperty: boolean,
   connections: [number, number, string][],
 }

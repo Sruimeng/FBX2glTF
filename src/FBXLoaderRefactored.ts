@@ -3,7 +3,7 @@ import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxForma
 import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
 import { TextParser } from './parse/FBX-text-parser';
-import { ParsingContext } from './types/core/context';
+import { ParsingContext } from './types';
 
 /**
  * A loader for the FBX format.

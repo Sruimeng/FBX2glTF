@@ -25,37 +25,12 @@ import type {
   FBXSkeleton,
   UserDataTransform,
   IParsingContext,
+  GeoBufferInfo,
+  GeoInfo,
 } from '../types';
+import { BaseParser } from '../types';
 import { generateTransform, getData, getEulerOrder } from './utils';
 import { NURBSCurve } from '../curves/NURBS-curve';
-import { BaseParser } from '../types';
-
-interface GeoBufferInfo {
-  buffer: number[],
-  dataSize: number,
-  indices: number[],
-  mappingType: string,
-  referenceType: string,
-}
-interface GeoInfo {
-  baseVertexPositions?: number[],
-  color?: GeoBufferInfo,
-  material?: GeoBufferInfo,
-  normal?: GeoBufferInfo,
-  skeleton?: FBXSkeleton,
-  uv?: {
-    buffer: number[],
-    dataSize: number,
-    indices: number[],
-    mappingType: string,
-    referenceType: string,
-  }[],
-  vertexIndices?: number[],
-  vertexPositions?: number[],
-  weightTable?: {
-    [key: number]: Array<{ id: number, weight: number }>,
-  },
-}
 
 export class GeometryParser extends BaseParser<any, any> {
   negativeMaterialIndices: boolean;

@@ -3,10 +3,10 @@
  */
 
 export interface FBXProperty {
-  [key: string]: unknown,
   name: string,
-  propertyList: object[],
+  propertyList: (string | number | boolean)[],
   singleProperty: boolean,
+  a?: string | number | boolean | string[] | number[] | object,
 }
 
 export interface FBXTypedProperty {

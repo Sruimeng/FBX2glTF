@@ -15,7 +15,7 @@ export interface FBXLayerElement {
   name: string,
   Normals?: FBXTreeNodeDetails,
   NormalsW?: FBXProperty,
-  propertyList: unknown[],
+  propertyList: (string | number | boolean)[],
   ReferenceInformationType: string,
   singleProperty: boolean,
   Smoothing?: FBXProperty,
@@ -43,7 +43,7 @@ export interface FBXLayer {
   id: number,
   LayerElement: FBXLayerElementRef,
   name: string,
-  propertyList: unknown[],
+  propertyList: (string | number | boolean)[],
   singleProperty: boolean,
   Version: number,
 }

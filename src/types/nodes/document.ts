@@ -3,8 +3,17 @@
  */
 
 import type { FBXTypedProperty } from './base-property';
-import type { FBXConnectionNode } from './connection';
+import type { FBXConnectionNode, FBXConnectionDocment } from './connection';
 import type { Group } from 'three';
+import type { FBXGeometryNode } from './geometry';
+import type { FBXMaterialNode } from './material';
+import type { FBXTextureNode } from './texture';
+import type { FBXVideoNode } from './texture';
+import type { FBXModelNode } from './model-animation';
+import type { FBXNodeAttribute } from './model-animation';
+import type { FBXPoseNode } from './model-animation';
+import type { FBXAnimationCurveNode } from './model-animation';
+import type { FBXDeformer } from './model-animation';
 
 export interface FBXTimeStamp {
   Day: number,
@@ -13,7 +22,7 @@ export interface FBXTimeStamp {
   Minute: number,
   Month: number,
   name: string,
-  propertyList: unknown[],
+  propertyList: (string | number)[],
   Second: number,
   singleProperty: boolean,
   Version: number,
@@ -25,7 +34,7 @@ export interface FBXMetaData {
   Comment: string,
   Keywords: string,
   name: string,
-  propertyList: unknown[],
+  propertyList: (string | number)[],
   Revision: string,
   singleProperty: boolean,
   Subject: string,
@@ -34,7 +43,6 @@ export interface FBXMetaData {
 }
 
 export interface FBXSceneInfo {
-  [key: string]: unknown,
   attrName: string,
   DocumentUrl: FBXTypedProperty,
   LastSaved: FBXTypedProperty,
@@ -55,7 +63,7 @@ export interface FBXHeaderExtension {
   FBXHeaderVersion: number,
   FBXVersion: number,
   name: string,
-  propertyList: unknown[],
+  propertyList: (string | number)[],
   SceneInfo: FBXSceneInfo,
   singleProperty: boolean,
 }
@@ -73,7 +81,7 @@ export interface FBXGlobalSettings {
   OriginalUnitScaleFactor: FBXTypedProperty,
   OriginalUpAxis: FBXTypedProperty,
   OriginalUpAxisSign: FBXTypedProperty,
-  propertyList: unknown[],
+  propertyList: (string | number)[],
   singleProperty: boolean,
   SnapOnFrameMode: FBXTypedProperty,
   TimeMarker: FBXTypedProperty,
@@ -89,12 +97,27 @@ export interface FBXGlobalSettings {
 
 export interface FBXDocuments {
   Count: number,
-  Document: {
-    [id: string]: FBXDocument,
-  },
+  Document: Record<string, FBXDocument>,
   name: string,
-  propertyList: unknown[],
+  propertyList: (string | number)[],
   singleProperty: boolean,
+}
+
+export interface FBXAnimationLayer {
+  name: string,
+  propertyList: (string | number)[],
+  singleProperty: boolean,
+  attrType: string,
+  id: number,
+}
+
+export interface FBXAnimationStack {
+  name: string,
+  propertyList: (string | number)[],
+  singleProperty: boolean,
+  attrType: string,
+  id: number,
+  Description?: FBXTypedProperty,
 }
 
 export interface FBXDocument {
@@ -102,7 +125,7 @@ export interface FBXDocument {
   attrType: string,
   id: number,
   name: string,
-  propertyList: unknown[],
+  propertyList: (string | number)[],
   RootNode: number,
   singleProperty: boolean,
   SourceObject: FBXTypedProperty,
@@ -111,9 +134,7 @@ export interface FBXDocument {
 export interface FBXDefinitions {
   Count: number,
   name: string,
-  ObjectType: {
-    [key: string]: FBXObjectType,
-  },
+  ObjectType: Record<string, FBXObjectType>,
   propertyList: string[],
   singleProperty: boolean,
   Version: number,
@@ -140,53 +161,64 @@ export interface FBXPropertyTemplate {
 }
 
 export interface FBXObjects {
-  [key: string]: unknown,
-  AnimationCurve?: Record<string, any>,
-  AnimationCurveNode?: Record<string, any>,
-  Deformer?: Record<string, any>,
-  Geometry?: Record<string, any>,
-  LayeredTexture?: Record<string, any>,
-  Material?: Record<string, any>,
-  Model?: Record<string, any>,
+  AnimationCurve?: Record<string, FBXAnimationCurveNode>,
+  AnimationCurveNode?: Record<string, FBXAnimationCurveNode>,
+  AnimationLayer?: Record<string, FBXAnimationLayer>,
+  AnimationStack?: Record<string, FBXAnimationStack>,
+  Deformer?: Record<string, FBXDeformer>,
+  Geometry?: Record<string, FBXGeometryNode>,
+  LayeredTexture?: Record<string, FBXTypedProperty>,
+  Material?: Record<string, FBXMaterialNode>,
+  Model?: Record<string, FBXModelNode>,
   name: string,
-  NodeAttribute?: Record<string, any>,
-  Pose?: Record<string, any>,
-  propertyList: unknown[],
+  NodeAttribute?: Record<string, FBXNodeAttribute>,
+  Pose?: Record<string, FBXPoseNode>,
+  propertyList: (string | number)[],
   singleProperty: boolean,
-  Texture?: Record<string, any>,
-  Video?: Record<string, any>,
+  Texture?: Record<string, FBXTextureNode>,
+  Video?: Record<string, FBXVideoNode>,
+}
+
+export interface FBXObjectsWithIndex extends FBXObjects {
+  [key: number]: FBXAnimationCurveNode | FBXAnimationLayer | FBXAnimationStack | FBXDeformer | FBXGeometryNode | FBXTypedProperty | FBXMaterialNode | FBXModelNode | FBXNodeAttribute | FBXPoseNode | FBXTextureNode | FBXVideoNode,
 }
 
 export interface IFBXTree {
-  [key: string]: unknown,
-  Connections?: any,
-  CreationTime?: any,
-  Creator?: any,
+  Connections?: FBXConnectionDocment,
+  CreationTime?: FBXTypedProperty,
+  Creator?: FBXTypedProperty,
   Definitions?: FBXDefinitions,
   Documents?: FBXDocuments,
   FBXHeaderExtension?: FBXHeaderExtension,
-  FileId?: any,
+  FileId?: FBXTypedProperty,
   GlobalSettings?: FBXGlobalSettings,
   Objects?: FBXObjects,
-  References?: any,
+  PoseNode?: Record<string, FBXPoseNode>,
+  References?: FBXTypedProperty,
 }
 
-export class FBXTree implements IFBXTree {
+export interface IFBXTreeWithIndex extends IFBXTree {
+  [key: string]: FBXConnectionDocment | FBXTypedProperty | FBXDefinitions | FBXDocuments | FBXHeaderExtension | FBXObjects | Record<string, FBXPoseNode> | string | number | boolean | object | undefined,
+}
+
+export class FBXTree implements IFBXTreeWithIndex {
   FBXHeaderExtension?: FBXHeaderExtension;
-  FileId?: any;
-  CreationTime?: any;
-  Creator?: any;
+  FileId?: FBXTypedProperty;
+  CreationTime?: FBXTypedProperty;
+  Creator?: FBXTypedProperty;
   GlobalSettings?: FBXGlobalSettings;
   Documents?: FBXDocuments;
-  References?: any;
+  References?: FBXTypedProperty;
   Definitions?: FBXDefinitions;
   Objects?: FBXObjects;
-  Connections?: any;
-  [key: string]: unknown;
+  Connections?: FBXConnectionDocment;
+  PoseNode?: Record<string, FBXPoseNode>;
   connections?: FBXConnectionNode[];
 
-  add (key: string, val: unknown) {
-    this[key] = val;
+  [key: string]: FBXConnectionDocment | FBXTypedProperty | FBXDefinitions | FBXDocuments | FBXHeaderExtension | FBXObjects | Record<string, FBXPoseNode> | string | number | boolean | object | undefined;
+
+  add (key: string, val: string | number | boolean | object) {
+    (this as any)[key] = val;
   }
 }
 

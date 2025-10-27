@@ -1,8 +1,7 @@
 import type { LoadingManager } from 'three';
 import { Group } from 'three';
 import type { IParsingContext } from './parser';
-import type { IFBXTree } from '../document';
-import type { FBXConnectionNode } from '../connection';
+import type { FBXConnectionNode, IFBXTree, FBXObjectsWithIndex } from '../nodes';
 
 /**
  * FBX 解析上下文实现
@@ -47,7 +46,9 @@ export class ParsingContext implements IParsingContext {
    * 根据 ID 获取 FBX 节点
    */
   getNodeById<T = unknown>(id: number): T | undefined {
-    return this._fbxTree.Objects?.[id] as T;
+    const objects = this._fbxTree.Objects as FBXObjectsWithIndex;
+
+    return objects?.[id] as T;
   }
 
   /**
