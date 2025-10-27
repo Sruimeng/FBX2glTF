@@ -16,8 +16,8 @@ export interface TextNode {
 
 export interface TextNodeWithIndex extends TextNode {
   // 不允许动态类型，只允许具体属性
-  userData?: Record<string, string | number | boolean | string[] | number[] | object>;
-  attrValues?: Record<string, string | number | boolean | string[] | number[] | object>;
+  userData?: Record<string, string | number | boolean | string[] | number[] | object>,
+  attrValues?: Record<string, string | number | boolean | string[] | number[] | object>,
 }
 
 // 为 TextNodeWithIndex 添加辅助方法
