@@ -1,8 +1,15 @@
 // Parses binary FBX files.
 import * as fflate from 'fflate';
-import { type FBXConnectionNode, FBXTree, type FBXTreeNode, type IFBXTree } from '../constants';
-import { BaseParser } from '../types/core/base-parser';
-import type { IParsingContext } from '../types/core/parser';
+import type {
+  FBXConnectionNode,
+  FBXTreeNode,
+  IFBXTree,
+  IParsingContext,
+} from '../types';
+import {
+  FBXTree,
+  BaseParser,
+} from '../types';
 
 // Parse an FBX file in Binary format
 export class BinaryParser extends BaseParser<ArrayBuffer, IFBXTree> {

@@ -12,8 +12,7 @@ import {
   VectorKeyframeTrack,
 } from 'three';
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
-import { BaseParser } from '../types/core/base-parser';
-import type { IParsingContext } from '../types/core/parser';
+import { BaseParser, type IParsingContext } from '../types';
 
 interface AnimationCurve {
   id: number,

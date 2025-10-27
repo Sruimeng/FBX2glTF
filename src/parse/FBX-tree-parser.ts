@@ -36,8 +36,7 @@ import {
   Texture,
   Vector3,
 } from 'three';
-import { BaseParser } from '../types/core/base-parser';
-import type { IParsingContext } from '../types/core/parser';
+import { BaseParser, type IParsingContext } from '../types';
 import type {
   FBXConnectionNode,
   FBXConnectionReference,
@@ -53,7 +52,7 @@ import type {
   IFBXPropertyValue,
   RawBone,
   UserDataTransform,
-} from '../constants';
+} from '../types';
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './FBX-geometry-parser';
@@ -124,9 +123,9 @@ export class FBXTreeParser extends BaseParser<any, any> {
       if (!fbxTree.Connections) {
         throw new Error('FBXLoader');
       }
-      const rawConnections = fbxTree.Connections.connections;
+      const rawConnections = fbxTree.Connections?.connections || [];
 
-      rawConnections.forEach(rawConnection => {
+      rawConnections.forEach((rawConnection: any) => {
         const fromID = rawConnection[0];
         const toID = rawConnection[1];
         const relationship = rawConnection[2];

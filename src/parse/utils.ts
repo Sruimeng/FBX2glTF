@@ -2,8 +2,8 @@
 
 import type { EulerOrder, EulerTuple } from 'three';
 import { Euler, MathUtils, Matrix4, Vector3 } from 'three';
-import type { FBXTransformData } from '../constants';
-import { FBXEulerOrder } from '../constants';
+import { FBXEulerOrder } from '../types';
+import type { FBXTransformData } from '../types';
 
 // ref: http://help.autodesk.com/view/FBX/2017/ENU/?guid=__cpp_ref_class_fbx_euler_html
 export function getEulerOrder (order: FBXEulerOrder): string {

@@ -1,7 +1,6 @@
 import { parseNumberArray } from '../util';
-import { FBXTree } from '../constants';
-import { BaseParser } from '../types/core/base-parser';
-import type { IParsingContext } from '../types/core/parser';
+import { FBXTree, BaseParser } from '../types';
+import type { IParsingContext } from '../types';
 
 type TextNode = {
   [key: string]: unknown, // 添加索引签名以支持动态属性

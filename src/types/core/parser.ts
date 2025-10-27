@@ -1,8 +1,6 @@
 import type { LoadingManager, Group, AnimationClip } from 'three';
-import type { FBXConnectionNode as GlobalFBXConnectionNode, IFBXTree } from '../../constants';
-
-// 重新导出类型供其他模块使用
-export type { GlobalFBXConnectionNode, IFBXTree };
+import type { FBXConnectionNode } from '../connection';
+import type { IFBXTree } from '../document';
 
 /**
  * FBX 解析上下文接口
@@ -10,14 +8,14 @@ export type { GlobalFBXConnectionNode, IFBXTree };
  */
 export interface IParsingContext {
   readonly fbxTree: IFBXTree,
-  connections: Map<number, GlobalFBXConnectionNode>,
+  connections: Map<number, FBXConnectionNode>,
   sceneGraph: Group,
   readonly loadingManager: LoadingManager,
   readonly wireframe?: boolean,
 
   // 便捷方法
   getNodeById<T>(id: number): T | undefined,
-  getConnections(id: number): GlobalFBXConnectionNode | undefined,
+  getConnections(id: number): FBXConnectionNode | undefined,
   getNodesByType<T>(nodeType: string): Map<number, T>,
 }
 

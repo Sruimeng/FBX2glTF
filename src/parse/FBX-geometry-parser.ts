@@ -24,11 +24,11 @@ import type {
   FBXMorphTarget,
   FBXSkeleton,
   UserDataTransform,
-} from '../constants';
+  IParsingContext,
+} from '../types';
 import { generateTransform, getData, getEulerOrder } from './utils';
 import { NURBSCurve } from '../curves/NURBS-curve';
-import { BaseParser } from '../types/core/base-parser';
-import type { IParsingContext } from '../types/core/parser';
+import { BaseParser } from '../types';
 
 interface GeoBufferInfo {
   buffer: number[],
