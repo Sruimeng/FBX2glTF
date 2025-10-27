@@ -28,8 +28,51 @@ export interface FBXConnection {
   relationship: string;
 }
 
-export interface FBXTreeFactory {
-  create(): IFBXTree;
+export class FBXTreeFactory {
+  private tree: IFBXTree;
+
+  constructor() {
+    this.tree = {
+      objects: {},
+      connections: {},
+      Objects: {},
+    };
+  }
+
+  create(): IFBXTree {
+    return this.tree;
+  }
+
+  add(name: string, node: any): void {
+    this.tree.objects = this.tree.objects || {};
+    this.tree.objects[name] = node;
+  }
+
+  addConnection(connection: any): void {
+    this.tree.connections = this.tree.connections || {};
+    if (!this.tree.connections.C) {
+      this.tree.connections.C = [];
+    }
+    this.tree.connections.C.push(connection);
+  }
+
+  build(): IFBXTree {
+    return this.tree;
+  }
+
+  setHeader(header: any): void {
+    this.tree.header = header;
+  }
+
+  setGlobalSettings(settings: any): void {
+    this.tree.settings = settings;
+  }
+
+  addObject(category: string, id: string, object: any): void {
+    this.tree.Objects = this.tree.Objects || {};
+    this.tree.Objects[category] = this.tree.Objects[category] || {};
+    this.tree.Objects[category][id] = object;
+  }
 }
 
 // FBX 欧拉角枚举
