@@ -318,8 +318,49 @@ export class BinaryParser {
       case 0x10:
         // 8位整数
         return reader.getInt8();
+      // 添加更多类型支持（基于ASCII码）
+      case 0x49: // 'I' - 32位整数
+        return reader.getInt32();
+      case 0x59: // 'Y' - 16位整数
+        return reader.getInt16();
+      case 0x52: { // 'R' - 原始二进制数据
+        const rawLen = reader.getUint32();
+        return reader.getArrayBuffer(rawLen);
+      }
+      case 0x53: { // 'S' - 字符串
+        const strLen = reader.getUint32();
+        return reader.getString(strLen);
+      }
+      case 0x44: // 'D' - 64位浮点数
+        return reader.getFloat64();
+      case 0x46: // 'F' - 32位浮点数
+        return reader.getFloat32();
+      case 0x4C: // 'L' - 64位整数
+        return reader.getInt64();
+      // 数组类型
+      case 0x64: { // 'd' - 64位浮点数数组
+        const dLen = reader.getUint32();
+        return reader.getFloat64Array(dLen);
+      }
+      case 0x66: { // 'f' - 32位浮点数数组
+        const fLen = reader.getUint32();
+        return reader.getFloat32Array(fLen);
+      }
+      case 0x69: { // 'i' - 32位整数数组
+        const iLen = reader.getUint32();
+        return reader.getInt32Array(iLen);
+      }
+      case 0x6C: { // 'l' - 64位整数数组
+        const lLen = reader.getUint32();
+        return reader.getInt64Array(lLen);
+      }
+      case 0x62: // 'b' - 布尔数组
+      case 0x63: { // 'c' - 布尔数组
+        const bLen = reader.getUint32();
+        return reader.getBooleanArray(bLen);
+      }
       default:
-        throw new Error(`未知的属性类型: 0x${type.toString(16)}`);
+        throw new Error(`未知的属性类型: 0x${type.toString(16)} (${String.fromCharCode(type)})`);
     }
   }
 }

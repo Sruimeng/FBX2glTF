@@ -63,17 +63,22 @@ export class FBXTreeParser {
     const geometryParser = new GeometryParser(this.context);
     const geometryMap = geometryParser.parse(deformers);
 
+    // 解析动画
+    const animationParser = new AnimationParser(this.context);
+    const animations = animationParser.parse();
+
     // 解析场景
     this.parseScene(deformers, geometryMap, materials);
 
     return {
       scene: this.context.sceneGraph as THREE.Group,
-      animations: [],
+      animations,
       modelInfo: {
         nodeCount: this.countNodes(fbxTree),
         connectionCount: connections.size,
         geometryCount: geometryMap.size,
         materialCount: materials.size,
+        animationCount: animations.length,
       },
     };
   }

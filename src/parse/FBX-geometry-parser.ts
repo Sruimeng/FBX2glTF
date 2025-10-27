@@ -45,11 +45,56 @@ export class GeometryParser {
    * 解析几何节点
    */
   private parseGeometryNode (geometryNode: any): THREE.BufferGeometry | null {
-    // 简化的几何体创建
     const geometry = new THREE.BufferGeometry();
+    
+    console.log(`🔷 解析几何节点: ${geometryNode.attrName || 'Unknown'}`);
 
-    // 这里可以实现完整的几何体解析逻辑
-    // 包括顶点、法线、UV等数据
+    // 解析顶点数据
+    if (geometryNode.Vertices) {
+      const vertices = geometryNode.Vertices.a || [];
+      console.log(`  顶点数量: ${vertices.length / 3}`);
+      
+      if (vertices.length >= 3) {
+        const positions = new Float32Array(vertices);
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      }
+    }
+
+    // 解析法线数据
+    if (geometryNode.Normals) {
+      const normals = geometryNode.Normals.a || [];
+      console.log(`  法线数量: ${normals.length / 3}`);
+      
+      if (normals.length >= 3) {
+        const normalArray = new Float32Array(normals);
+        geometry.setAttribute('normal', new THREE.BufferAttribute(normalArray, 3));
+      }
+    }
+
+    // 解析UV数据
+    if (geometryNode.LayerElementUV) {
+      const uvs = geometryNode.LayerElementUV.UV?.a || [];
+      console.log(`  UV数量: ${uvs.length / 2}`);
+      
+      if (uvs.length >= 2) {
+        const uvArray = new Float32Array(uvs);
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
+      }
+    }
+
+    // 解析索引数据
+    if (geometryNode.PolygonVertexIndex) {
+      const indices = geometryNode.PolygonVertexIndex.a || [];
+      console.log(`  索引数量: ${indices.length}`);
+      
+      if (indices.length > 0) {
+        geometry.setIndex(indices);
+      }
+    }
+
+    // 计算边界框
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
 
     return geometry;
   }

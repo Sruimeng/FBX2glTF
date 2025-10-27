@@ -21,21 +21,30 @@ export class AnimationParser {
   parse (): any[] {
     const animations: any[] = [];
 
-    // 简化的动画解析逻辑
+    // 解析动画栈
     if (this.context.fbxTree.Objects && 'AnimationStack' in this.context.fbxTree.Objects) {
       const animationStacks = (this.context.fbxTree.Objects as any).AnimationStack;
 
       for (const stackId in animationStacks) {
         const animationStack = animationStacks[stackId];
+        const stackName = animationStack.attrName || `Animation_${stackId}`;
 
-        // 这里可以实现完整的动画解析逻辑
-        animations.push({
-          name: animationStack.attrName || `Animation_${stackId}`,
-          duration: 1.0,
+        // 创建基础的动画剪辑
+        const animationClip = {
+          name: stackName,
+          duration: 1.0, // 默认持续时间，后续可以从AnimationLayer计算
           tracks: [],
-        });
+          uuid: `anim_${stackId}`,
+        };
+
+        animations.push(animationClip);
       }
     }
+
+    console.log(`📹 解析到 ${animations.length} 个动画栈`);
+    animations.forEach((anim, index) => {
+      console.log(`  ${index + 1}. ${anim.name} (duration: ${anim.duration}s)`);
+    });
 
     return animations;
   }

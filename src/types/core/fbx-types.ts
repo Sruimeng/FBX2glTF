@@ -275,36 +275,9 @@ export interface FBXLightNodeAttribute {
 }
 
 /**
- * FBX 视频节点
- */
-export interface FBXVideoNode {
-  [key: string]: any,
-}
-
-/**
  * FBX 相机节点属性
  */
 export interface FBXCameraNodeAttribute {
-  [key: string]: any,
-}
-
-/**
- * FBX 模型节点
- */
-export interface FBXModelNode {
-  /** 节点名称 */
-  attrName?: string,
-  /** 节点类型 */
-  attrType?: string,
-  /** 变换信息 */
-  properties?: {
-    Lcl_Translation?: FBXValue<number[]>,
-    Lcl_Rotation?: FBXValue<number[]>,
-    Lcl_Scaling?: FBXValue<number[]>,
-  },
-  /** 子节点 */
-  children?: FBXModelNode[],
-  /** 其他属性 */
   [key: string]: any,
 }
 
