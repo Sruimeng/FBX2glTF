@@ -1,6 +1,5 @@
 import type { LoadingManager } from 'three';
 import { Group } from 'three';
-import type { FBXConnectionNode } from '../nodes';
 import type { IParsingContext } from './parser';
 
 /**
@@ -9,14 +8,14 @@ import type { IParsingContext } from './parser';
  */
 export class ParsingContext implements IParsingContext {
   private readonly _fbxTree: any;
-  private readonly _connections: Map<number, FBXConnectionNode>;
+  private readonly _connections: Map<number, any>;
   private readonly _sceneGraph: Group;
   private readonly _loadingManager: LoadingManager;
   private readonly _wireframe?: boolean;
 
   constructor (
     fbxTree: any,
-    connections: Map<number, FBXConnectionNode>,
+    connections: Map<number, any>,
     loadingManager: LoadingManager,
     wireframe?: boolean
   ) {
@@ -32,7 +31,7 @@ export class ParsingContext implements IParsingContext {
 
   // Getters
   get fbxTree (): any { return this._fbxTree; }
-  get connections (): Map<number, FBXConnectionNode> { return this._connections; }
+  get connections (): Map<number, any> { return this._connections; }
   get sceneGraph (): Group { return this._sceneGraph; }
   get loadingManager (): LoadingManager { return this._loadingManager; }
   get wireframe (): boolean | undefined { return this._wireframe; }
@@ -48,7 +47,7 @@ export class ParsingContext implements IParsingContext {
   /**
    * 获取指定 ID 的连接关系
    */
-  getConnections (id: number): FBXConnectionNode | undefined {
+  getConnections (id: number): any {
     return this._connections.get(id);
   }
 
@@ -73,11 +72,11 @@ export class ParsingContext implements IParsingContext {
   /**
    * 获取与指定节点关联的所有子节点
    */
-  getConnectedNodes (parentId: number): FBXConnectionNode[] {
-    const connections: FBXConnectionNode[] = [];
+  getConnectedNodes (parentId: number): any[] {
+    const connections: any[] = [];
 
     this._connections.forEach(connection => {
-      if (connection.parent === parentId) {
+      if (connection.parents?.some((parent: any) => parent.ID === parentId)) {
         connections.push(connection);
       }
     });
@@ -88,13 +87,7 @@ export class ParsingContext implements IParsingContext {
   /**
    * 查找节点的父节点
    */
-  getParentNode (childId: number): FBXConnectionNode | null {
-    for (const connection of this._connections.values()) {
-      if (connection.child === childId) {
-        return connection;
-      }
-    }
-
-    return null;
+  getParentNode (childId: number): any {
+    return this._connections.get(childId);
   }
 }

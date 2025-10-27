@@ -1,5 +1,4 @@
 import type { IParsingContext, IParser, IAsyncParser } from './parser';
-import type { FBXConnectionNode } from '../nodes';
 
 /**
  * 解析器抽象基类
@@ -69,7 +68,7 @@ export abstract class BaseParser<TInput, TOutput> implements IParser<TInput, TOu
   /**
    * 便捷方法：获取节点连接
    */
-  protected getConnections (id: number): FBXConnectionNode | undefined {
+  protected getConnections (id: number): any {
     return this.context.getConnections(id);
   }
 

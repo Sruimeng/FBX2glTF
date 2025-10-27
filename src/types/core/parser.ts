@@ -1,5 +1,5 @@
 import type { LoadingManager } from 'three';
-import type { FBXConnectionNode } from '../nodes';
+import type { FBXConnectionNode as GlobalFBXConnectionNode } from '../../constants';
 
 /**
  * FBX 解析上下文接口
@@ -7,14 +7,14 @@ import type { FBXConnectionNode } from '../nodes';
  */
 export interface IParsingContext {
   readonly fbxTree: any,
-  readonly connections: Map<number, FBXConnectionNode>,
+  readonly connections: Map<number, GlobalFBXConnectionNode>,
   readonly sceneGraph: any,
   readonly loadingManager: LoadingManager,
   readonly wireframe?: boolean,
 
   // 便捷方法
   getNodeById<T>(id: number): T | undefined,
-  getConnections(id: number): FBXConnectionNode | undefined,
+  getConnections(id: number): GlobalFBXConnectionNode | undefined,
   getNodesByType<T>(nodeType: string): Map<number, T>,
 }
 
