@@ -4,7 +4,7 @@
  */
 
 import type * as THREE from 'three';
-import type { FBXNode, FBXValue, FBXTextureInfo } from '../core/fbx-types';
+import type { FBXNode, FBXValue } from '../core/fbx-types';
 
 /**
  * FBX 纹理节点接口

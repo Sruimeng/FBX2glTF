@@ -6,10 +6,8 @@
 import * as THREE from 'three';
 import type {
   IParsingContext,
-  IAsyncParser,
-  AsyncBaseParser,
-  ParserMetadata,
 } from '../types/core';
+import { AsyncBaseParser } from '../types/core';
 import type {
   ImageParserInput,
   ImageParserOutput,
@@ -50,7 +48,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
   /**
    * 解析图像节点
    */
-  async parse (input: ImageParserInput, context: IParsingContext): Promise<ImageParserOutput> {
+  override async parse (input: ImageParserInput, context: IParsingContext): Promise<ImageParserOutput> {
     const { imageNode, id } = input;
 
     this.log(`开始解析图像节点: ${imageNode.name || `Image_${id}`}`);
@@ -162,7 +160,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
         },
         error => {
           clearTimeout(timeoutId);
-          this.log(`Base64 图像加载失败: ${error.message}`, 'error');
+          this.log(`Base64 图像加载失败: ${(error as Error).message}`, 'error');
           reject(error);
         }
       );
@@ -212,7 +210,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
         },
         error => {
           clearTimeout(timeoutId);
-          this.log(`图像加载失败: ${error.message}`, 'error');
+          this.log(`图像加载失败: ${(error as Error).message}`, 'error');
 
           // 尝试创建默认纹理
           const defaultTexture = this.createDefaultTexture();
@@ -288,7 +286,7 @@ export class ImageParser extends AsyncBaseParser<ImageParserInput, ImageParserOu
   /**
    * 验证图像节点
    */
-  protected validateInput (input: ImageParserInput): void {
+  protected override validateInput (input: ImageParserInput): void {
     super.validateInput(input);
 
     if (!input.imageNode) {

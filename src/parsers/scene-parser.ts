@@ -6,17 +6,14 @@
 import * as THREE from 'three';
 import type {
   IParsingContext,
-  IParser,
-  BaseParser,
-  ParserMetadata,
 } from '../types/core';
+import { BaseParser } from '../types/core';
 import type {
   SceneParserInput,
   SceneParserOutput,
   SceneMetadata,
-  SceneStats,
-  SceneUnits,
   SceneParserConfig,
+  SceneParserStats,
 } from '../types/parsers/scene-parser';
 import type {
   FBXModelNode,
@@ -25,7 +22,7 @@ import type {
   FCBCameraNode,
   FBXLightNode,
 } from '../types/parsers/scene-parser';
-import { MatrixUtils } from '../utils/transform/matrix-utils';
+// import { MatrixUtils } from '../utils/transform/matrix-utils';
 
 /**
  * 场景解析器
@@ -156,7 +153,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
         name: 'meter',
       },
       upAxis: 'Y',
-      frontAxis: '-Z',
+      frontAxis: 'Z',
       coordSystem: 'right-handed',
     };
   }
@@ -409,13 +406,14 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
         light = new THREE.DirectionalLight(color, intensity);
 
         break;
-      case 'spot':
+      case 'spot': {
         const angle = props?.OuterAngle?.value || Math.PI / 4;
         const penumbra = props?.InnerAngle?.value || 0;
 
         light = new THREE.SpotLight(color, intensity, 0, angle, penumbra);
 
         break;
+      }
       case 'ambient':
         light = new THREE.AmbientLight(color, intensity);
 
@@ -581,8 +579,8 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 生成场景统计
    */
-  private generateSceneStats (scene: THREE.Scene, input: SceneParserInput): SceneStats {
-    const stats: SceneStats = {
+  private generateSceneStats (scene: THREE.Scene, input: SceneParserInput): SceneParserStats {
+    const stats: SceneParserStats = {
       totalNodes: 0,
       modelNodes: 0,
       nullNodes: 0,
@@ -604,7 +602,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 递归计算节点统计
    */
-  private calculateNodeStats (object: THREE.Object3D, stats: SceneStats, depth: number): void {
+  private calculateNodeStats (object: THREE.Object3D, stats: SceneParserStats, depth: number): void {
     stats.totalNodes++;
     stats.maxDepth = Math.max(stats.maxDepth, depth);
 
@@ -696,7 +694,7 @@ export class SceneParser extends BaseParser<SceneParserInput, SceneParserOutput>
   /**
    * 验证输入数据
    */
-  protected validateInput (input: SceneParserInput): void {
+  protected override validateInput (input: SceneParserInput): void {
     super.validateInput(input);
 
     if (!input.modelNodes) {

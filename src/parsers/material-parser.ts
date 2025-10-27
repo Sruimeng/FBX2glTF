@@ -6,10 +6,8 @@
 import * as THREE from 'three';
 import type {
   IParsingContext,
-  IParser,
-  BaseParser,
-  ParserMetadata,
 } from '../types/core';
+import { BaseParser } from '../types/core';
 import type {
   MaterialParserInput,
   MaterialParserOutput,
@@ -20,7 +18,6 @@ import type {
 } from '../types/parsers/material-parser';
 import type {
   FBXMaterialNode,
-  FBXMaterialPropertyNode,
   FBXTextureConnection,
 } from '../types/parsers/material-parser';
 import { TextureParser } from './texture-parser';
@@ -301,7 +298,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
     // 设置材质基本属性
     material.name = metadata.name;
     material.transparent = this.isMaterialTransparent(properties, textures);
-    material.alphaTest = this.config.alphaTest;
+    material.alphaTest = this.config.alphaTest || 0;
 
     // 检查是否需要双面渲染
     if (this.shouldBeDoubleSided(properties, textures)) {
@@ -342,9 +339,9 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
 
     // 设置金属度
     if (properties.metallic !== undefined) {
-      material.metallic = properties.metallic;
+      (material as any).metallic = properties.metallic;
     } else {
-      material.metallic = this.config.metallicFactor!;
+      (material as any).metallic = this.config.metallicFactor!;
     }
 
     // 设置自发光
@@ -582,7 +579,7 @@ export class MaterialParser extends BaseParser<MaterialParserInput, MaterialPars
   /**
    * 验证材质节点
    */
-  protected validateInput (input: MaterialParserInput): void {
+  protected override validateInput (input: MaterialParserInput): void {
     super.validateInput(input);
 
     if (!input.materialNode) {

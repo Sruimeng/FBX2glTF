@@ -6,10 +6,8 @@
 import * as THREE from 'three';
 import type {
   IParsingContext,
-  IParser,
-  BaseParser,
-  ParserMetadata,
 } from '../types/core';
+import { BaseParser } from '../types/core';
 import type {
   TextureParserInput,
   TextureParserOutput,
@@ -373,7 +371,7 @@ export class TextureParser extends BaseParser<TextureParserInput, TextureParserO
   /**
    * 验证纹理节点
    */
-  protected validateInput (input: TextureParserInput): void {
+  protected override validateInput (input: TextureParserInput): void {
     super.validateInput(input);
 
     if (!input.textureNode) {

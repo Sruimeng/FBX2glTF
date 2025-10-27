@@ -192,4 +192,27 @@ export abstract class AsyncBaseParser<TInput, TOutput> implements IAsyncParser<T
       throw error;
     }
   }
+
+  /**
+   * 统一的日志记录
+   */
+  protected log (message: string, level: 'info' | 'warn' | 'error' = 'info'): void {
+    const timestamp = new Date().toISOString();
+    const prefix = `[${timestamp}] [${this.metadata.name}] [${level.toUpperCase()}]`;
+
+    switch (level) {
+      case 'info':
+        console.info(prefix, message);
+
+        break;
+      case 'warn':
+        console.warn(prefix, message);
+
+        break;
+      case 'error':
+        console.error(prefix, message);
+
+        break;
+    }
+  }
 }

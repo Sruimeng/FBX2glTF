@@ -16,7 +16,7 @@ import type { FBXContext, IFBXTree } from '../types';
  * @deprecated 此全局状态将被新的 ParsingContext 架构替代
  */
 export const global: FBXContext = {
-  connections: {},
+  connections: new Map(),
   fbxTree: {} as IFBXTree,
   sceneGraph: new Group(),
 };

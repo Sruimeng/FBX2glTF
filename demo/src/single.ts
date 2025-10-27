@@ -293,6 +293,193 @@ function createModelSelector () {
   statusContainer.textContent = '就绪';
   panel.appendChild(statusContainer);
 
+  // 动画选择器
+  const animationContainer = document.createElement('div');
+
+  animationContainer.id = 'animation-container';
+  animationContainer.style.cssText = `
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    display: none;
+  `;
+
+  // 动画标题
+  const animationTitle = document.createElement('div');
+
+  animationTitle.textContent = '动画控制';
+  animationTitle.style.cssText = `
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 10px;
+  `;
+  animationContainer.appendChild(animationTitle);
+
+  // 动画选择下拉框
+  const animationSelectContainer = document.createElement('div');
+
+  animationSelectContainer.style.marginBottom = '10px';
+
+  const animationLabel = document.createElement('label');
+
+  animationLabel.textContent = '选择动画:';
+  animationLabel.style.display = 'block';
+  animationLabel.style.marginBottom = '5px';
+  animationLabel.style.fontSize = '12px';
+  animationLabel.style.color = '#ccc';
+  animationSelectContainer.appendChild(animationLabel);
+
+  const animationSelect = document.createElement('select');
+
+  animationSelect.id = 'animation-select';
+  animationSelect.style.cssText = `
+    width: 100%;
+    padding: 6px;
+    border: none;
+    border-radius: 4px;
+    background: #333;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  `;
+
+  // 添加无动画选项
+  const noAnimationOption = document.createElement('option');
+
+  noAnimationOption.value = '-1';
+  noAnimationOption.textContent = '无动画';
+  animationSelect.appendChild(noAnimationOption);
+
+  animationSelect.addEventListener('change', event => {
+    const index = parseInt((event.target as HTMLSelectElement).value);
+
+    if (index >= 0) {
+      (window as any).playAnimation(index);
+    } else {
+      (window as any).stopAllAnimations();
+    }
+  });
+
+  animationSelectContainer.appendChild(animationSelect);
+  animationContainer.appendChild(animationSelectContainer);
+
+  // 动画控制按钮
+  const animationControls = document.createElement('div');
+
+  animationControls.style.cssText = `
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  `;
+
+  // 播放/暂停按钮
+  const playPauseBtn = document.createElement('button');
+
+  playPauseBtn.textContent = '播放';
+  playPauseBtn.style.cssText = `
+    padding: 4px 8px;
+    border: none;
+    border-radius: 3px;
+    background: #4CAF50;
+    color: white;
+    font-size: 11px;
+    cursor: pointer;
+    flex: 1;
+  `;
+  playPauseBtn.addEventListener('click', () => {
+    const isPaused = animationActions.some(action => action.paused);
+
+    if (isPaused) {
+      (window as any).resumeAllAnimations();
+      playPauseBtn.textContent = '暂停';
+      playPauseBtn.style.background = '#FF9800';
+    } else {
+      (window as any).pauseAllAnimations();
+      playPauseBtn.textContent = '播放';
+      playPauseBtn.style.background = '#4CAF50';
+    }
+  });
+
+  // 停止按钮
+  const stopBtn = document.createElement('button');
+
+  stopBtn.textContent = '停止';
+  stopBtn.style.cssText = `
+    padding: 4px 8px;
+    border: none;
+    border-radius: 3px;
+    background: #f44336;
+    color: white;
+    font-size: 11px;
+    cursor: pointer;
+    flex: 1;
+  `;
+  stopBtn.addEventListener('click', () => {
+    (window as any).stopAllAnimations();
+    playPauseBtn.textContent = '播放';
+    playPauseBtn.style.background = '#4CAF50';
+  });
+
+  // 速度控制
+  const speedControl = document.createElement('div');
+
+  speedControl.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+  `;
+
+  const speedLabel = document.createElement('label');
+
+  speedLabel.textContent = '速度:';
+  speedLabel.style.fontSize = '11px';
+  speedLabel.style.color = '#ccc';
+  speedControl.appendChild(speedLabel);
+
+  const speedSlider = document.createElement('input');
+
+  speedSlider.type = 'range';
+  speedSlider.min = '0.1';
+  speedSlider.max = '2';
+  speedSlider.step = '0.1';
+  speedSlider.value = '1';
+  speedSlider.style.cssText = `
+    flex: 1;
+    height: 20px;
+  `;
+  speedSlider.addEventListener('input', event => {
+    const speed = parseFloat((event.target as HTMLInputElement).value);
+
+    (window as any).setAnimationSpeed(speed);
+  });
+
+  const speedValue = document.createElement('span');
+
+  speedValue.textContent = '1.0x';
+  speedValue.style.fontSize = '11px';
+  speedValue.style.color = '#ccc';
+  speedValue.style.minWidth = '30px';
+
+  speedSlider.addEventListener('input', event => {
+    const speed = parseFloat((event.target as HTMLInputElement).value);
+
+    speedValue.textContent = speed.toFixed(1) + 'x';
+  });
+
+  speedControl.appendChild(speedSlider);
+  speedControl.appendChild(speedValue);
+
+  animationControls.appendChild(playPauseBtn);
+  animationControls.appendChild(stopBtn);
+  animationContainer.appendChild(animationControls);
+  animationContainer.appendChild(speedControl);
+
+  panel.appendChild(animationContainer);
+
   // 操作按钮
   const buttonContainer = document.createElement('div');
 
@@ -390,6 +577,25 @@ function loadFBXModel (modelName: string = currentModelName) {
       const fbxScene = fbxResult.scene;
       const animations = fbxResult.animations || [];
 
+      // 详细调试动画数据
+      console.log('🔍 动画调试信息:');
+      console.log('- fbxResult 类型:', typeof fbxResult);
+      console.log('- fbxResult keys:', Object.keys(fbxResult));
+      console.log('- animations 数组:', animations);
+      console.log('- animations 长度:', animations.length);
+      console.log('- animations 是否为数组:', Array.isArray(animations));
+
+      if (animations && animations.length > 0) {
+        animations.forEach((clip: any, index: number) => {
+          console.log(`动画 ${index}:`, {
+            name: clip.name,
+            duration: clip.duration,
+            tracks: clip.tracks?.length || 0,
+            uuid: clip.uuid,
+          });
+        });
+      }
+
       // 详细调试FBX场景内容
       console.log('FBX场景子节点数量:', fbxScene.children.length);
       fbxScene.traverse((child: any) => {
@@ -465,12 +671,17 @@ function loadFBXModel (modelName: string = currentModelName) {
           animationActions.push(action);
         });
 
+        // 更新动画选择器UI
+        updateAnimationSelector(animations);
+
         // 播放第一个动画（如果存在）
         if (animationActions.length > 0) {
           playAnimation(0);
         }
       } else {
         console.info('该模型没有动画数据');
+        // 隐藏动画选择器
+        hideAnimationSelector();
       }
 
       // 更新 UI 状态
@@ -508,6 +719,8 @@ function loadFBXModel (modelName: string = currentModelName) {
     });
   } catch (error) {
     console.error('FBX 初始化失败:', error);
+    console.error('错误详情:', error instanceof Error ? error.message : String(error));
+    console.error('错误堆栈:', error instanceof Error ? error.stack : 'No stack trace');
     // 创建默认几何体作为占位符
     createDefaultGeometry();
   }
@@ -598,4 +811,40 @@ function onWindowResize () {
 
 export function render () {
   renderer.render(scene, camera);
+}
+
+// 更新动画选择器
+function updateAnimationSelector (animations: any[]) {
+  const animationContainer = document.getElementById('animation-container');
+  const animationSelect = document.getElementById('animation-select') as HTMLSelectElement;
+
+  if (!animationContainer || !animationSelect) {
+    return;
+  }
+
+  // 清除现有选项（保留"无动画"选项）
+  while (animationSelect.children.length > 1) {
+    animationSelect.removeChild(animationSelect.lastChild!);
+  }
+
+  // 添加动画选项
+  animations.forEach((clip: any, index: number) => {
+    const option = document.createElement('option');
+
+    option.value = index.toString();
+    option.textContent = clip.name || `动画 ${index + 1}`;
+    animationSelect.appendChild(option);
+  });
+
+  // 显示动画选择器
+  animationContainer.style.display = 'block';
+}
+
+// 隐藏动画选择器
+function hideAnimationSelector () {
+  const animationContainer = document.getElementById('animation-container');
+
+  if (animationContainer) {
+    animationContainer.style.display = 'none';
+  }
 }

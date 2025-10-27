@@ -25,7 +25,7 @@ import type {
   FBXSkeleton,
   UserDataTransform,
 } from '../constants';
-import type { BaseInfo, ParseContext } from '../../types';
+import type { ParseContext } from '../../types';
 import { generateTransform, getData, getEulerOrder } from './utils';
 import { NURBSCurve } from '../curves/NURBS-curve';
 
@@ -104,7 +104,7 @@ export class GeometryParser {
 
       for (const nodeID in geoNodes) {
         if (!geoNodes[nodeID]) {continue;}
-        const relationships = connections[parseInt(nodeID)] || { children: [], parents: [] };
+        const relationships = connections.get(parseInt(nodeID)) || { children: [], parents: [] };
         const result = this.parseGeometry(relationships, geoNodes[nodeID], deformers);
         const { geometry, modelInfo } = result || {};
 
@@ -129,6 +129,8 @@ export class GeometryParser {
         return this.parseMeshGeometry(relationships, geoNode, deformers);
       case 'NurbsCurve':
         return this.parseNurbsGeometry(geoNode);
+      default:
+        return { geometry: undefined, modelInfo: { id: 0, name: '', polygons: 0, quads: 0, triangles: 0, vertices: 0 } };
     }
   }
 
@@ -207,24 +209,24 @@ export class GeometryParser {
 
     const transformData: UserDataTransform = {};
 
-    if ('RotationOrder' in modelNode && modelNode.RotationOrder?.value) {
+    if (modelNode && 'RotationOrder' in modelNode && modelNode.RotationOrder?.value) {
       const value = modelNode.RotationOrder.value;
 
       if (typeof value === 'number') {
         transformData.eulerOrder = getEulerOrder(value as FBXEulerOrder) as EulerOrder;
       }
     }
-    if ('InheritType' in modelNode && modelNode.InheritType?.value) {
+    if (modelNode && 'InheritType' in modelNode && modelNode.InheritType?.value) {
       transformData.inheritType = parseInt(String(modelNode.InheritType.value));
     }
 
-    if ('GeometricTranslation' in modelNode && modelNode.GeometricTranslation?.value) {
+    if (modelNode && 'GeometricTranslation' in modelNode && modelNode.GeometricTranslation?.value) {
       transformData.translation = modelNode.GeometricTranslation.value;
     }
-    if ('GeometricRotation' in modelNode && modelNode.GeometricRotation?.value) {
+    if (modelNode && 'GeometricRotation' in modelNode && modelNode.GeometricRotation?.value) {
       transformData.rotation = modelNode.GeometricRotation.value;
     }
-    if ('GeometricScaling' in modelNode && modelNode.GeometricScaling?.value) {
+    if (modelNode && 'GeometricScaling' in modelNode && modelNode.GeometricScaling?.value) {
       transformData.scale = modelNode.GeometricScaling.value;
     }
 
@@ -642,9 +644,13 @@ export class GeometryParser {
 
     if (faceLength > 3) {
       if (faceLength === 4) {
-        if (this.modelInfo) this.modelInfo.quads++;
+        if (this.modelInfo) {
+          this.modelInfo.quads++;
+        }
       } else if (faceLength > 4) {
-        if (this.modelInfo) this.modelInfo.polygons++;
+        if (this.modelInfo) {
+          this.modelInfo.polygons++;
+        }
       }
       // Triangulate n-gon using earcut
       const vertices = [];
@@ -677,7 +683,9 @@ export class GeometryParser {
       // so that we don't end up with an array of 0 triangles for the faces not participating in morph.
       triangles = ShapeUtils.triangulateShape(triangulationInput, []);
     } else {
-      if (this.modelInfo) this.modelInfo.triangles++;
+      if (this.modelInfo) {
+        this.modelInfo.triangles++;
+      }
       // Regular triangle, skip earcut triangulation step
       triangles = [[0, 1, 2]];
     }

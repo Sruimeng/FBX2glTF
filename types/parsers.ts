@@ -87,7 +87,7 @@ export interface UserDataTransform {
  */
 export interface ParseContext {
   fbxTree: IFBXTree,
-  connections: Record<number, FBXConnectionNode>,
+  connections: Map<number, FBXConnectionNode>,
   sceneGraph: Group,
 }
 

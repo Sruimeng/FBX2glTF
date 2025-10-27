@@ -6,8 +6,6 @@
 import * as THREE from 'three';
 import type {
   IParsingContext,
-  IParser,
-  ParserMetadata,
 } from '../types/core';
 import { BaseParser } from '../types/core';
 import type {
@@ -22,23 +20,23 @@ import type {
   FBXAnimationLayerNode,
   FBXAnimationCurveNode,
   FBXAnimationCurve,
-  FBXPoseNode,
 } from '../types/parsers/animation-parser';
 import { ArrayUtils } from '../utils/data/array-utils';
-import { MatrixUtils } from '../utils/transform/matrix-utils';
+// import { ArrayUtils } from '../utils/data/array-utils';
+// import { MatrixUtils } from '../utils/transform/matrix-utils';
 
 /**
  * FBX 动画属性类型
  */
-enum FBXAnimationProperty {
-  POSITION = 'Lcl Translation',
-  ROTATION = 'Lcl Rotation',
-  SCALE = 'Lcl Scale',
-  QUATERNION = 'Lcl Rotation Quaternion',
-  VISIBILITY = 'Visibility',
-  OPACITY = 'Opacity',
-  FOV = 'FieldOfView'
-}
+// enum FBXAnimationProperty {
+//   POSITION = 'Lcl Translation',
+//   ROTATION = 'Lcl Rotation',
+//   SCALE = 'Lcl Scale',
+//   QUATERNION = 'Lcl Rotation Quaternion',
+//   VISIBILITY = 'Visibility',
+//   OPACITY = 'Opacity',
+//   FOV = 'FieldOfView'
+// }
 
 /**
  * 动画曲线数据
@@ -393,7 +391,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
 
     // 简化实现：返回第一个模型对象
     if (modelNodes.size > 0) {
-      return modelNodes.values().next().value;
+      return modelNodes.values().next().value as THREE.Object3D;
     }
 
     return null;
@@ -411,7 +409,7 @@ export class AnimationParser extends BaseParser<AnimationParserInput, AnimationP
 
     // 简化实现：返回第一条曲线
     if (animationCurves.size > 0) {
-      return animationCurves.values().next().value;
+      return animationCurves.values().next().value as FBXAnimationCurve;
     }
 
     return null;

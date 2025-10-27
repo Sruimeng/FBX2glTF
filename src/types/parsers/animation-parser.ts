@@ -4,7 +4,7 @@
  */
 
 import type * as THREE from 'three';
-import type { FBXNode, FBXValue, FBXKeyframe, FBXAnimationCurve } from '../core/fbx-types';
+import type { FBXNode, FBXValue, FBXAnimationCurve } from '../core/fbx-types';
 
 // Re-export for convenience
 export type { FBXAnimationCurve } from '../core/fbx-types';
@@ -190,6 +190,6 @@ export interface AnimationParserConfig {
 /**
  * FBX 数组数据接口 (动画专用)
  */
-interface FBXArrayData {
+interface _FBXArrayData {
   a: number[],
 }

@@ -6,10 +6,8 @@
 import * as THREE from 'three';
 import type {
   IParsingContext,
-  IParser,
-  BaseParser,
-  ParserMetadata,
 } from '../types/core';
+import { BaseParser } from '../types/core';
 import type {
   GeometryParserInput,
   GeometryParserOutput,
@@ -22,12 +20,11 @@ import type {
 import type {
   FBXGeometryNode,
   FBXLayerNode,
-  FBXLayerElementNode,
 } from '../types/parsers/geometry-parser';
-import type { MappingInformationType, ReferenceInformationType } from '../types/enums/mapping-types';
+import { MappingInformationType, ReferenceInformationType } from '../types/enums/mapping-types';
 import type { DeformerData, SkinData, BlendShapeData } from '../types/parsers/deformer-parser';
-import { ArrayUtils } from '../utils/data/array-utils';
-import { MatrixUtils } from '../utils/transform/matrix-utils';
+// import { ArrayUtils } from '../utils/data/array-utils';
+// import { MatrixUtils } from '../utils/transform/matrix-utils';
 
 /**
  * 层元素数据接口
@@ -74,7 +71,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
    * 解析几何体节点
    */
   parse (input: GeometryParserInput, context: IParsingContext): GeometryParserOutput {
-    const { geometryNode, id, deformerInfo, materialMapping } = input;
+    const { geometryNode, id, deformerInfo } = input;
 
     this.log(`开始解析几何体节点: ${geometryNode.GeometryName?.value || `Geometry_${id}`}`);
 
@@ -95,7 +92,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       const geometry = this.createBufferGeometry(geometryAttributes, faceIndices);
 
       // 应用变形器数据
-      const skinInfo = this.applyDeformerData(geometry, deformerInfo || []);
+      const skinInfo = this.applyDeformerData(geometry, deformerInfo as DeformerData[] || []);
 
       // 生成缺失的属性
       this.generateMissingAttributes(geometry, geometryAttributes, skinInfo);
@@ -109,13 +106,13 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       const stats = this.generateGeometryStats(geometry, geometryAttributes, skinInfo);
 
       // 生成元数据
-      const metadata = this.generateGeometryMetadata(geometryNode, geometryAttributes, skinInfo);
+      // const metadata = this.generateGeometryMetadata(geometryNode, geometryAttributes, skinInfo);
 
       const output: GeometryParserOutput = {
         geometry,
         name: geometryNode.GeometryName?.value || `Geometry_${id}`,
         attributes: geometryAttributes,
-        morphTargets: this.createMorphTargets(geometry, deformerInfo || []),
+        morphTargets: this.createMorphTargets(geometry, deformerInfo as DeformerData[] || []),
         skinInfo: skinInfo || undefined,
         stats,
       };
@@ -391,7 +388,6 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     componentCount: number
   ): void {
     const sourceData = elementData.dataByPolygonVertex!;
-    let outputIndex = 0;
     let faceVertexIndex = 0;
 
     for (let i = 0; i < faceIndices.length; i++) {
@@ -415,7 +411,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
         }
       }
 
-      outputIndex += componentCount;
+      // outputIndex += componentCount;
       faceVertexIndex++;
 
       // 检查是否是面的结束
@@ -437,7 +433,6 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   ): void {
     const sourceData = elementData.dataByPolygonVertex!;
     let faceIndex = 0;
-    let faceVertexIndex = 0;
 
     for (let i = 0; i < faceIndices.length; i++) {
       const vertexIndex = faceIndices[i];
@@ -460,12 +455,9 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
         }
       }
 
-      faceVertexIndex++;
-
       // 检查是否是面的结束
       if (i < faceIndices.length - 1 && this.isFaceEnd(faceIndices, i)) {
         faceIndex++;
-        faceVertexIndex = 0;
       }
     }
   }
@@ -627,8 +619,8 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
    * 应用变形器数据
    */
   private applyDeformerData (geometry: THREE.BufferGeometry, deformerInfo: DeformerData[]): SkinInfo | undefined {
-    const skinDeformers = deformerInfo.filter(d => d.type === 'skin') as SkinData[];
-    const blendShapeDeformers = deformerInfo.filter(d => d.type === 'blendshape') as BlendShapeData[];
+    const skinDeformers = deformerInfo.filter(d => (d as any).type === 'skin') as SkinData[];
+    const blendShapeDeformers = deformerInfo.filter(d => (d as any).type === 'blendshape') as BlendShapeData[];
 
     // 应用皮肤数据
     if (skinDeformers.length > 0) {
@@ -649,7 +641,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
    * 应用皮肤数据
    */
   private applySkinData (geometry: THREE.BufferGeometry, skinData: SkinData): SkinInfo {
-    if (skinData.skinWeightData.length === 0) {
+    if (!skinData.skinWeights || skinData.skinWeights.length === 0) {
       return {
         boneCount: 0,
         maxBonesPerVertex: 0,
@@ -665,11 +657,11 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
     const skinWeights = new Float32Array(vertexCount * 4);
     const skinIndices = new Float32Array(vertexCount * 4);
 
-    const weightMap = new Map<number, typeof skinData.skinWeightData>();
+    const weightMap = new Map<number, typeof skinData.skinWeights>();
     const boneIndexMap = new Map<number, number>();
 
     // 处理皮肤权重数据
-    skinData.skinWeightData.forEach(weightData => {
+    skinData.skinWeights?.forEach((weightData: any) => {
       weightMap.set(weightData.vertexIndex, [weightData]);
     });
 
@@ -698,7 +690,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       }
 
       // 归一化权重
-      if (totalWeight > 0 && this.config.normalizeWeights) {
+      if (totalWeight > 0 && (this.config as any).normalizeWeights) {
         for (let j = 0; j < maxBones; j++) {
           skinWeights[i * 4 + j] /= totalWeight;
         }
@@ -737,7 +729,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
           if (targetPositions && targetPositions.count === vertexCount) {
             geometry.morphAttributes.position = geometry.morphAttributes.position || [];
             geometry.morphAttributes.position.push(targetPositions.clone());
-            geometry.morphTargets!.push({
+            (geometry as any).morphTargets!.push({
               name: channel.name,
               positions: targetPositions.array as Float32Array,
             });
@@ -795,16 +787,16 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   private createMorphTargets (geometry: THREE.BufferGeometry, deformerInfo: DeformerData[]): THREE.MorphTarget[] {
     const morphTargets: THREE.MorphTarget[] = [];
 
-    const blendShapeDeformers = deformerInfo.filter(d => d.type === 'blendshape') as BlendShapeData[];
+    const blendShapeDeformers = deformerInfo.filter(d => (d as any).type === 'blendshape') as BlendShapeData[];
 
     blendShapeDeformers.forEach(blendShape => {
       blendShape.channels.forEach(channel => {
         if (channel.targetGeometry) {
           morphTargets.push({
             name: channel.name,
-            positions: channel.targetGeometry.getAttribute('position')?.array as Float32Array,
-            normals: channel.targetGeometry.getAttribute('normal')?.array as Float32Array,
-            colors: channel.targetGeometry.getAttribute('color')?.array as Float32Array,
+            position: channel.targetGeometry.getAttribute('position')?.array as Float32Array,
+            normal: channel.targetGeometry.getAttribute('normal')?.array as Float32Array,
+            color: channel.targetGeometry.getAttribute('color')?.array as Float32Array,
           });
         }
       });
@@ -829,7 +821,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
       faceCount: indexAttribute ? indexAttribute.count / 3 : 0,
       triangleCount: indexAttribute ? indexAttribute.count / 3 : 0,
       attributeCount: Object.keys(attributes).length,
-      morphTargetCount: geometry.morphTargets ? geometry.morphTargets.length : 0,
+      morphTargetCount: (geometry as any).morphTargets ? (geometry as any).morphTargets.length : 0,
       boneCount: skinInfo ? skinInfo.boneCount : 0,
     };
   }
@@ -857,7 +849,7 @@ export class GeometryParser extends BaseParser<GeometryParserInput, GeometryPars
   /**
    * 验证几何体节点
    */
-  protected validateInput (input: GeometryParserInput): void {
+  protected override validateInput (input: GeometryParserInput): void {
     super.validateInput(input);
 
     if (!input.geometryNode) {

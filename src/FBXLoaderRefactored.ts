@@ -1,10 +1,8 @@
 import { FileLoader, Group, Loader, LoaderUtils, TextureLoader } from 'three';
-import type { LoaderOptions } from '../types';
 import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary } from './util';
 import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
 import { TextParser } from './parse/FBX-text-parser';
-import { global } from './constants';
 import type { ModelLoaderResult } from '../types';
 
 /**
@@ -22,14 +20,14 @@ export class FBXLoaderRefactored extends Loader {
   /**
    * 构造函数
    */
-  constructor() {
+  constructor () {
     super();
   }
 
   /**
    * 从 URL 加载 FBX 文件
    */
-  load(
+  override load (
     url: string,
     onLoad: (group: ModelLoaderResult) => void,
     onProgress?: (event: ProgressEvent) => void,
@@ -48,7 +46,9 @@ export class FBXLoaderRefactored extends Loader {
       url,
       async (buffer: string | ArrayBuffer) => {
         try {
+
           const result = await this.parse(buffer as ArrayBuffer, path);
+
           onLoad(result);
         } catch (error) {
           if (onError) {
@@ -67,11 +67,16 @@ export class FBXLoaderRefactored extends Loader {
   /**
    * 解析 FBX 数据
    */
-  async parse(FBXBuffer: ArrayBuffer | string, path: string): Promise<ModelLoaderResult> {
+  async parse (
+    FBXBuffer: ArrayBuffer | string,
+    path: string,
+  ): Promise<ModelLoaderResult> {
     try {
       // 解析 FBX 树结构
+      let fbxTree: any;
+
       if (isFbxFormatBinary(FBXBuffer as ArrayBuffer)) {
-        global.fbxTree = new BinaryParser().parse(FBXBuffer as ArrayBuffer);
+        fbxTree = new BinaryParser().parse(FBXBuffer as ArrayBuffer);
       } else {
         const FBXText = convertArrayBufferToString(FBXBuffer as ArrayBuffer);
 
@@ -85,7 +90,7 @@ export class FBXLoaderRefactored extends Loader {
           );
         }
 
-        global.fbxTree = new TextParser().parse(FBXText);
+        fbxTree = new TextParser().parse(FBXText);
       }
 
       // 创建纹理加载器
@@ -95,8 +100,8 @@ export class FBXLoaderRefactored extends Loader {
 
       // 创建解析上下文
       const context = {
-        fbxTree: global.fbxTree,
-        connections: (global.fbxTree as any).connections || global.connections,
+        fbxTree,
+        connections: (fbxTree).connections || {},
         sceneGraph: new Group(),
       };
 
@@ -115,13 +120,13 @@ export class FBXLoaderRefactored extends Loader {
   /**
    * 异步加载方法
    */
-  async loadAsync(url: string): Promise<ModelLoaderResult> {
+  override async loadAsync (url: string): Promise<ModelLoaderResult> {
     return new Promise((resolve, reject) => {
       this.load(
         url,
-        (result) => resolve(result),
+        result => resolve(result),
         undefined,
-        (error) => reject(error)
+        error => reject(error)
       );
     });
   }

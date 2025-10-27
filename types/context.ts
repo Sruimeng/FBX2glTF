@@ -12,7 +12,7 @@ import type { FBXConnectionNode } from './connections';
  * FBX 加载运行时上下文
  */
 export interface FBXContext {
-  connections: Record<number, FBXConnectionNode>,
+  connections: Map<number, FBXConnectionNode>,
   fbxTree: IFBXTree,
   sceneGraph: Group,
 }
@@ -21,7 +21,7 @@ export interface FBXContext {
  * 全局运行时对象
  */
 export const global: FBXContext = {
-  connections: {},
+  connections: new Map(),
   fbxTree: {} as IFBXTree,
   sceneGraph: new Group(),
 };

@@ -6,8 +6,6 @@
 import * as THREE from 'three';
 import type {
   IParsingContext,
-  IParser,
-  ParserMetadata,
 } from '../types/core';
 import { BaseParser } from '../types/core';
 import type {
@@ -23,12 +21,14 @@ import type {
 } from '../types/parsers/deformer-parser';
 import type {
   FBXDeformerNode,
-  FBXClusterNode,
-  FBXSkinNode,
-  FBXBlendShapeNode,
-  FBXBlendShapeChannelNode,
 } from '../types/parsers/deformer-parser';
-import { ArrayUtils } from '../utils/data/array-utils';
+// import type {
+//   FBXClusterNode,
+//   FBXSkinNode,
+//   FBXBlendShapeNode,
+//   FBXBlendShapeChannelNode,
+// } from '../types/parsers/deformer-parser';
+// import { ArrayUtils } from '../utils/data/array-utils';
 
 /**
  * FBX 变形器类型枚举
@@ -69,9 +69,9 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
    * 解析变形器节点
    */
   parse (input: DeformerParserInput, context: IParsingContext): DeformerParserOutput {
-    const { deformerNode, id, childDeformers, geometryId, boneNodes } = input;
+    const { deformerNode, childDeformers, boneNodes } = input;
 
-    this.log(`开始解析变形器节点: ${deformerNode.DeformerName?.value || `Deformer_${id}`}`);
+    this.log(`开始解析变形器节点: ${deformerNode.DeformerName?.value || 'Deformer'}`);
 
     try {
       // 确定变形器类型
@@ -276,7 +276,7 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
     const clusterName = cluster.DeformerName?.value;
 
     if (clusterName) {
-      for (const [id, bone] of boneNodes) {
+      for (const [, bone] of boneNodes) {
         if (bone.name === clusterName) {
           return bone;
         }
@@ -513,7 +513,7 @@ export class DeformerParser extends BaseParser<DeformerParserInput, DeformerPars
   /**
    * 验证变形器节点
    */
-  protected validateInput (input: DeformerParserInput): void {
+  protected override validateInput (input: DeformerParserInput): void {
     super.validateInput(input);
 
     if (!input.deformerNode) {

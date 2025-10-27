@@ -4,7 +4,7 @@
  */
 
 import type * as THREE from 'three';
-import type { FBXNode, FBXValue, FBXDeformerInfo, FBXArrayData } from '../core/fbx-types';
+import type { FBXNode, FBXValue, FBXArrayData } from '../core/fbx-types';
 
 /**
  * FBX 变形器节点接口
