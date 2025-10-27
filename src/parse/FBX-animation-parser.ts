@@ -184,7 +184,7 @@ export class AnimationParser {
         values: rawCurve.KeyValueFloat.a,
       };
 
-      const relationships = this.context.connections[animationCurve.id];
+      const relationships = this.context.connections.get(animationCurve.id);
 
       if (relationships !== undefined) {
         const parent = relationships.parents[0];
@@ -237,14 +237,14 @@ export class AnimationParser {
     for (const nodeID in rawLayers) {
       const layerCurveNodes: AnimationNode[] = [];
 
-      const connection = connections[parseInt(nodeID)];
+      const connection = connections.get(parseInt(nodeID));
 
       if (connection !== undefined) {
         // all the animationCurveNodes used in the layer
         const children = connection.children;
 
         children.forEach((child, i) => {
-          if (curveNodesMap.has(child.ID)) {
+          if (child && typeof child.ID !== 'undefined' && curveNodesMap.has(child.ID)) {
             const curveNode = curveNodesMap.get(child.ID);
 
             if (!curveNode) {
@@ -256,10 +256,11 @@ export class AnimationParser {
               || curveNode.curves?.y !== undefined
               || curveNode.curves?.z !== undefined
             ) {
-              if (layerCurveNodes[i] === undefined) {
-                const modelID = (connections[child.ID]?.parents.filter(parent => {
+              if (layerCurveNodes[i] === undefined && child && typeof child.ID !== 'undefined') {
+                const childConnections = connections.get(child.ID);
+                const modelID = childConnections?.parents.filter(parent => {
                   return parent.relationship !== undefined;
-                })[0] as { ID: number })?.ID;
+                })[0]?.ID;
 
                 if (modelID !== undefined) {
                   const rawModel = models[modelID.toString()];
@@ -330,16 +331,19 @@ export class AnimationParser {
                 // layerCurveNodes[ i ][ curveNode.attr ] = curveNode;
               }
             } else if (curveNode.curves?.morph !== undefined) {
-              if (layerCurveNodes[i] === undefined) {
-                const deformerID
-                  = (connections[child.ID]?.parents.filter(parent => {
-                    return parent.relationship !== undefined;
-                  })[0] as { ID: number }).ID || 0;
-                const morpherID = (connections[deformerID]?.parents[0] as { ID: number }).ID || 0;
-                const geoID = (connections[morpherID]?.parents[0] as { ID: number }).ID || 0;
+              if (layerCurveNodes[i] === undefined && child && typeof child.ID !== 'undefined') {
+                const childConnections = connections.get(child.ID);
+                const deformerID = childConnections?.parents.filter(parent => {
+                  return parent.relationship !== undefined;
+                })[0]?.ID || 0;
+                const deformerConnections = connections.get(deformerID);
+                const morpherID = deformerConnections?.parents[0]?.ID || 0;
+                const morpherConnections = connections.get(morpherID);
+                const geoID = morpherConnections?.parents[0]?.ID || 0;
 
                 // assuming geometry is not used in more than one model
-                const modelID = (connections[geoID]?.parents[0] as { ID: number }).ID || 0;
+                const geoConnections = connections.get(geoID);
+                const modelID = geoConnections?.parents[0]?.ID || 0;
                 const models = objects.Model;
 
                 if (!models) {
@@ -410,7 +414,7 @@ export class AnimationParser {
     const rawClips: Record<string, RawClip> = {};
 
     for (const nodeID in rawStacks) {
-      const children = connections[parseInt(nodeID)]?.children || [];
+      const children = connections.get(parseInt(nodeID))?.children || [];
       const rawStack = rawStacks[nodeID] as { attrName?: string };
 
       if (children.length > 1) {
@@ -421,10 +425,11 @@ export class AnimationParser {
         );
       }
 
-      const layer = layersMap.get((children[0] as { ID: number }).ID);
+      const layer = layersMap.get((children[0] as { ID: number })?.ID || 0);
 
       if (!layer) {
-        throw new Error('Layer not found for nodeID: ' + nodeID);
+        console.warn('THREE.FBXLoader: Layer not found for nodeID: ' + nodeID + ', skipping this animation stack');
+        return; // 跳过这个动画栈而不是抛出错误
       }
 
       rawClips[nodeID] = {
@@ -545,29 +550,31 @@ export class AnimationParser {
     const defaultEulerOrder = getEulerOrder(0) as EulerOrder;
 
     if (preRotationQuat !== undefined) {
-      preRotationQuat = preRotationQuat.map(MathUtils.degToRad);
+      const preRotArray = Array.isArray(preRotationQuat) ? preRotationQuat : [preRotationQuat];
+      preRotationQuat = preRotArray.map(MathUtils.degToRad);
       // preRotation.push(defaultEulerOrder);
 
-      preRotationQuat = new Euler(
-        preRotationQuat[0],
-        preRotationQuat[1],
-        preRotationQuat[2],
+      const preRotEuler = new Euler(
+        (preRotationQuat as number[])[0],
+        (preRotationQuat as number[])[1],
+        (preRotationQuat as number[])[2],
         defaultEulerOrder,
       );
-      preRotationQuat = new Quaternion().setFromEuler(preRotationQuat);
+      preRotationQuat = new Quaternion().setFromEuler(preRotEuler);
     }
 
     if (postRotationQuat !== undefined) {
-      postRotationQuat = postRotationQuat.map(MathUtils.degToRad);
+      const postRotArray = Array.isArray(postRotationQuat) ? postRotationQuat : [postRotationQuat];
+      postRotationQuat = postRotArray.map(MathUtils.degToRad);
       // postRotationQuat.push(defaultEulerOrder);
 
-      postRotationQuat = new Euler(
-        postRotationQuat[0],
-        postRotationQuat[1],
-        postRotationQuat[2],
+      const postRotEuler = new Euler(
+        (postRotationQuat as number[])[0],
+        (postRotationQuat as number[])[1],
+        (postRotationQuat as number[])[2],
         defaultEulerOrder,
       );
-      postRotationQuat = new Quaternion().setFromEuler(postRotationQuat).invert();
+      postRotationQuat = new Quaternion().setFromEuler(postRotEuler).invert();
 
       // postRotation = new Euler().fromArray(postRotation);
       // postRotation = new Quaternion().setFromEuler(postRotation).invert();
@@ -586,10 +593,10 @@ export class AnimationParser {
       euler.set(values[i], values[i + 1], values[i + 2], eulerOrder);
       quaternion.setFromEuler(euler);
 
-      if (preRotationQuat !== undefined) {
+      if (preRotationQuat !== undefined && preRotationQuat instanceof Quaternion) {
         quaternion.premultiply(preRotationQuat);
       }
-      if (postRotationQuat !== undefined) {
+      if (postRotationQuat !== undefined && postRotationQuat instanceof Quaternion) {
         quaternion.multiply(postRotationQuat);
       }
 
