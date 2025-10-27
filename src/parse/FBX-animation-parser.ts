@@ -15,8 +15,8 @@ import {
   VectorKeyframeTrack,
 } from 'three';
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
-import { BaseParser, type IParsingContext, type AnimationCurve, type AnimationCurveRelationship, type AnimationNode, type CurveNode, type RawClip } from '../types';
-import type { FBXAnimationCurveNode, FBXAnimationStack } from '../types/nodes';
+import type { FBXAnimationCurveNode, FBXAnimationStack, IParsingContext, AnimationCurve, AnimationCurveRelationship, AnimationNode, CurveNode, RawClip } from '../types';
+import { BaseParser } from '../types';
 
 interface FBXAnimationCurve {
   id?: number,

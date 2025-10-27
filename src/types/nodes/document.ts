@@ -113,6 +113,7 @@ export interface FBXAnimationLayer {
 
 export interface FBXAnimationStack {
   name: string,
+  attrName: string,
   propertyList: (string | number)[],
   singleProperty: boolean,
   attrType: string,
