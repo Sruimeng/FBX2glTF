@@ -16,16 +16,7 @@ import {
 } from 'three';
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
 import { BaseParser, type IParsingContext, type AnimationCurve, type AnimationCurveRelationship, type AnimationNode, type CurveNode, type RawClip } from '../types';
-
-// 定义具体的FBX动画节点类型
-interface FBXAnimationCurveNode {
-  attrName?: string,
-  id?: number,
-}
-
-interface FBXAnimationStack {
-  attrName?: string,
-}
+import type { FBXAnimationCurveNode, FBXAnimationStack } from '../types/nodes';
 
 interface FBXAnimationCurve {
   id?: number,
@@ -44,17 +35,13 @@ interface Object3DWithID extends Object3D {
   ID?: number,
 }
 
-interface ConnectionNode {
-  ID: number,
-}
-
 // parse animation data from FBXTree
 export class AnimationParser extends BaseParser<null, AnimationClip[]> {
   constructor (context: IParsingContext) {
     super(context);
   }
 
-  private getConnectionID (connection: { parents: ConnectionNode[] } | { children: ConnectionNode[] } | undefined): number | undefined {
+  private getConnectionID (connection: { parents: { ID: number }[] } | { children: { ID: number }[] } | undefined): number | undefined {
     if (!connection) {
       return undefined;
     }
@@ -127,7 +114,7 @@ export class AnimationParser extends BaseParser<null, AnimationClip[]> {
     for (const nodeID in rawCurveNodes) {
       const rawCurveNode: FBXAnimationCurveNode = rawCurveNodes[nodeID];
       const attrName = rawCurveNode.attrName || '';
-      const id = rawCurveNode.id || 0;
+      const id = rawCurveNode.id || rawCurveNode.ID || 0;
 
       if (attrName.match(/S|R|T|DeformPercent/) !== null) {
         const curveNode: CurveNode = {
@@ -365,7 +352,7 @@ export class AnimationParser extends BaseParser<null, AnimationClip[]> {
                 if (!models) {
                   throw new Error('FBXTree.Objects.Model is undefined');
                 }
-                const rawModel: FBXAnimationCurveNode = models[modelID];
+                const rawModel = models[modelID];
 
                 const node: AnimationNode = {
                   ID: 0,
