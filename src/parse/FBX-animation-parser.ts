@@ -1,4 +1,7 @@
 import type { EulerOrder } from 'three';
+import type {
+  Object3D,
+} from 'three';
 import {
   AnimationClip,
   Euler,
@@ -14,14 +17,61 @@ import {
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
 import { BaseParser, type IParsingContext, type AnimationCurve, type AnimationCurveRelationship, type AnimationNode, type CurveNode, type RawClip } from '../types';
 
+// 定义具体的FBX动画节点类型
+interface FBXAnimationCurveNode {
+  attrName?: string,
+  id?: number,
+}
+
+interface FBXAnimationStack {
+  attrName?: string,
+}
+
+interface FBXAnimationCurve {
+  id?: number,
+  KeyTime?: { a: number[] },
+  KeyValueFloat?: { a: number[] },
+}
+
+interface ProcessedAnimationCurve extends AnimationCurve {
+  id: number,
+  times: number[],
+  values: number[],
+}
+
+// 扩展 Object3D 接口以包含 ID 属性
+interface Object3DWithID extends Object3D {
+  ID?: number,
+}
+
+interface ConnectionNode {
+  ID: number,
+}
+
 // parse animation data from FBXTree
-export class AnimationParser extends BaseParser<any, any> {
+export class AnimationParser extends BaseParser<null, AnimationClip[]> {
   constructor (context: IParsingContext) {
     super(context);
   }
 
+  private getConnectionID (connection: { parents: ConnectionNode[] } | { children: ConnectionNode[] } | undefined): number | undefined {
+    if (!connection) {
+      return undefined;
+    }
+    // 处理 parents 情况
+    if ('parents' in connection && connection.parents && connection.parents.length > 0) {
+      return connection.parents[0].ID;
+    }
+    // 处理 children 情况
+    if ('children' in connection && connection.children && connection.children.length > 0) {
+      return connection.children[0].ID;
+    }
+
+    return undefined;
+  }
+
   // take raw animation clips and turn them into three.js animation clips
-  parse (_input: any, context: IParsingContext) {
+  parse (_input: null, context: IParsingContext) {
     const animationClips = [];
 
     const rawClips = this.parseClips();
@@ -75,7 +125,7 @@ export class AnimationParser extends BaseParser<any, any> {
     const curveNodesMap: Map<number, CurveNode> = new Map();
 
     for (const nodeID in rawCurveNodes) {
-      const rawCurveNode = rawCurveNodes[nodeID] as { attrName?: string, id?: number };
+      const rawCurveNode: FBXAnimationCurveNode = rawCurveNodes[nodeID];
       const attrName = rawCurveNode.attrName || '';
       const id = rawCurveNode.id || 0;
 
@@ -133,12 +183,12 @@ export class AnimationParser extends BaseParser<any, any> {
     // this shows up in nearly every FBX file, and generally time array is length > 100
 
     for (const nodeID in rawCurves) {
-      const rawCurve = rawCurves[nodeID] as { id?: number, KeyTime: { a: number[] }, KeyValueFloat: { a: number[] } };
+      const rawCurve: FBXAnimationCurve = rawCurves[nodeID];
       const id = rawCurve.id || 0;
-      const animationCurve: AnimationCurve = {
+      const animationCurve: ProcessedAnimationCurve = {
         id,
-        times: rawCurve.KeyTime.a.map(convertFBXTimeToSeconds),
-        values: rawCurve.KeyValueFloat.a,
+        times: rawCurve.KeyTime ? rawCurve.KeyTime.a.map(convertFBXTimeToSeconds) : [],
+        values: rawCurve.KeyValueFloat ? rawCurve.KeyValueFloat.a : [],
       };
 
       const relationships = this.context.connections.get(animationCurve.id);
@@ -157,13 +207,21 @@ export class AnimationParser extends BaseParser<any, any> {
 
             if (curveNode) {
               if (animationCurveRelationship.match(/X/)) {
-                (curveNode.curves as AnimationCurveRelationship)['x'] = animationCurve;
+                if (curveNode.curves) {
+                  curveNode.curves.x = animationCurve;
+                }
               } else if (animationCurveRelationship.match(/Y/)) {
-                (curveNode.curves as AnimationCurveRelationship)['y'] = animationCurve;
+                if (curveNode.curves) {
+                  curveNode.curves.y = animationCurve;
+                }
               } else if (animationCurveRelationship.match(/Z/)) {
-                (curveNode.curves as AnimationCurveRelationship)['z'] = animationCurve;
+                if (curveNode.curves) {
+                  curveNode.curves.z = animationCurve;
+                }
               } else if (animationCurveRelationship.match(/DeformPercent/)) {
-                (curveNode.curves as AnimationCurveRelationship)['morph'] = animationCurve;
+                if (curveNode.curves) {
+                  curveNode.curves.morph = animationCurve;
+                }
               }
             }
           }
@@ -214,9 +272,9 @@ export class AnimationParser extends BaseParser<any, any> {
               || curveNode.curves?.z !== undefined
             ) {
               if (layerCurveNodes[i] === undefined) {
-                const modelID = (connections.get(child.ID)?.parents.filter(parent => {
-                  return parent.relationship !== undefined;
-                })[0] as { ID: number })?.ID;
+                const connectionParents = connections.get(child.ID)?.parents;
+                const validParent = connectionParents?.find(parent => parent.relationship !== undefined);
+                const modelID = validParent?.ID;
 
                 if (modelID !== undefined) {
                   const rawModel = models[modelID.toString()];
@@ -237,8 +295,8 @@ export class AnimationParser extends BaseParser<any, any> {
                       : '',
                   };
 
-                  sceneGraph.traverse(child => {
-                    if ((child as unknown as { ID: number }).ID === rawModel.id) {
+                  sceneGraph.traverse((child: Object3DWithID) => {
+                    if (child.ID === rawModel.id) {
                       node.transform = child.matrix;
 
                       if (child.userData.transformData) {
@@ -253,11 +311,19 @@ export class AnimationParser extends BaseParser<any, any> {
 
                   // if the animated model is pre rotated, we'll have to apply the pre rotations to every
                   // animation value as well
-                  if ('PreRotation' in rawModel) {
-                    node.preRotation = rawModel.PreRotation.value as [number, number, number];
+                  if ('PreRotation' in rawModel && rawModel.PreRotation?.value) {
+                    const value = rawModel.PreRotation.value;
+
+                    if (Array.isArray(value) && value.length >= 3) {
+                      node.preRotation = [value[0], value[1], value[2]];
+                    }
                   }
-                  if ('PostRotation' in rawModel) {
-                    node.postRotation = rawModel.PostRotation.value as [number, number, number];
+                  if ('PostRotation' in rawModel && rawModel.PostRotation?.value) {
+                    const value = rawModel.PostRotation.value;
+
+                    if (Array.isArray(value) && value.length >= 3) {
+                      node.postRotation = [value[0], value[1], value[2]];
+                    }
                   }
                   layerCurveNodes[i] = node;
                 }
@@ -288,21 +354,18 @@ export class AnimationParser extends BaseParser<any, any> {
               }
             } else if (curveNode.curves?.morph !== undefined) {
               if (layerCurveNodes[i] === undefined) {
-                const deformerID
-                  = (connections.get(child.ID)?.parents.filter(parent => {
-                    return parent.relationship !== undefined;
-                  })[0] as { ID: number }).ID || 0;
-                const morpherID = (connections.get(deformerID)?.parents[0] as { ID: number }).ID || 0;
-                const geoID = (connections.get(morpherID)?.parents[0] as { ID: number }).ID || 0;
+                const deformerID = this.getConnectionID(connections.get(child.ID)) || 0;
+                const morpherID = this.getConnectionID(connections.get(deformerID)) || 0;
+                const geoID = this.getConnectionID(connections.get(morpherID)) || 0;
 
                 // assuming geometry is not used in more than one model
-                const modelID = (connections.get(geoID)?.parents[0] as { ID: number }).ID || 0;
+                const modelID = this.getConnectionID(connections.get(geoID)) || 0;
                 const models = objects.Model;
 
                 if (!models) {
                   throw new Error('FBXTree.Objects.Model is undefined');
                 }
-                const rawModel = models[modelID] as { attrName?: string, id?: number };
+                const rawModel: FBXAnimationCurveNode = models[modelID];
 
                 const node: AnimationNode = {
                   ID: 0,
@@ -356,7 +419,7 @@ export class AnimationParser extends BaseParser<any, any> {
   // parse nodes in FBXTree.Objects.AnimationStack. These are the top level node in the animation
   // hierarchy. Each Stack node will be used to create an AnimationClip
   parseAnimStacks (layersMap: Map<number, AnimationNode[]>) {
-    const rawStacks = this.context.fbxTree.Objects?.AnimationStack as Record<string, unknown>;
+    const rawStacks = this.context.fbxTree.Objects?.AnimationStack as Record<string, FBXAnimationStack>;
     const connections = this.context.connections;
 
     if (!rawStacks || !connections) {
@@ -368,7 +431,7 @@ export class AnimationParser extends BaseParser<any, any> {
 
     for (const nodeID in rawStacks) {
       const children = connections.get(parseInt(nodeID))?.children || [];
-      const rawStack = rawStacks[nodeID] as { attrName?: string };
+      const rawStack: FBXAnimationStack = rawStacks[nodeID];
 
       if (children.length > 1) {
         // it seems like stacks will always be associated with a single layer. But just in case there are files
@@ -378,7 +441,8 @@ export class AnimationParser extends BaseParser<any, any> {
         );
       }
 
-      const layer = layersMap.get((children[0] as { ID: number }).ID);
+      const connectionID = this.getConnectionID({ children: [children[0]] });
+      const layer = connectionID ? layersMap.get(connectionID) : undefined;
 
       if (!layer) {
         throw new Error('Layer not found for nodeID: ' + nodeID);
@@ -386,7 +450,7 @@ export class AnimationParser extends BaseParser<any, any> {
 
       rawClips[nodeID] = {
         layer: layer,
-        name: rawStack.attrName as string,
+        name: rawStack.attrName || '',
       };
     }
 
@@ -430,29 +494,33 @@ export class AnimationParser extends BaseParser<any, any> {
     }
 
     if (rawTracks.R !== undefined && Object.keys(rawTracks.R.curves ?? {}).length > 0) {
-      const rotationTrack = this.generateRotationTrack(
-        rawTracks.modelName,
-        rawTracks.R.curves as AnimationCurveRelationship,
-        rawTracks.preRotation ?? [0, 0, 0],
-        rawTracks.postRotation ?? [0, 0, 0],
-        rawTracks.eulerOrder || 'ZYX',
-      );
+      if (rawTracks.R.curves) {
+        const rotationTrack = this.generateRotationTrack(
+          rawTracks.modelName,
+          rawTracks.R.curves,
+          rawTracks.preRotation ?? [0, 0, 0],
+          rawTracks.postRotation ?? [0, 0, 0],
+          rawTracks.eulerOrder || 'ZYX',
+        );
 
-      if (rotationTrack !== undefined) {
-        tracks.push(rotationTrack);
+        if (rotationTrack !== undefined) {
+          tracks.push(rotationTrack);
+        }
       }
     }
 
     if (rawTracks.S !== undefined && Object.keys(rawTracks.S.curves ?? {}).length > 0) {
-      const scaleTrack = this.generateVectorTrack(
-        rawTracks.modelName,
-        rawTracks.S.curves as AnimationCurveRelationship,
-        initialScale,
-        'scale',
-      );
+      if (rawTracks.S.curves) {
+        const scaleTrack = this.generateVectorTrack(
+          rawTracks.modelName,
+          rawTracks.S.curves,
+          initialScale,
+          'scale',
+        );
 
-      if (scaleTrack !== undefined) {
-        tracks.push(scaleTrack);
+        if (scaleTrack !== undefined) {
+          tracks.push(scaleTrack);
+        }
       }
     }
 
@@ -473,10 +541,16 @@ export class AnimationParser extends BaseParser<any, any> {
     initialValue: [number, number, number],
     type: string,
   ) {
+    // 确保所有必需的曲线都存在
+    if (!curves.x || !curves.y || !curves.z) {
+      return undefined;
+    }
     const times = this.getTimesForAllAxes(curves);
     const values = this.getKeyframeTrackValues(times, curves, initialValue);
 
-    return new VectorKeyframeTrack(modelName + '.' + type, times, values as number[]);
+    const numberValues: number[] = values.map(v => typeof v === 'number' ? v : Number(v));
+
+    return new VectorKeyframeTrack(modelName + '.' + type, times, numberValues);
   }
 
   generateRotationTrack (
@@ -499,7 +573,8 @@ export class AnimationParser extends BaseParser<any, any> {
     }
 
     // For Maya models using "Joint Orient", Euler order only applies to rotation, not pre/post-rotations
-    const defaultEulerOrder = getEulerOrder(0) as EulerOrder;
+    const eulerOrderStr = getEulerOrder(0);
+    const defaultEulerOrder: EulerOrder = eulerOrderStr as EulerOrder;
 
     if (preRotationQuat !== undefined) {
       preRotationQuat = preRotationQuat.map(MathUtils.degToRad);
@@ -566,7 +641,7 @@ export class AnimationParser extends BaseParser<any, any> {
   }
 
   generateMorphTrack (rawTracks: AnimationNode) {
-    const curves = (rawTracks.DeformPercent?.curves as AnimationCurveRelationship).morph;
+    const curves = rawTracks.DeformPercent?.curves?.morph;
 
     if (!curves) {
       throw new Error('curves is undefined');
@@ -580,9 +655,14 @@ export class AnimationParser extends BaseParser<any, any> {
       = curves.values.map(val => {
         return val / 100;
       }) || [];
-    const object = sceneGraph.getObjectByName(rawTracks.modelName) as unknown as { morphTargetDictionary: { [key: string]: number } };
+    const sceneObject = sceneGraph.getObjectByName(rawTracks.modelName);
 
-    const morphNum = object.morphTargetDictionary[rawTracks.morphName ?? ''];
+    if (!sceneObject || !('morphTargetDictionary' in sceneObject)) {
+      throw new Error(`Morph target dictionary not found for model: ${rawTracks.modelName}`);
+    }
+
+    const morphTargetDictionary = sceneObject.morphTargetDictionary as Record<string, number>;
+    const morphNum = morphTargetDictionary[rawTracks.morphName ?? ''] ?? 0;
 
     return new NumberKeyframeTrack(
       rawTracks.modelName + '.morphTargetInfluences[' + morphNum + ']',
@@ -713,7 +793,11 @@ export class AnimationParser extends BaseParser<any, any> {
     values.push(MathUtils.degToRad(curvez.values[0]));
 
     for (let i = 1; i < curvex.values.length; i++) {
-      const initialValue = [curvex.values[i - 1], curvey.values[i - 1], curvez.values[i - 1]] as [number, number, number];
+      const initialValue: [number, number, number] = [
+        curvex.values[i - 1],
+        curvey.values[i - 1],
+        curvez.values[i - 1],
+      ];
 
       if (isNaN(initialValue[0]) || isNaN(initialValue[1]) || isNaN(initialValue[2])) {
         continue;
@@ -721,7 +805,11 @@ export class AnimationParser extends BaseParser<any, any> {
 
       const initialValueRad = initialValue.map(MathUtils.degToRad);
 
-      const currentValue = [curvex.values[i], curvey.values[i], curvez.values[i]] as [number, number, number];
+      const currentValue: [number, number, number] = [
+        curvex.values[i],
+        curvey.values[i],
+        curvez.values[i],
+      ];
 
       if (isNaN(currentValue[0]) || isNaN(currentValue[1]) || isNaN(currentValue[2])) {
         continue;
@@ -729,17 +817,17 @@ export class AnimationParser extends BaseParser<any, any> {
 
       const currentValueRad = currentValue.map(MathUtils.degToRad);
 
-      const valuesSpan = [
+      const valuesSpan: [number, number, number] = [
         currentValue[0] - initialValue[0],
         currentValue[1] - initialValue[1],
         currentValue[2] - initialValue[2],
-      ] as [number, number, number];
+      ];
 
-      const absoluteSpan = [
+      const absoluteSpan: [number, number, number] = [
         Math.abs(valuesSpan[0]),
         Math.abs(valuesSpan[1]),
         Math.abs(valuesSpan[2]),
-      ] as [number, number, number];
+      ];
 
       if (absoluteSpan[0] >= 180 || absoluteSpan[1] >= 180 || absoluteSpan[2] >= 180) {
         const maxAbsSpan = Math.max(...absoluteSpan);

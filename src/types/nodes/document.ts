@@ -199,7 +199,7 @@ export interface IFBXTree {
 
 export interface IFBXTreeWithIndex extends IFBXTree {
   // 不允许动态类型，只允许具体属性
-  userData?: Record<string, string | number | boolean | object>;
+  userData?: Record<string, string | number | boolean | object>,
 }
 
 export class FBXTree implements IFBXTreeWithIndex {
@@ -221,16 +221,16 @@ export class FBXTree implements IFBXTreeWithIndex {
     if (!this.userData) {
       this.userData = {};
     }
-    this.userData[key] = val;
+    this[key] = val;
   }
 
   // 获取动态属性的方法
   getProperty (key: string): string | number | boolean | object | undefined {
-    return this.userData?.[key];
+    return this[key];
   }
 
   hasProperty (key: string): boolean {
-    return this.userData ? key in this.userData : false;
+    return key in this;
   }
 }
 
