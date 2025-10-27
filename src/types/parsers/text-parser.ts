@@ -15,5 +15,14 @@ export interface TextNode {
 }
 
 export interface TextNodeWithIndex extends TextNode {
-  [key: string]: string | number | boolean | string[] | number[] | object | TextNode | TextNode[] | undefined,
+  // 不允许动态类型，只允许具体属性
+  userData?: Record<string, string | number | boolean | string[] | number[] | object>;
+  attrValues?: Record<string, string | number | boolean | string[] | number[] | object>;
+}
+
+// 为 TextNodeWithIndex 添加辅助方法
+export interface TextNodeWithMethods extends TextNodeWithIndex {
+  setAttribute (key: string, value: string | number | boolean | string[] | number[] | object): void,
+  getAttribute (key: string): string | number | boolean | string[] | number[] | object | undefined,
+  hasAttribute (key: string): boolean,
 }

@@ -180,7 +180,7 @@ export interface FBXObjects {
 }
 
 export interface FBXObjectsWithIndex extends FBXObjects {
-  [key: number]: FBXAnimationCurveNode | FBXAnimationLayer | FBXAnimationStack | FBXDeformer | FBXGeometryNode | FBXTypedProperty | FBXMaterialNode | FBXModelNode | FBXNodeAttribute | FBXPoseNode | FBXTextureNode | FBXVideoNode,
+  // 移除动态类型，通过具体方法访问
 }
 
 export interface IFBXTree {
@@ -198,7 +198,8 @@ export interface IFBXTree {
 }
 
 export interface IFBXTreeWithIndex extends IFBXTree {
-  [key: string]: FBXConnectionDocment | FBXTypedProperty | FBXDefinitions | FBXDocuments | FBXHeaderExtension | FBXObjects | Record<string, FBXPoseNode> | string | number | boolean | object | undefined,
+  // 不允许动态类型，只允许具体属性
+  userData?: Record<string, string | number | boolean | object>;
 }
 
 export class FBXTree implements IFBXTreeWithIndex {
@@ -214,11 +215,22 @@ export class FBXTree implements IFBXTreeWithIndex {
   Connections?: FBXConnectionDocment;
   PoseNode?: Record<string, FBXPoseNode>;
   connections?: FBXConnectionNode[];
-
-  [key: string]: FBXConnectionDocment | FBXTypedProperty | FBXDefinitions | FBXDocuments | FBXHeaderExtension | FBXObjects | Record<string, FBXPoseNode> | string | number | boolean | object | undefined;
+  userData?: Record<string, string | number | boolean | object>;
 
   add (key: string, val: string | number | boolean | object) {
-    (this as any)[key] = val;
+    if (!this.userData) {
+      this.userData = {};
+    }
+    this.userData[key] = val;
+  }
+
+  // 获取动态属性的方法
+  getProperty (key: string): string | number | boolean | object | undefined {
+    return this.userData?.[key];
+  }
+
+  hasProperty (key: string): boolean {
+    return this.userData ? key in this.userData : false;
   }
 }
 

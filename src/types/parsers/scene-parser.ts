@@ -15,7 +15,7 @@ export interface FBXSceneParserOptions {
     morphTargets: Record<string, FBXMorphTarget>,
     skeletons: Record<string, FBXSkeleton>,
   },
-  geoInfoMap?: Map<number, unknown>,
+  geoInfoMap?: Map<number, BufferGeometry>,
   geometryMap?: Map<number, BufferGeometry>,
   materialMap?: Map<number, MeshPhongMaterial | MeshStandardMaterial | LineBasicMaterial>,
 }

@@ -1,5 +1,6 @@
 import type { IParsingContext, IParser, IAsyncParser } from './parser';
 import type { FBXConnectionNode } from '../nodes';
+import type { FBXAnimationCurveNode } from '../nodes/model-animation';
 
 /**
  * 解析器抽象基类
@@ -62,7 +63,7 @@ export abstract class BaseParser<TInput, TOutput> implements IParser<TInput, TOu
   /**
    * 便捷方法：根据ID获取节点
    */
-  protected getNodeById<T = unknown>(id: number): T | undefined {
+  protected getNodeById<T = FBXAnimationCurveNode>(id: number): T | undefined {
     return this.context.getNodeById<T>(id);
   }
 
@@ -76,7 +77,7 @@ export abstract class BaseParser<TInput, TOutput> implements IParser<TInput, TOu
   /**
    * 便捷方法：根据类型获取节点
    */
-  protected getNodesByType<T = unknown>(nodeType: string): Map<number, T> {
+  protected getNodesByType<T = FBXAnimationCurveNode>(nodeType: string): Map<number, T> {
     return this.context.getNodesByType<T>(nodeType);
   }
 }
