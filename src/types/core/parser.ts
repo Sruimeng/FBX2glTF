@@ -1,14 +1,17 @@
-import type { LoadingManager } from 'three';
-import type { FBXConnectionNode as GlobalFBXConnectionNode } from '../../constants';
+import type { LoadingManager, Group, AnimationClip } from 'three';
+import type { FBXConnectionNode as GlobalFBXConnectionNode, IFBXTree } from '../../constants';
+
+// 重新导出类型供其他模块使用
+export type { GlobalFBXConnectionNode, IFBXTree };
 
 /**
  * FBX 解析上下文接口
  * 提供解析过程中需要的所有数据和工具
  */
 export interface IParsingContext {
-  readonly fbxTree: any,
+  readonly fbxTree: IFBXTree,
   readonly connections: Map<number, GlobalFBXConnectionNode>,
-  readonly sceneGraph: any,
+  readonly sceneGraph: Group,
   readonly loadingManager: LoadingManager,
   readonly wireframe?: boolean,
 
@@ -36,8 +39,8 @@ export interface IAsyncParser<TInput, TOutput> {
  * 解析结果类型
  */
 export interface ModelLoaderResult {
-  scene: any,
-  animations: any[],
+  scene: Group,
+  animations: AnimationClip[],
   modelInfo?: {
     name: string,
     version: string,
