@@ -1,4 +1,4 @@
-import { FileLoader, Group, Loader, LoaderUtils, TextureLoader } from 'three';
+import { FileLoader, Loader, LoaderUtils, TextureLoader } from 'three';
 import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary } from './util';
 import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
@@ -98,16 +98,9 @@ export class FBXLoaderRefactored extends Loader {
         .setPath(this.resourcePath || path)
         .setCrossOrigin(this.crossOrigin);
 
-      // 创建解析上下文
-      const context = {
-        fbxTree,
-        connections: (fbxTree).connections || {},
-        sceneGraph: new Group(),
-      };
-
       // 使用重构后的解析器
-      const treeParser = new FBXTreeParser(context, textureLoader, this.manager);
-      const result = await treeParser.parse();
+      const treeParser = new FBXTreeParser(textureLoader, this.manager);
+      const result = treeParser.parse(fbxTree);
 
       return result;
 

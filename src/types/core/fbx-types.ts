@@ -109,6 +109,10 @@ export interface IFBXTree {
   root?: FBXTreeNode,
   /** FBX对象集合（与objects类似，但用于解析器） */
   Objects?: Record<string, Record<string, unknown>>,
+  /** 设置全局设置的方法 */
+  setGlobalSettings?(node: FBXTreeNode): void,
+  /** 添加对象的方法 */
+  addObject?(name: string, id: string, node: FBXTreeNode): void,
 }
 
 /**
@@ -281,6 +285,26 @@ export interface FBXVideoNode {
  * FBX 相机节点属性
  */
 export interface FBXCameraNodeAttribute {
+  [key: string]: any,
+}
+
+/**
+ * FBX 模型节点
+ */
+export interface FBXModelNode {
+  /** 节点名称 */
+  attrName?: string,
+  /** 节点类型 */
+  attrType?: string,
+  /** 变换信息 */
+  properties?: {
+    Lcl_Translation?: FBXValue<number[]>,
+    Lcl_Rotation?: FBXValue<number[]>,
+    Lcl_Scaling?: FBXValue<number[]>,
+  },
+  /** 子节点 */
+  children?: FBXModelNode[],
+  /** 其他属性 */
   [key: string]: any,
 }
 
