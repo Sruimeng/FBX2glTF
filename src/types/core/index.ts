@@ -22,9 +22,4 @@ export type {
 export { ParsingContext } from '../../parsers/core/parsing-context';
 export { BaseParser, AsyncBaseParser } from '../../parsers/core/base-parser';
 
-// 解析器结果类型
-export interface ModelLoaderResult {
-  scene: THREE.Group,
-  animations: THREE.AnimationClip[],
-  modelInfo: any,
-}
+// ModelLoaderResult 已在 fbx-types.ts 中定义，不再重复定义

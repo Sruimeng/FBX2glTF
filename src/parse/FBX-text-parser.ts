@@ -1,4 +1,5 @@
 import { parseNumberArray } from '../util';
+import type { IFBXTree } from '../types/core';
 import { FBXTreeFactory } from '../constants';
 
 type TextNode = {

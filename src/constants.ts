@@ -86,10 +86,7 @@ export enum FBXEulerOrder {
   SphericXYZ = 6,
 }
 
-export interface FBXConnectionNode {
-  children: Array<{ ID: number; relationship?: string }>;
-  parents: Array<{ ID: number; relationship?: string }>;
-}
+// FBXConnectionNode 已移至 types/core/fbx-types.ts
 
 export interface FBXConnectionReference {
   ID: number;

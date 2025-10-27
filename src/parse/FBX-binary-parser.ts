@@ -7,9 +7,7 @@ import {
   type IFBXTree,
   FBXTreeFactory,
 } from '../constants';
-import type { FBXTreeNode } from '../types/core/fbx-types';
-// FBXConnectionType 临时定义为 string
-export type FBXConnectionType = string;
+import type { FBXTreeNode, FBXConnectionType } from '../types/core';
 
 // Parse an FBX file in Binary format
 export class BinaryParser {

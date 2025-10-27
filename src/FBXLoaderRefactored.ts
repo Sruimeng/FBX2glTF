@@ -3,7 +3,7 @@ import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxForma
 import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
 import { TextParser } from './parse/FBX-text-parser';
-import type { ModelLoaderResult } from './parse/FBX-tree-parser';
+import type { ModelLoaderResult } from './types/core';
 
 /**
  * 重构后的 FBX 加载器

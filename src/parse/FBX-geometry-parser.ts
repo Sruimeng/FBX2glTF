@@ -24,13 +24,7 @@ import type {
   FBXSkeleton,
   UserDataTransform,
 } from '../constants';
-import { FBXConnectionNode } from '../constants';
-
-// 临时定义 ParseContext 类型
-export interface ParseContext {
-  connections: Map<number, FBXConnectionNode>;
-  [key: string]: any;
-}
+import type { ParseContext, FBXConnectionNode } from '../types/core';
 import { generateTransform, getData, getEulerOrder } from './utils';
 import { NURBSCurve } from '../curves/NURBS-curve';
 

@@ -98,7 +98,7 @@ export interface IFBXTree {
   /** 连接信息 */
   connections?: {
     C: Array<[number, number, string]>,
-  },
+  } | Record<string, unknown>,
   /** 全局设置 */
   settings?: Record<string, unknown>,
   /** 时间轴信息 */
@@ -107,14 +107,16 @@ export interface IFBXTree {
   version?: number,
   /** 根节点 */
   root?: FBXTreeNode,
+  /** FBX对象集合（与objects类似，但用于解析器） */
+  Objects?: Record<string, Record<string, unknown>>,
 }
 
 /**
  * FBX 连接节点
  */
 export interface FBXConnectionNode {
-  children: Array<{ ID: number }>,
-  parents: Array<{ ID: number }>,
+  children: Array<{ ID: number; relationship?: string }>,
+  parents: Array<{ ID: number; relationship?: string }>,
 }
 
 /**
@@ -227,3 +229,62 @@ export interface FBXDeformerInfo {
     geometry: FBXGeometryData,
   }>,
 }
+
+/**
+ * FBX 解析上下文
+ */
+export interface ParseContext {
+  connections: Map<number, FBXConnectionNode>;
+  fbxTree: IFBXTree;
+  [key: string]: any;
+}
+
+/**
+ * 模型加载结果
+ */
+export interface ModelLoaderResult {
+  scene: any;
+  animations: any[];
+  modelInfo: any;
+}
+
+/**
+ * 加载器选项
+ */
+export interface LoaderOptions {
+  [key: string]: any;
+}
+
+/**
+ * FBX 连接节点（增强版，支持relationship）
+ */
+export interface FBXConnectionNodeEnhanced {
+  children: Array<{ ID: number; relationship?: string }>;
+  parents: Array<{ ID: number; relationship?: string }>;
+}
+
+/**
+ * FBX 轻节点属性
+ */
+export interface FBXLightNodeAttribute {
+  [key: string]: any;
+}
+
+/**
+ * FBX 视频节点
+ */
+export interface FBXVideoNode {
+  [key: string]: any;
+}
+
+/**
+ * FBX 相机节点属性
+ */
+export interface FBXCameraNodeAttribute {
+  [key: string]: any;
+}
+
+/**
+ * FBX 连接类型
+ */
+export type FBXConnectionType = string;
