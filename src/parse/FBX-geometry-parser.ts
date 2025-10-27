@@ -25,7 +25,8 @@ import type {
   FBXSkeleton,
   UserDataTransform,
 } from '../constants';
-import type { ParseContext } from '../../types';
+// 使用与 FBX-animation-parser.ts 相同的 ParseContext
+import type { ParseContext } from './FBX-animation-parser';
 import { generateTransform, getData, getEulerOrder } from './utils';
 import { NURBSCurve } from '../curves/NURBS-curve';
 

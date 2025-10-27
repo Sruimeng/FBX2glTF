@@ -12,7 +12,11 @@ import {
   VectorKeyframeTrack,
 } from 'three';
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
-import type { ParseContext } from '../../types';
+// 临时定义 ParseContext 类型
+export interface ParseContext {
+  connections: Map<number, any[]>;
+  [key: string]: any;
+}
 
 interface AnimationCurve {
   id: number,

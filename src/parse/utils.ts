@@ -2,7 +2,7 @@
 
 import type { EulerOrder, EulerTuple } from 'three';
 import { Euler, MathUtils, Matrix4, Vector3 } from 'three';
-import type { UserDataTransform } from '../../types';
+import type { UserDataTransform } from '../constants';
 import { FBXEulerOrder } from '../constants';
 
 // ref: http://help.autodesk.com/view/FBX/2017/ENU/?guid=__cpp_ref_class_fbx_euler_html
