@@ -1,25 +1,10 @@
 // Parses binary FBX files.
 import * as fflate from 'fflate';
-import type {
-  FBXConnection,
-} from '../constants';
-import {
-  type IFBXTree,
-  FBXTreeFactory,
-} from '../constants';
-import type { FBXTreeNode } from '../../types/shared';
-import type { FBXConnectionType } from '../../types/enums';
+import { type FBXConnectionNode, FBXTree, type FBXTreeNode, type IFBXTree } from '../constants';
 
 // Parse an FBX file in Binary format
 export class BinaryParser {
-  private factory: FBXTreeFactory;
-  private connections: FBXConnection[] = [];
-
   parse (buffer: ArrayBuffer): IFBXTree {
-    this.factory = new FBXTreeFactory();
-
-    this.connections = [];
-
     const reader = new BinaryReader(buffer);
 
     reader.skip(23); // skip magic 23 bytes
@@ -30,56 +15,17 @@ export class BinaryParser {
       throw new Error('THREE.FBXLoader: FBX version not supported, FileVersion: ' + version);
     }
 
+    const allNodes = new FBXTree();
+
     while (!this.endOfContent(reader)) {
       const node = this.parseNode(reader, version);
 
       if (node !== null && node.name) {
-        this.processNode(node);
+        allNodes.add(node.name, node);
       }
     }
 
-    // 添加所有连接关系
-    this.connections.forEach(conn => {
-      this.factory.addConnection(conn);
-    });
-
-    return this.factory.build();
-  }
-
-  private processNode (node: FBXTreeNode): void {
-    switch (node.name) {
-      case 'FBXHeaderExtension':
-        this.factory.setHeader(node);
-
-        break;
-      case 'GlobalSettings':
-        this.factory.setGlobalSettings(node);
-
-        break;
-      case 'C':
-        // 连接关系
-        if (node.propertyList && node.propertyList.length >= 3) {
-          this.connections.push({
-            ID: node.id || 0,
-            from: node.propertyList[1] as number,
-            to: node.propertyList[2] as number,
-            relationship: node.propertyList[0] as FBXConnectionType,
-          });
-        }
-
-        break;
-      case 'Objects':
-        // 处理 Objects 节点 - 这个节点包含所有的 FBX 对象
-        // Objects 节点本身不需要添加到 factory，但它的子节点需要
-        break;
-      default:
-        // 添加到 Objects 或其他父节点
-        if (node.id !== undefined && node.name) {
-          this.factory.addObject(node.name, node.id, node);
-        }
-
-        break;
-    }
+    return allNodes as IFBXTree;
   }
 
   // Check if reader has reached the end of content.
@@ -140,14 +86,7 @@ export class BinaryParser {
       const subNode = this.parseNode(reader, version);
 
       if (subNode !== null) {
-        // 将子节点附加到当前节点
-        this.parseSubNode(name, node, subNode);
-
-        // 如果子节点不是 Properties70 类型，也需要通过 processNode 处理
-        // 这确保所有对象都被添加到 factory 中
-        if (subNode.name && subNode.name !== 'Properties70') {
-          this.processNode(subNode);
-        }
+        this.parseSubNode(name, node as FBXTree, subNode);
       }
     }
 
@@ -169,7 +108,7 @@ export class BinaryParser {
     return node;
   }
 
-  parseSubNode (name: string, node: FBXTreeNode, subNode: FBXTreeNode) {
+  parseSubNode (name: string, node: FBXTree, subNode: FBXTreeNode) {
     // special case: child node is single property
     if (subNode.singleProperty === true && subNode.propertyList && subNode.propertyList.length > 0) {
       const value = subNode.propertyList[0];
@@ -182,21 +121,21 @@ export class BinaryParser {
         node[subNode.name as string] = value;
       }
     } else if (name === 'Connections' && subNode.name === 'C') {
-      const array: unknown[] = [];
+      const array: FBXConnectionNode[] = [];
       const propertyDef = subNode.propertyList as [string, number, number | string];
 
       propertyDef.forEach(property => {
         // first Connection is FBX type (OO, OP, etc.). We'll discard these
         if (propertyDef.indexOf(property) !== 0) {
-          array.push(property);
+          array.push(property as unknown as FBXConnectionNode);
         }
       });
 
-      if ((node as Record<string, unknown>).connections === undefined) {
-        (node as Record<string, unknown>).connections = [];
+      if (node.connections === undefined) {
+        node.connections = [];
       }
 
-      ((node as Record<string, unknown>).connections as unknown[]).push(array);
+      node.connections.push(array as unknown as FBXConnectionNode);
     } else if (subNode.name === 'Properties70') {
       const keys = Object.keys(subNode);
 
@@ -243,7 +182,8 @@ export class BinaryParser {
       };
     } else if (node[subNode.name as string] === undefined) {
       if (typeof subNode.id === 'number') {
-        node[subNode.name as string] = subNode;
+        node[subNode.name as string] = {};
+        ((node as Record<string, unknown>)[subNode.name!] as Record<number, unknown>)[subNode.id] = subNode;
       } else {
         node[subNode.name as string] = subNode;
       }

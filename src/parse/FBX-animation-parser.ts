@@ -12,7 +12,7 @@ import {
   VectorKeyframeTrack,
 } from 'three';
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
-import type { ParseContext } from '../../types';
+import { global } from '../constants';
 
 interface AnimationCurve {
   id: number,
@@ -57,12 +57,6 @@ interface RawClip {
 
 // parse animation data from FBXTree
 export class AnimationParser {
-  private context: ParseContext;
-
-  constructor (context: ParseContext) {
-    this.context = context;
-  }
-
   // take raw animation clips and turn them into three.js animation clips
   parse () {
     const animationClips = [];
@@ -83,7 +77,7 @@ export class AnimationParser {
   }
 
   parseClips (): Record<string, RawClip> | undefined {
-    const objects = this.context.fbxTree.Objects;
+    const objects = global.fbxTree.Objects;
 
     if (!objects) {
       throw new Error('FBXTree.Objects is undefined');
@@ -108,7 +102,7 @@ export class AnimationParser {
   // each AnimationCurveNode holds data for an animation transform for a model (e.g. left arm rotation )
   // and is referenced by an AnimationLayer
   parseAnimationCurveNodes (): Map<number, CurveNode> {
-    const objects = this.context.fbxTree.Objects;
+    const objects = global.fbxTree.Objects;
 
     if (!objects) {
       throw new Error('FBXTree.Objects is undefined');
@@ -161,7 +155,7 @@ export class AnimationParser {
   // previously parsed AnimationCurveNodes. Each AnimationCurve holds data for a single animated
   // axis ( e.g. times and values of x rotation)
   parseAnimationCurves (curveNodesMap: Map<number, CurveNode>) {
-    const objects = this.context.fbxTree.Objects;
+    const objects = global.fbxTree.Objects;
 
     if (!objects) {
       throw new Error('FBXTree.Objects is undefined');
@@ -184,7 +178,7 @@ export class AnimationParser {
         values: rawCurve.KeyValueFloat.a,
       };
 
-      const relationships = this.context.connections[animationCurve.id];
+      const relationships = global.connections.get(animationCurve.id);
 
       if (relationships !== undefined) {
         const parent = relationships.parents[0];
@@ -219,12 +213,12 @@ export class AnimationParser {
   // to various AnimationCurveNodes and is referenced by an AnimationStack node
   // note: theoretically a stack can have multiple layers, however in practice there always seems to be one per stack
   parseAnimationLayers (curveNodesMap: Map<number, CurveNode>): Map<number, AnimationNode[]> {
-    const objects = this.context.fbxTree.Objects;
+    const objects = global.fbxTree.Objects;
 
     const animationLayer = objects?.AnimationLayer;
     const models = objects?.Model;
-    const connections = this.context.connections;
-    const sceneGraph = this.context.sceneGraph;
+    const connections = global.connections;
+    const sceneGraph = global.sceneGraph;
 
     if (!animationLayer || !connections || !models || !sceneGraph || !objects) {
       throw new Error('FBXTree.Objects.AnimationLayer is undefined');
@@ -237,7 +231,7 @@ export class AnimationParser {
     for (const nodeID in rawLayers) {
       const layerCurveNodes: AnimationNode[] = [];
 
-      const connection = connections[parseInt(nodeID)];
+      const connection = connections.get(parseInt(nodeID));
 
       if (connection !== undefined) {
         // all the animationCurveNodes used in the layer
@@ -257,7 +251,7 @@ export class AnimationParser {
               || curveNode.curves?.z !== undefined
             ) {
               if (layerCurveNodes[i] === undefined) {
-                const modelID = (connections[child.ID]?.parents.filter(parent => {
+                const modelID = (connections.get(child.ID)?.parents.filter(parent => {
                   return parent.relationship !== undefined;
                 })[0] as { ID: number })?.ID;
 
@@ -296,10 +290,10 @@ export class AnimationParser {
 
                   // if the animated model is pre rotated, we'll have to apply the pre rotations to every
                   // animation value as well
-                  if ('PreRotation' in rawModel && rawModel.PreRotation?.value) {
+                  if ('PreRotation' in rawModel) {
                     node.preRotation = rawModel.PreRotation.value as [number, number, number];
                   }
-                  if ('PostRotation' in rawModel && rawModel.PostRotation?.value) {
+                  if ('PostRotation' in rawModel) {
                     node.postRotation = rawModel.PostRotation.value as [number, number, number];
                   }
                   layerCurveNodes[i] = node;
@@ -332,14 +326,14 @@ export class AnimationParser {
             } else if (curveNode.curves?.morph !== undefined) {
               if (layerCurveNodes[i] === undefined) {
                 const deformerID
-                  = (connections[child.ID]?.parents.filter(parent => {
+                  = (connections.get(child.ID)?.parents.filter(parent => {
                     return parent.relationship !== undefined;
                   })[0] as { ID: number }).ID || 0;
-                const morpherID = (connections[deformerID]?.parents[0] as { ID: number }).ID || 0;
-                const geoID = (connections[morpherID]?.parents[0] as { ID: number }).ID || 0;
+                const morpherID = (connections.get(deformerID)?.parents[0] as { ID: number }).ID || 0;
+                const geoID = (connections.get(morpherID)?.parents[0] as { ID: number }).ID || 0;
 
                 // assuming geometry is not used in more than one model
-                const modelID = (connections[geoID]?.parents[0] as { ID: number }).ID || 0;
+                const modelID = (connections.get(geoID)?.parents[0] as { ID: number }).ID || 0;
                 const models = objects.Model;
 
                 if (!models) {
@@ -399,8 +393,8 @@ export class AnimationParser {
   // parse nodes in FBXTree.Objects.AnimationStack. These are the top level node in the animation
   // hierarchy. Each Stack node will be used to create an AnimationClip
   parseAnimStacks (layersMap: Map<number, AnimationNode[]>) {
-    const rawStacks = this.context.fbxTree.Objects?.AnimationStack as Record<string, unknown>;
-    const connections = this.context.connections;
+    const rawStacks = global.fbxTree.Objects?.AnimationStack as Record<string, unknown>;
+    const connections = global.connections;
 
     if (!rawStacks || !connections) {
       throw new Error('FBXTree.Objects.AnimationStack or global.connections is undefined');
@@ -410,7 +404,7 @@ export class AnimationParser {
     const rawClips: Record<string, RawClip> = {};
 
     for (const nodeID in rawStacks) {
-      const children = connections[parseInt(nodeID)]?.children || [];
+      const children = connections.get(parseInt(nodeID))?.children || [];
       const rawStack = rawStacks[nodeID] as { attrName?: string };
 
       if (children.length > 1) {
@@ -614,7 +608,7 @@ export class AnimationParser {
     if (!curves) {
       throw new Error('curves is undefined');
     }
-    const sceneGraph = this.context.sceneGraph;
+    const sceneGraph = global.sceneGraph;
 
     if (!sceneGraph) {
       throw new Error('sceneGraph is undefined');

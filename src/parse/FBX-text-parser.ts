@@ -1,5 +1,5 @@
 import { parseNumberArray } from '../util';
-import { FBXTreeFactory } from '../constants';
+import { FBXTree } from '../constants';
 
 type TextNode = {
   [key: string]: unknown, // 添加索引签名以支持动态属性
@@ -16,14 +16,14 @@ export class TextParser {
   currentIndent: number;
   currentProp: { [key: string]: unknown } | unknown[];
   currentPropName: string;
-  allNodes: any;
+  allNodes: FBXTree;
 
   constructor () {
     this.nodeStack = [];
     this.currentIndent = 0;
     this.currentProp = [];
     this.currentPropName = '';
-    this.allNodes = new FBXTreeFactory();
+    this.allNodes = new FBXTree();
   }
 
   getPrevNode () {
@@ -56,7 +56,7 @@ export class TextParser {
   parse (text: string) {
     this.currentIndent = 0;
 
-    this.allNodes = new FBXTreeFactory();
+    this.allNodes = new FBXTree();
     this.nodeStack = [];
     this.currentProp = [];
     this.currentPropName = '';

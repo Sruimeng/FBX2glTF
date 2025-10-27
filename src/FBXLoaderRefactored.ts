@@ -1,5 +1,4 @@
-import { FileLoader, Group, Loader, LoaderUtils, TextureLoader } from 'three';
-import type { LoaderOptions, ModelLoaderResult } from '../types';
+import { FileLoader, Loader, LoaderUtils, TextureLoader } from 'three';
 import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary } from './util';
 import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
@@ -32,17 +31,17 @@ import {
  * @augments Loader
  * @three_import import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
  */
-class FBXLoader extends Loader<ModelLoaderResult> {
-  result?: ModelLoaderResult;
+export class FBXLoaderRefactored extends Loader<any> {
+  result?: any;
   /**
    * Constructs a new FBX loader.
    *
    * @param {LoaderOptions} [options] - The loading options.
    */
-  constructor (options?: LoaderOptions) {
+  constructor (options?: any) {
     const { manager } = options || {};
 
-    super(manager as any);
+    super(manager);
   }
 
   /**
@@ -56,7 +55,7 @@ class FBXLoader extends Loader<ModelLoaderResult> {
    */
   override load (
     url: string,
-    onLoad: (group: ModelLoaderResult) => void,
+    onLoad: (group: any) => void,
     onProgress?: (event: ProgressEvent) => void,
     onError?: (event: unknown) => void,
   ) {
@@ -118,19 +117,10 @@ class FBXLoader extends Loader<ModelLoaderResult> {
 
       global.fbxTree = new TextParser().parse(FBXText);
     }
-
     const textureLoader = new TextureLoader(this.manager)
       .setPath(this.resourcePath || path)
       .setCrossOrigin(this.crossOrigin);
 
-    const context = {
-      fbxTree: global.fbxTree,
-      connections: (global.fbxTree as any).connections || global.connections,
-      sceneGraph: new Group(),
-    };
-
-    return new FBXTreeParser(context, textureLoader, this.manager).parse();
+    return new FBXTreeParser(textureLoader, this.manager).parse();
   }
 }
-
-export { FBXLoader };

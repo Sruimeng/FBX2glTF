@@ -2,11 +2,11 @@
 
 import type { EulerOrder, EulerTuple } from 'three';
 import { Euler, MathUtils, Matrix4, Vector3 } from 'three';
-import type { UserDataTransform } from '../../types';
+import type { FBXTransformData } from '../constants';
 import { FBXEulerOrder } from '../constants';
 
 // ref: http://help.autodesk.com/view/FBX/2017/ENU/?guid=__cpp_ref_class_fbx_euler_html
-export function getEulerOrder (order: FBXEulerOrder): string {
+export function getEulerOrder(order: FBXEulerOrder): string {
   order = order || 0;
 
   if (order === FBXEulerOrder.SphericXYZ) {
@@ -14,7 +14,7 @@ export function getEulerOrder (order: FBXEulerOrder): string {
       'THREE.FBXLoader: unsupported Euler Order: Spherical XYZ. Animations and rotations may be incorrect.',
     );
 
-    return FBXEulerOrder[0];
+    return FBXEulerOrder[0] as string;
   }
 
   return FBXEulerOrder[order];
@@ -27,7 +27,7 @@ const dataArray: [] = []; // corrected type annotation
 // generate transformation from FBX transform data
 // ref: https://help.autodesk.com/view/FBX/2017/ENU/?guid=__files_GUID_10CDD63C_79C1_4F2D_BB28_AD2BE65A02ED_htm
 // ref: http://docs.autodesk.com/FBX/2014/ENU/FBX-SDK-Documentation/index.html?url=cpp_ref/_transformations_2main_8cxx-example.html,topicNumber=cpp_ref__transformations_2main_8cxx_example_htmlfc10a1e1-b18d-4e72-9dc0-70d0f1959f5e
-export function generateTransform (transformData: UserDataTransform) {
+export function generateTransform(transformData: FBXTransformData) {
   const lTranslationM = new Matrix4();
   const lPreRotationM = new Matrix4();
   const lRotationM = new Matrix4();
@@ -158,7 +158,7 @@ export function generateTransform (transformData: UserDataTransform) {
   return lTransform;
 }
 
-function slice (a: number[], b: number[], from: number, to: number): number[] {
+function slice(a: number[], b: number[], from: number, to: number): number[] {
   for (let i = from, j = 0; i < to; i++, j++) {
     a[j] = b[i] ?? 0;
   }
@@ -167,16 +167,16 @@ function slice (a: number[], b: number[], from: number, to: number): number[] {
 }
 
 // extracts the data from the correct position in the FBX array based on indexing type
-export function getData (
+export function getData(
   polygonVertexIndex: number,
   polygonIndex: number,
   vertexIndex: number,
   infoObject: {
-    buffer: number[],
-    dataSize: number,
-    indices: number[],
-    mappingType: string,
-    referenceType: string,
+    buffer: number[];
+    dataSize: number;
+    indices: number[];
+    mappingType: string;
+    referenceType: string;
   },
 ): number[] {
   let index = 0;
@@ -213,6 +213,6 @@ export function getData (
 }
 
 // Converts FBX ticks into real time seconds.
-export function convertFBXTimeToSeconds (time: number): number {
+export function convertFBXTimeToSeconds(time: number): number {
   return time / 46186158000;
 }

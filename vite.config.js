@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
         targets: ['iOS >= 9'],
       }),
       getSWCPlugin({
-        target: 'ES6',
+        target: 'ES2020',
       }),
       tsconfigPaths(),
     ],
