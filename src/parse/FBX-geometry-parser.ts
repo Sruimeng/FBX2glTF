@@ -15,7 +15,6 @@ import {
 } from 'three';
 import type {
   Deformers,
-  FBXConnectionNode,
   FBXEulerOrder,
   FBXGeometryNode,
   FBXLayerElementColor,
@@ -25,8 +24,13 @@ import type {
   FBXSkeleton,
   UserDataTransform,
 } from '../constants';
-// 使用与 FBX-animation-parser.ts 相同的 ParseContext
-import type { ParseContext } from './FBX-animation-parser';
+import { FBXConnectionNode } from '../constants';
+
+// 临时定义 ParseContext 类型
+export interface ParseContext {
+  connections: Map<number, FBXConnectionNode>;
+  [key: string]: any;
+}
 import { generateTransform, getData, getEulerOrder } from './utils';
 import { NURBSCurve } from '../curves/NURBS-curve';
 

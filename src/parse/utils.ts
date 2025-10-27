@@ -14,10 +14,11 @@ export function getEulerOrder (order: FBXEulerOrder): string {
       'THREE.FBXLoader: unsupported Euler Order: Spherical XYZ. Animations and rotations may be incorrect.',
     );
 
-    return FBXEulerOrder[0];
+    return 'XYZ';
   }
 
-  return FBXEulerOrder[order];
+  const orderMap = ['XYZ', 'YZX', 'ZXY', 'XZY', 'YXZ', 'ZYX'];
+  return orderMap[order] || 'XYZ';
 }
 
 const tempEuler = new Euler();

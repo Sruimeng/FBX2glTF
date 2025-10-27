@@ -12,9 +12,11 @@ import {
   VectorKeyframeTrack,
 } from 'three';
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
+import { FBXConnectionNode } from '../constants';
+
 // 临时定义 ParseContext 类型
 export interface ParseContext {
-  connections: Map<number, any[]>;
+  connections: Map<number, FBXConnectionNode>;
   [key: string]: any;
 }
 

@@ -50,9 +50,37 @@ import type {
   FBXTextureNode,
   RawBone,
 } from '../constants';
-import type { ParseContext, ModelLoaderResult, UserDataTransform } from '../../types';
-import type { BaseInfo } from '../../types';
-import type { FBXLightNodeAttribute, FBXVideoNode, FBXCameraNodeAttribute } from '../../types/nodes';
+import { FBXConnectionNode } from '../constants';
+
+// 临时类型定义
+export interface ParseContext {
+  connections: Map<number, FBXConnectionNode>;
+  [key: string]: any;
+}
+
+export interface ModelLoaderResult {
+  scene: any;
+  animations: any[];
+  modelInfo: any;
+}
+
+export interface BaseInfo {
+  id: number;
+  name: string;
+  type?: string;
+}
+
+export interface FBXLightNodeAttribute {
+  [key: string]: any;
+}
+
+export interface FBXVideoNode {
+  [key: string]: any;
+}
+
+export interface FBXCameraNodeAttribute {
+  [key: string]: any;
+}
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './FBX-geometry-parser';

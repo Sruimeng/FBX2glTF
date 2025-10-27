@@ -1,5 +1,10 @@
 import { FileLoader, Group, Loader, LoaderUtils, TextureLoader } from 'three';
-import type { LoaderOptions, ModelLoaderResult } from '../types';
+// 临时类型定义
+export interface LoaderOptions {
+  [key: string]: any;
+}
+
+import type { ModelLoaderResult } from './parse/FBX-tree-parser';
 import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary } from './util';
 import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';

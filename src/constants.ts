@@ -8,7 +8,7 @@
  * - 类型定义已迁移到 /types 目录
  */
 
-import type { IFBXTree, FBXConnectionReference, FBXGeometryData, FBXTextureInfo } from './types/core';
+import type { IFBXTree, FBXGeometryData, FBXTextureInfo } from './types/core';
 import { Group } from 'three';
 
 /**
@@ -32,8 +32,15 @@ export interface FBXTreeFactory {
   create(): IFBXTree;
 }
 
-export interface FBXEulerOrder {
-  value: number;
+// FBX 欧拉角枚举
+export enum FBXEulerOrder {
+  Order_XYZ = 0,
+  Order_YZX = 1,
+  Order_ZXY = 2,
+  Order_XZY = 3,
+  Order_YXZ = 4,
+  Order_ZYX = 5,
+  SphericXYZ = 6,
 }
 
 export interface FBXConnectionNode {
@@ -41,12 +48,35 @@ export interface FBXConnectionNode {
   parents: Array<{ ID: number; relationship?: string }>;
 }
 
-export interface FBXConnectionReference extends FBXConnectionReference {}
+export interface FBXConnectionReference {
+  ID: number;
+  relationship?: string;
+}
 
 export interface FBXGeometryNode extends FBXGeometryData {
   id: number;
   attrName: string;
   attrType: string;
+  Vertices?: { a: number[] };
+  PolygonVertexIndex?: { a: number[] };
+  LayerElementNormal?: {
+    Normals?: { a: number[] };
+    NormalsW?: { a: number[] };
+  };
+  LayerElementUV?: {
+    UV?: { a: number[] };
+    UVIndex?: { a: number[] };
+  };
+  LayerElementColor?: {
+    Colors?: { a: number[] };
+    ColorIndex?: { a: number[] };
+  };
+  LayerElementMaterial?: {
+    Materials?: { a: number[] };
+  };
+  Indexes?: { a: number[] };
+  // 允许数字索引访问
+  [key: number]: any;
 }
 
 export interface FBXLayerElementColor {
@@ -68,6 +98,8 @@ export interface FBXMorphTarget {
   name: string;
   vertices?: { a: number[] };
   normals?: { a: number[] };
+  rawTargets?: any[];
+  position?: number[]; // for MorphTarget
 }
 
 export interface FBXSkeleton {
@@ -76,12 +108,24 @@ export interface FBXSkeleton {
   attrType: string;
   Transform: { a: number[] };
   TransformLink: { a: number[] };
+  rawBones?: any[];
 }
 
 export interface UserDataTransform {
   position: number[];
   rotation: number[];
   scale: number[];
+  inheritType?: number;
+  translation?: number[];
+  preRotation?: number[];
+  postRotation?: number[];
+  eulerOrder?: number;
+  scalingOffset?: number[];
+  scalingPivot?: number[];
+  rotationOffset?: number[];
+  rotationPivot?: number[];
+  parentMatrixWorld?: any;
+  parentMatrix?: any;
 }
 
 export interface Deformers {
