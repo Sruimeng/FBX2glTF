@@ -115,8 +115,8 @@ export interface IFBXTree {
  * FBX 连接节点
  */
 export interface FBXConnectionNode {
-  children: Array<{ ID: number; relationship?: string }>,
-  parents: Array<{ ID: number; relationship?: string }>,
+  children: Array<{ ID: number, relationship?: string }>,
+  parents: Array<{ ID: number, relationship?: string }>,
 }
 
 /**
@@ -234,54 +234,54 @@ export interface FBXDeformerInfo {
  * FBX 解析上下文
  */
 export interface ParseContext {
-  connections: Map<number, FBXConnectionNode>;
-  fbxTree: IFBXTree;
-  [key: string]: any;
+  connections: Map<number, FBXConnectionNode>,
+  fbxTree: IFBXTree,
+  [key: string]: any,
 }
 
 /**
  * 模型加载结果
  */
 export interface ModelLoaderResult {
-  scene: any;
-  animations: any[];
-  modelInfo: any;
+  scene: any,
+  animations: any[],
+  modelInfo: any,
 }
 
 /**
  * 加载器选项
  */
 export interface LoaderOptions {
-  [key: string]: any;
+  [key: string]: any,
 }
 
 /**
  * FBX 连接节点（增强版，支持relationship）
  */
 export interface FBXConnectionNodeEnhanced {
-  children: Array<{ ID: number; relationship?: string }>;
-  parents: Array<{ ID: number; relationship?: string }>;
+  children: Array<{ ID: number, relationship?: string }>,
+  parents: Array<{ ID: number, relationship?: string }>,
 }
 
 /**
  * FBX 轻节点属性
  */
 export interface FBXLightNodeAttribute {
-  [key: string]: any;
+  [key: string]: any,
 }
 
 /**
  * FBX 视频节点
  */
 export interface FBXVideoNode {
-  [key: string]: any;
+  [key: string]: any,
 }
 
 /**
  * FBX 相机节点属性
  */
 export interface FBXCameraNodeAttribute {
-  [key: string]: any;
+  [key: string]: any,
 }
 
 /**

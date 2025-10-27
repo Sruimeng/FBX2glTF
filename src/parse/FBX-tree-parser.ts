@@ -50,14 +50,14 @@ import type {
   FBXTextureNode,
   RawBone,
 } from '../constants';
-import type { 
-  ParseContext, 
-  ModelLoaderResult, 
-  BaseInfo, 
-  FBXLightNodeAttribute, 
-  FBXVideoNode, 
+import type {
+  ParseContext,
+  ModelLoaderResult,
+  BaseInfo,
+  FBXLightNodeAttribute,
+  FBXVideoNode,
   FBXCameraNodeAttribute,
-  FBXConnectionNode 
+  FBXConnectionNode,
 } from '../types/core';
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
@@ -124,6 +124,7 @@ export class FBXTreeParser {
       // Step 1: 验证FBX树结构
       console.log('🔍 Zod验证：验证FBX树结构...');
       const validatedTree = FBXValidator.validateFBXTree(this.context.fbxTree);
+
       this.context.fbxTree = validatedTree;
       console.log('✅ Zod验证：FBX树结构验证通过');
 
@@ -135,22 +136,27 @@ export class FBXTreeParser {
       // Step 3: 验证并解析各个组件
       console.log('🖼️  Zod验证：解析图像资源...');
       const images = this.parseImages();
+
       console.log(`✅ Zod验证：找到 ${images.length} 个图像`);
 
       console.log('🎨 Zod验证：解析纹理资源...');
       const textures = await this.parseTextures(images);
+
       console.log(`✅ Zod验证：找到 ${textures.length} 个纹理`);
 
       console.log('🧱 Zod验证：解析材质资源...');
       const materialMap = this.parseMaterials(textures);
+
       console.log(`✅ Zod验证：找到 ${materialMap.size} 个材质`);
 
       console.log('🦴 Zod验证：解析变形器...');
       const deformers = this.parseDeformers();
+
       console.log(`✅ Zod验证：找到 ${Object.keys(deformers.skeletons).length} 个骨架，${Object.keys(deformers.morphTargets).length} 个变形目标`);
 
       console.log('📐 Zod验证：解析几何体...');
       const { geoInfoMap, geometryMap } = new GeometryParser(this.context).parse(deformers);
+
       console.log(`✅ Zod验证：找到 ${geoInfoMap.size} 个几何体信息，${geometryMap.size} 个几何体`);
 
       console.log('🎭 Zod验证：解析场景...');
@@ -162,13 +168,15 @@ export class FBXTreeParser {
       });
 
       console.log('🎉 Zod验证：FBX解析完成！');
+
       return result;
 
     } catch (error) {
       console.error('❌ Zod验证失败:', error);
-      
+
       // 提供安全的fallback
       console.warn('🔄 使用安全fallback模式...');
+
       return {
         scene: new Group(),
         animations: [],
@@ -188,8 +196,10 @@ export class FBXTreeParser {
       try {
         // 安全验证connections数据
         const connections = FBXValidator.safeProperty(fbxTree, 'connections');
+
         if (!connections) {
           console.warn('⚠️  Zod验证：connections属性不存在');
+
           return connectionMap;
         }
 
@@ -200,6 +210,7 @@ export class FBXTreeParser {
           try {
             // 验证connection结构
             const validatedConnection = FBXValidator.validateConnectionNode(connection);
+
             connectionMap.set(parseInt(id), validatedConnection);
           } catch (error) {
             console.warn(`⚠️  Zod验证：连接节点 ${id} 验证失败，跳过:`, error);
@@ -209,6 +220,7 @@ export class FBXTreeParser {
         return connectionMap;
       } catch (error) {
         console.warn('⚠️  Zod验证：connections解析失败，使用fallback:', error);
+
         return connectionMap;
       }
     }
@@ -973,7 +985,7 @@ export class FBXTreeParser {
     try {
       // Zod验证：验证输入参数
       console.log('🎭 Zod验证：验证场景解析参数...');
-      
+
       const {
         deformers,
         geoInfoMap = new Map(),
@@ -1004,6 +1016,7 @@ export class FBXTreeParser {
 
       // 验证关键数据结构
       const objects = FBXValidator.safeProperty(fbxTree, 'Objects');
+
       if (!objects) {
         throw new Error('FBXTree.Objects is missing or invalid');
       }
@@ -1012,6 +1025,7 @@ export class FBXTreeParser {
 
     } catch (error) {
       console.error('❌ Zod验证：场景解析验证失败:', error);
+
       // 返回安全的fallback结果
       return {
         scene: new Group(),

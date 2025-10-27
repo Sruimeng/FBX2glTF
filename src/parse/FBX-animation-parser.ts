@@ -429,6 +429,7 @@ export class AnimationParser {
 
       if (!layer) {
         console.warn('THREE.FBXLoader: Layer not found for nodeID: ' + nodeID + ', skipping this animation stack');
+
         return; // 跳过这个动画栈而不是抛出错误
       }
 
@@ -551,29 +552,33 @@ export class AnimationParser {
 
     if (preRotationQuat !== undefined) {
       const preRotArray = Array.isArray(preRotationQuat) ? preRotationQuat : [preRotationQuat];
+
       preRotationQuat = preRotArray.map(MathUtils.degToRad);
       // preRotation.push(defaultEulerOrder);
 
       const preRotEuler = new Euler(
-        (preRotationQuat as number[])[0],
-        (preRotationQuat as number[])[1],
-        (preRotationQuat as number[])[2],
+        (preRotationQuat)[0],
+        (preRotationQuat)[1],
+        (preRotationQuat)[2],
         defaultEulerOrder,
       );
+
       preRotationQuat = new Quaternion().setFromEuler(preRotEuler);
     }
 
     if (postRotationQuat !== undefined) {
       const postRotArray = Array.isArray(postRotationQuat) ? postRotationQuat : [postRotationQuat];
+
       postRotationQuat = postRotArray.map(MathUtils.degToRad);
       // postRotationQuat.push(defaultEulerOrder);
 
       const postRotEuler = new Euler(
-        (postRotationQuat as number[])[0],
-        (postRotationQuat as number[])[1],
-        (postRotationQuat as number[])[2],
+        (postRotationQuat)[0],
+        (postRotationQuat)[1],
+        (postRotationQuat)[2],
         defaultEulerOrder,
       );
+
       postRotationQuat = new Quaternion().setFromEuler(postRotEuler).invert();
 
       // postRotation = new Euler().fromArray(postRotation);
