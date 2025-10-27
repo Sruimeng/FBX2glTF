@@ -3,8 +3,6 @@
  * @description 核心类型统一导出
  */
 
-import type * as THREE from 'three';
-
 // 核心 FBX 类型
 export * from './fbx-types';
 

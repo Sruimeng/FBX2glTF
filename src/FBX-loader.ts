@@ -42,7 +42,7 @@ class FBXLoader extends Loader<ModelLoaderResult> {
   constructor (options?: LoaderOptions) {
     const { manager } = options || {};
 
-    super(manager as any);
+    super(manager);
   }
 
   /**
