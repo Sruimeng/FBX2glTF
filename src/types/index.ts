@@ -33,7 +33,6 @@ export {
   Deformers,
   FBXMorphTarget,
   Global,
-  global,
   FBXTree,
 } from '../constants';
 

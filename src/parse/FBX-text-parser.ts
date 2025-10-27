@@ -1,5 +1,7 @@
 import { parseNumberArray } from '../util';
 import { FBXTree } from '../constants';
+import { BaseParser } from '../types/core/base-parser';
+import type { IParsingContext } from '../types/core/parser';
 
 type TextNode = {
   [key: string]: unknown, // 添加索引签名以支持动态属性
@@ -11,14 +13,15 @@ type TextNode = {
 };
 
 // parse an FBX file in ASCII format
-export class TextParser {
+export class TextParser extends BaseParser<string, FBXTree> {
   nodeStack: TextNode[];
   currentIndent: number;
   currentProp: { [key: string]: unknown } | unknown[];
   currentPropName: string;
   allNodes: FBXTree;
 
-  constructor () {
+  constructor (context: IParsingContext) {
+    super(context);
     this.nodeStack = [];
     this.currentIndent = 0;
     this.currentProp = [];
@@ -53,7 +56,7 @@ export class TextParser {
     this.currentPropName = name;
   }
 
-  parse (text: string) {
+  parse (text: string, context: IParsingContext) {
     this.currentIndent = 0;
 
     this.allNodes = new FBXTree();

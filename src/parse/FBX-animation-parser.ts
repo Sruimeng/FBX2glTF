@@ -12,7 +12,8 @@ import {
   VectorKeyframeTrack,
 } from 'three';
 import { convertFBXTimeToSeconds, getEulerOrder } from './utils';
-import { global } from '../constants';
+import { BaseParser } from '../types/core/base-parser';
+import type { IParsingContext } from '../types/core/parser';
 
 interface AnimationCurve {
   id: number,
@@ -56,9 +57,13 @@ interface RawClip {
 }
 
 // parse animation data from FBXTree
-export class AnimationParser {
+export class AnimationParser extends BaseParser<any, any> {
+  constructor (context: IParsingContext) {
+    super(context);
+  }
+
   // take raw animation clips and turn them into three.js animation clips
-  parse () {
+  parse (_input: any, context: IParsingContext) {
     const animationClips = [];
 
     const rawClips = this.parseClips();
@@ -77,7 +82,7 @@ export class AnimationParser {
   }
 
   parseClips (): Record<string, RawClip> | undefined {
-    const objects = global.fbxTree.Objects;
+    const objects = this.context.fbxTree.Objects;
 
     if (!objects) {
       throw new Error('FBXTree.Objects is undefined');
@@ -102,7 +107,7 @@ export class AnimationParser {
   // each AnimationCurveNode holds data for an animation transform for a model (e.g. left arm rotation )
   // and is referenced by an AnimationLayer
   parseAnimationCurveNodes (): Map<number, CurveNode> {
-    const objects = global.fbxTree.Objects;
+    const objects = this.context.fbxTree.Objects;
 
     if (!objects) {
       throw new Error('FBXTree.Objects is undefined');
@@ -155,7 +160,7 @@ export class AnimationParser {
   // previously parsed AnimationCurveNodes. Each AnimationCurve holds data for a single animated
   // axis ( e.g. times and values of x rotation)
   parseAnimationCurves (curveNodesMap: Map<number, CurveNode>) {
-    const objects = global.fbxTree.Objects;
+    const objects = this.context.fbxTree.Objects;
 
     if (!objects) {
       throw new Error('FBXTree.Objects is undefined');
@@ -178,7 +183,7 @@ export class AnimationParser {
         values: rawCurve.KeyValueFloat.a,
       };
 
-      const relationships = global.connections.get(animationCurve.id);
+      const relationships = this.context.connections.get(animationCurve.id);
 
       if (relationships !== undefined) {
         const parent = relationships.parents[0];
@@ -213,12 +218,12 @@ export class AnimationParser {
   // to various AnimationCurveNodes and is referenced by an AnimationStack node
   // note: theoretically a stack can have multiple layers, however in practice there always seems to be one per stack
   parseAnimationLayers (curveNodesMap: Map<number, CurveNode>): Map<number, AnimationNode[]> {
-    const objects = global.fbxTree.Objects;
+    const objects = this.context.fbxTree.Objects;
 
     const animationLayer = objects?.AnimationLayer;
     const models = objects?.Model;
-    const connections = global.connections;
-    const sceneGraph = global.sceneGraph;
+    const connections = this.context.connections;
+    const sceneGraph = this.context.sceneGraph;
 
     if (!animationLayer || !connections || !models || !sceneGraph || !objects) {
       throw new Error('FBXTree.Objects.AnimationLayer is undefined');
@@ -393,11 +398,11 @@ export class AnimationParser {
   // parse nodes in FBXTree.Objects.AnimationStack. These are the top level node in the animation
   // hierarchy. Each Stack node will be used to create an AnimationClip
   parseAnimStacks (layersMap: Map<number, AnimationNode[]>) {
-    const rawStacks = global.fbxTree.Objects?.AnimationStack as Record<string, unknown>;
-    const connections = global.connections;
+    const rawStacks = this.context.fbxTree.Objects?.AnimationStack as Record<string, unknown>;
+    const connections = this.context.connections;
 
     if (!rawStacks || !connections) {
-      throw new Error('FBXTree.Objects.AnimationStack or global.connections is undefined');
+      throw new Error('FBXTree.Objects.AnimationStack or this.context.connections is undefined');
     }
 
     // connect the stacks (clips) up to the layers
@@ -608,7 +613,7 @@ export class AnimationParser {
     if (!curves) {
       throw new Error('curves is undefined');
     }
-    const sceneGraph = global.sceneGraph;
+    const sceneGraph = this.context.sceneGraph;
 
     if (!sceneGraph) {
       throw new Error('sceneGraph is undefined');

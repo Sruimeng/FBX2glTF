@@ -1,10 +1,12 @@
 // Parses binary FBX files.
 import * as fflate from 'fflate';
 import { type FBXConnectionNode, FBXTree, type FBXTreeNode, type IFBXTree } from '../constants';
+import { BaseParser } from '../types/core/base-parser';
+import type { IParsingContext } from '../types/core/parser';
 
 // Parse an FBX file in Binary format
-export class BinaryParser {
-  parse (buffer: ArrayBuffer): IFBXTree {
+export class BinaryParser extends BaseParser<ArrayBuffer, IFBXTree> {
+  parse (buffer: ArrayBuffer, context: IParsingContext): IFBXTree {
     const reader = new BinaryReader(buffer);
 
     reader.skip(23); // skip magic 23 bytes
@@ -181,9 +183,9 @@ export class BinaryParser {
         value: innerPropValue,
       };
     } else if (node[subNode.name as string] === undefined) {
-      if (typeof subNode.id === 'number') {
-        node[subNode.name as string] = {};
-        ((node as Record<string, unknown>)[subNode.name!] as Record<number, unknown>)[subNode.id] = subNode;
+      if (typeof subNode.id === 'number' && subNode.name) {
+        node[subNode.name] = {};
+        ((node as Record<string, unknown>)[subNode.name] as Record<number, unknown>)[subNode.id] = subNode;
       } else {
         node[subNode.name as string] = subNode;
       }
@@ -194,8 +196,8 @@ export class BinaryParser {
         }
 
         ((node as Record<string, unknown>)[subNode.name] as unknown[]).push(subNode);
-      } else if (((node as Record<string, unknown>)[subNode.name!] as Record<number, unknown>)[subNode.id as number] === undefined) {
-        ((node as Record<string, unknown>)[subNode.name!] as Record<number, unknown>)[subNode.id as number] = subNode;
+      } else if (subNode.name && ((node as Record<string, unknown>)[subNode.name] as Record<number, unknown>)[subNode.id as number] === undefined) {
+        ((node as Record<string, unknown>)[subNode.name] as Record<number, unknown>)[subNode.id as number] = subNode;
       }
     }
   }

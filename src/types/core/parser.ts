@@ -10,8 +10,8 @@ export type { GlobalFBXConnectionNode, IFBXTree };
  */
 export interface IParsingContext {
   readonly fbxTree: IFBXTree,
-  readonly connections: Map<number, GlobalFBXConnectionNode>,
-  readonly sceneGraph: Group,
+  connections: Map<number, GlobalFBXConnectionNode>,
+  sceneGraph: Group,
   readonly loadingManager: LoadingManager,
   readonly wireframe?: boolean,
 

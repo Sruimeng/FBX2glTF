@@ -36,6 +36,8 @@ import {
   Texture,
   Vector3,
 } from 'three';
+import { BaseParser } from '../types/core/base-parser';
+import type { IParsingContext } from '../types/core/parser';
 import type {
   FBXConnectionNode,
   FBXConnectionReference,
@@ -55,7 +57,6 @@ import type {
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './FBX-geometry-parser';
-import { global } from '../constants';
 
 interface FBXMeshStandardMaterialParameters extends MeshStandardMaterialParameters {
   reflectivity?: number,
@@ -73,7 +74,7 @@ export interface FBXSceneParserOptions {
 }
 
 // Parse the FBXTree object returned by the BinaryParser or TextParser and return a Group
-export class FBXTreeParser {
+export class FBXTreeParser extends BaseParser<any, any> {
   textureLoader: TextureLoader;
   manager: LoadingManager;
   defaultMaterialIndex = -1;
@@ -88,20 +89,21 @@ export class FBXTreeParser {
     vertices: 0,
   };
 
-  constructor (textureLoader: TextureLoader, manager: LoadingManager) {
+  constructor (textureLoader: TextureLoader, manager: LoadingManager, context: IParsingContext) {
+    super(context);
     this.textureLoader = textureLoader;
     this.manager = manager;
   }
 
-  async parse (): Promise<any> {
-    global.connections = this.parseConnections();
+  async parse (_input: any, context: IParsingContext): Promise<any> {
+    this.context.connections = this.parseConnections();
 
     const images = this.parseImages();
 
     const textures = await this.parseTextures(images);
     const materialMap = this.parseMaterials(textures);
     const deformers = this.parseDeformers();
-    const { geoInfoMap, geometryMap } = new GeometryParser().parse(deformers);
+    const { geoInfoMap, geometryMap } = new GeometryParser(this.context).parse(deformers, this.context);
 
     return this.parseScene({
       deformers,
@@ -111,12 +113,12 @@ export class FBXTreeParser {
     });
   }
 
-  // Parses global.fbxTree.Connections which holds parent-child connections between objects (e.g. material -> texture, model->geometry )
+  // Parses context.fbxTree.Connections which holds parent-child connections between objects (e.g. material -> texture, model->geometry )
   // and details the connection type
   parseConnections () {
     const connectionMap = new Map();
 
-    const fbxTree = global.fbxTree;
+    const fbxTree = this.context.fbxTree;
 
     if ('Connections' in fbxTree) {
       if (!fbxTree.Connections) {
@@ -156,19 +158,19 @@ export class FBXTreeParser {
     return connectionMap;
   }
 
-  // Parse global.fbxTree.Objects.Video for embedded image data
-  // These images are connected to textures in global.fbxTree.Objects.Textures
-  // via global.fbxTree.Connections.
+  // Parse context.fbxTree.Objects.Video for embedded image data
+  // These images are connected to textures in context.fbxTree.Objects.Textures
+  // via context.fbxTree.Connections.
   parseImages () {
     const images: Record<number, string> = {};
     const blobs: Record<string, string | undefined> = {};
 
-    if (!global.fbxTree.Objects) {
+    if (!this.context.fbxTree.Objects) {
       throw new Error('FBXTree.Objects is undefined');
     }
 
-    if ('Video' in global.fbxTree.Objects) {
-      const videoNodes = global.fbxTree.Objects.Video;
+    if ('Video' in this.context.fbxTree.Objects) {
+      const videoNodes = this.context.fbxTree.Objects.Video;
 
       for (const nodeID in videoNodes) {
         const videoNode = videoNodes[nodeID];
@@ -196,16 +198,16 @@ export class FBXTreeParser {
       const filename = images[id];
 
       if (blobs[filename] !== undefined) {
-        images[id] = blobs[filename];
+        images[id] = blobs[filename]!;
       } else {
-        images[id] = images[id]?.split('\\').pop() || (images[id]);
+        images[id] = images[id]?.split('\\').pop() || images[id] || '';
       }
     }
 
     return images;
   }
 
-  // Parse embedded image data in global.fbxTree.Video.Content
+  // Parse embedded image data in context.fbxTree.Video.Content
   parseImage (videoNode: FBXVideoNode) {
     const content = videoNode.Content;
     const fileName = videoNode.RelativeFilename || videoNode.Filename;
@@ -262,18 +264,18 @@ export class FBXTreeParser {
     }
   }
 
-  // Parse nodes in global.fbxTree.Objects.Texture
+  // Parse nodes in context.fbxTree.Objects.Texture
   // These contain details such as UV scaling, cropping, rotation etc and are connected
-  // to images in global.fbxTree.Objects.Video
+  // to images in context.fbxTree.Objects.Video
   async parseTextures (images: Record<string, string>) {
     const textureMap = new Map();
 
-    if (!global.fbxTree.Objects) {
+    if (!this.context.fbxTree.Objects) {
       throw new Error('FBXTree Objects is undefined');
     }
 
-    if ('Texture' in global.fbxTree.Objects) {
-      const textureNodes = global.fbxTree.Objects.Texture;
+    if ('Texture' in this.context.fbxTree.Objects) {
+      const textureNodes = this.context.fbxTree.Objects.Texture;
 
       for (const nodeID in textureNodes) {
         const texture = await this.parseTexture(textureNodes[nodeID], images);
@@ -286,7 +288,7 @@ export class FBXTreeParser {
     return textureMap;
   }
 
-  // Parse individual node in global.fbxTree.Objects.Texture
+  // Parse individual node in context.fbxTree.Objects.Texture
   async parseTexture (textureNode: FBXTextureNode, images: Record<string, string>) {
     const texture = await this.loadTexture(textureNode, images);
 
@@ -345,7 +347,7 @@ export class FBXTreeParser {
     if (!loaderPath) {
       loader.setPath(this.textureLoader.path);
     }
-    const connections = global.connections;
+    const connections = this.context.connections;
 
     if (!connections) {
       throw new Error('Global connections are undefined');
@@ -383,10 +385,10 @@ export class FBXTreeParser {
     return texture;
   }
 
-  // Parse nodes in global.fbxTree.Objects.Material
+  // Parse nodes in context.fbxTree.Objects.Material
   parseMaterials (textureMap: Map<number, Texture>) {
     const materialMap = new Map();
-    const fbxTree = global.fbxTree;
+    const fbxTree = this.context.fbxTree;
 
     if (!fbxTree || !fbxTree.Objects) {
       throw new Error('Global FBXTree or fbxTree.Objects is undefined');
@@ -415,8 +417,8 @@ export class FBXTreeParser {
     return materialMap;
   }
 
-  // Parse single node in global.fbxTree.Objects.Material
-  // Materials are connected to texture maps in global.fbxTree.Objects.Textures
+  // Parse single node in context.fbxTree.Objects.Material
+  // Materials are connected to texture maps in context.fbxTree.Objects.Textures
   // FBX format currently only supports Lambert and Phong shading models
   parseMaterial (materialNode: FBXMaterialNode, textureMap: Map<number, Texture>) {
     const ID = materialNode.id;
@@ -429,7 +431,7 @@ export class FBXTreeParser {
     }
 
     // Ignore unused materials which don't have any connections.
-    if (!global.connections.has(ID)) {
+    if (!this.context.connections.has(ID)) {
       return null;
     }
 
@@ -469,7 +471,7 @@ export class FBXTreeParser {
   // Also parse the texture map and return any textures associated with the material
   parseParameters (materialNode: FBXMaterialNode, textureMap: Map<number, Texture>, ID: number) {
     const parameters: FBXMeshStandardMaterialParameters = {};
-    const connections = global.connections;
+    const connections = this.context.connections;
 
     if (!connections) {
       throw new Error('Global connections is undefined');
@@ -663,8 +665,8 @@ export class FBXTreeParser {
 
   // get a texture from the textureMap for use by a material.
   getTexture (textureMap: Map<number, Texture>, id: number) {
-    const objects = global.fbxTree.Objects;
-    const connections = global.connections;
+    const objects = this.context.fbxTree.Objects;
+    const connections = this.context.connections;
     let textureID: number | undefined = id;
 
     if (!objects || !connections) {
@@ -685,13 +687,13 @@ export class FBXTreeParser {
     return textureMap.get(textureID);
   }
 
-  // Parse nodes in global.fbxTree.Objects.Deformer
+  // Parse nodes in context.fbxTree.Objects.Deformer
   // Deformer node can contain skinning or Vertex Cache animation data, however only skinning is supported here
   // Generates map of Skeleton-like objects for use later when generating and binding skeletons.
   parseDeformers () {
     const skeletons: Record<string, FBXSkeleton> = {};
     const morphTargets: Record<string, FBXMorphTarget> = {};
-    const objects = global.fbxTree.Objects;
+    const objects = this.context.fbxTree.Objects;
 
     if (!objects) {
       throw new Error('No objects found in fbxTree.');
@@ -702,7 +704,7 @@ export class FBXTreeParser {
       for (const nodeID in DeformerNodes) {
         const deformerNode = DeformerNodes[nodeID];
 
-        const relationships = global.connections.get(parseInt(nodeID));
+        const relationships = this.context.connections.get(parseInt(nodeID));
 
         if (!relationships) {
           throw new Error('No relationships found for nodeID: ' + nodeID);
@@ -754,7 +756,7 @@ export class FBXTreeParser {
     };
   }
 
-  // Parse single nodes in global.fbxTree.Objects.Deformer
+  // Parse single nodes in context.fbxTree.Objects.Deformer
   // The top level skeleton node has type 'Skin' and sub nodes have type 'Cluster'
   // Each skin node represents a skeleton and each cluster node represents a bone
   parseSkeleton (
@@ -763,7 +765,7 @@ export class FBXTreeParser {
   ): FBXSkeleton {
     const rawBones: RawBone[] = [];
 
-    relationships.children.forEach(function (child) {
+    relationships.children.forEach(child => {
       const boneNode = deformerNodes[child.ID];
 
       if (!boneNode || !boneNode.TransformLink) {
@@ -805,7 +807,7 @@ export class FBXTreeParser {
     deformerNodes: Record<number, FBXMeshNode>,
   ): FBXRawTargets[] | undefined {
     const rawMorphTargets: FBXRawTargets[] = [];
-    const connections = global.connections;
+    const connections = this.context.connections;
 
     if (!connections) {
       throw new Error('Global connections is undefined');
@@ -853,9 +855,9 @@ export class FBXTreeParser {
       materialMap = new Map(),
     } = option;
 
-    global.sceneGraph = new Group();
-    const fbxTree = global.fbxTree;
-    const connections = global.connections;
+    this.context.sceneGraph = new Group();
+    const fbxTree = this.context.fbxTree;
+    const connections = this.context.connections;
 
     if (!fbxTree || !fbxTree.Objects || !connections) {
       throw new Error('Global FBXTree or fbxTree.Objects or global connections is undefined');
@@ -881,7 +883,7 @@ export class FBXTreeParser {
 
       const parentConnections = connections.get(modelID)?.parents || [];
 
-      parentConnections.forEach(function (connection) {
+      parentConnections.forEach(connection => {
         const parent = modelMap.get(connection.ID);
 
         if (parent !== undefined) {
@@ -890,7 +892,7 @@ export class FBXTreeParser {
       });
 
       if (model.parent === null) {
-        global.sceneGraph.add(model);
+        this.context.sceneGraph.add(model);
       }
     });
 
@@ -898,7 +900,7 @@ export class FBXTreeParser {
 
     this.addGlobalSceneSettings();
 
-    global.sceneGraph.traverse(function (node) {
+    this.context.sceneGraph.traverse(node => {
       if (node.userData.transformData) {
         if (node.parent) {
           node.userData.transformData.parentMatrix = node.parent.matrix;
@@ -912,28 +914,28 @@ export class FBXTreeParser {
       }
     });
 
-    const animations = new AnimationParser().parse();
+    const animations = new AnimationParser(this.context).parse(null, this.context);
 
     // if all the models where already combined in a single group, just return that
     if (
-      global.sceneGraph.children.length === 1
-      && (global.sceneGraph.children[0] as Group).isGroup
+      this.context.sceneGraph.children.length === 1
+      && (this.context.sceneGraph.children[0] as Group).isGroup
     ) {
-      (global.sceneGraph.children[0] as Group).animations = animations;
-      global.sceneGraph = global.sceneGraph.children[0] as Group;
+      (this.context.sceneGraph.children[0] as Group).animations = animations;
+      this.context.sceneGraph = this.context.sceneGraph.children[0] as Group;
     }
 
-    global.sceneGraph.animations = animations;
+    this.context.sceneGraph.animations = animations;
 
     return {
       animations: animations,
       modelInfo: modelInfoMap,
-      scene: global.sceneGraph,
+      scene: this.context.sceneGraph,
       sceneInfo: this.sceneInfo,
     };
   }
 
-  // parse nodes in global.fbxTree.Objects.Model
+  // parse nodes in context.fbxTree.Objects.Model
   parseWireFrameModels (
     skeletons: Record<string, FBXSkeleton>,
     geometryMap: Map<number, BufferGeometry>,
@@ -941,8 +943,8 @@ export class FBXTreeParser {
     geoInfoMap: Map<number, any>,
   ) {
     const modelMap: Map<number, Object3D> = new Map();
-    const fbxTree = global.fbxTree;
-    const connections = global.connections;
+    const fbxTree = this.context.fbxTree;
+    const connections = this.context.connections;
     const modelInfoMap: Record<string, any> = {};
 
     if (!fbxTree || !fbxTree.Objects || !connections) {
@@ -1055,7 +1057,7 @@ export class FBXTreeParser {
 
   // create a PerspectiveCamera or OrthographicCamera
   createCamera (relationships: FBXConnectionNode) {
-    const fbxTree = global.fbxTree;
+    const fbxTree = this.context.fbxTree;
     let model;
     let cameraAttribute: FBXLightNodeAttribute | undefined;
 
@@ -1063,7 +1065,7 @@ export class FBXTreeParser {
       throw new Error('Global FBXTree or fbxTree.Objects is undefined');
     }
 
-    relationships.children.forEach(function (child) {
+    relationships.children.forEach(child => {
       const nodeAttribute = fbxTree.Objects?.NodeAttribute;
 
       if (!nodeAttribute) {
@@ -1173,7 +1175,7 @@ export class FBXTreeParser {
 
   // Create a DirectionalLight, PointLight or SpotLight
   createLight (relationships: FBXConnectionNode) {
-    const fbxTree = global.fbxTree;
+    const fbxTree = this.context.fbxTree;
 
     if (!fbxTree || !fbxTree.Objects) {
       throw new Error('Global FBXTree or fbxTree.Objects is undefined');
@@ -1186,7 +1188,7 @@ export class FBXTreeParser {
     if (!nodeAttribute) {
       throw new Error('NodeAttribute is undefined');
     }
-    relationships.children.forEach(function (child) {
+    relationships.children.forEach(child => {
       const attr = nodeAttribute[child.ID];
 
       if (attr !== undefined) {
@@ -1366,7 +1368,7 @@ export class FBXTreeParser {
     }
 
     if ('color' in geometry.attributes) {
-      materials.forEach(function (material) {
+      materials.forEach(material => {
         material.vertexColors = true;
       });
     }
@@ -1547,8 +1549,8 @@ export class FBXTreeParser {
   }
 
   setLookAtProperties (model: Object3D, modelNode: FBXModelNode) {
-    const connections = global.connections;
-    const fbxTree = global.fbxTree;
+    const connections = this.context.connections;
+    const fbxTree = this.context.fbxTree;
 
     if (!connections || !fbxTree) {
       throw new Error('Global connections or FBX tree is undefined');
@@ -1556,7 +1558,7 @@ export class FBXTreeParser {
     if ('LookAtProperty' in modelNode) {
       const children = connections.get((model as unknown as { ID: number }).ID)?.children ?? [];
 
-      children.forEach(function (child) {
+      children.forEach(child => {
         if (child.relationship === 'LookAtProperty') {
           const modelNode = fbxTree.Objects?.Model;
 
@@ -1593,7 +1595,9 @@ export class FBXTreeParser {
               (model as unknown as { target: { position: Vector3 } }).target.position.fromArray(
                 pos,
               );
-              global.sceneGraph.add((model as unknown as { target: Object3D }).target);
+              const sceneGraph = this.context.sceneGraph;
+
+              sceneGraph.add((model as unknown as { target: Object3D }).target);
             } else {
               // Cameras and other Object3Ds
 
@@ -1610,8 +1614,8 @@ export class FBXTreeParser {
     geometryMap: Map<number, BufferGeometry>,
     modelMap: Map<number, Object3D>,
   ) {
-    const fbxTree = global.fbxTree;
-    const connections = global.connections;
+    const fbxTree = this.context.fbxTree;
+    const connections = this.context.connections;
 
     if (!fbxTree || !connections) {
       throw new Error('Global fbxTree or connections is undefined');
@@ -1624,12 +1628,12 @@ export class FBXTreeParser {
 
       const parents = connections.get(parseInt(skeleton.ID))?.parents || [];
 
-      parents.forEach(function (parent) {
+      parents.forEach(parent => {
         if (geometryMap.has(parent.ID)) {
           const geoID = parent.ID;
           const geoRelationships = connections.get(geoID) || { parents: [] };
 
-          geoRelationships.parents.forEach(function (geoConnParent) {
+          geoRelationships.parents.forEach(geoConnParent => {
             if (modelMap.has(geoConnParent.ID)) {
               const model = modelMap.get(geoConnParent.ID) as SkinnedMesh;
 
@@ -1643,8 +1647,8 @@ export class FBXTreeParser {
 
   parsePoseNodes () {
     const bindMatrices: Record<string, Matrix4> = {};
-    const fbxTree = global.fbxTree;
-    const connections = global.connections;
+    const fbxTree = this.context.fbxTree;
+    const connections = this.context.connections;
 
     if (!fbxTree || !connections || !fbxTree.Objects) {
       throw new Error('Global fbxTree or connections is undefined');
@@ -1684,7 +1688,7 @@ export class FBXTreeParser {
   }
 
   addGlobalSceneSettings () {
-    const fbxTree = global.fbxTree;
+    const fbxTree = this.context.fbxTree;
 
     if (!fbxTree || !fbxTree.GlobalSettings) {
       throw new Error('Global FBXTree is undefined');
@@ -1701,12 +1705,12 @@ export class FBXTreeParser {
         if (r !== 0 || g !== 0 || b !== 0) {
           const color = new Color().setRGB(r, g, b, SRGBColorSpace);
 
-          global.sceneGraph.add(new AmbientLight(color, 1));
+          this.context.sceneGraph.add(new AmbientLight(color, 1));
         }
       }
 
       if ('UnitScaleFactor' in fbxTree.GlobalSettings) {
-        global.sceneGraph.userData.unitScaleFactor = fbxTree.GlobalSettings.UnitScaleFactor.value;
+        this.context.sceneGraph.userData.unitScaleFactor = fbxTree.GlobalSettings.UnitScaleFactor.value;
       }
     }
   }

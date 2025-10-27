@@ -1,5 +1,5 @@
 import type { Bone, EulerOrder, Matrix4 } from 'three';
-import { Group } from 'three';
+import type { Group } from 'three';
 
 // FBX 上下文参数
 export interface FBXDocumentOptions {
@@ -725,12 +725,6 @@ export interface Global {
   sceneGraph: Group,
   wireframe?: boolean,
 }
-
-export const global: Global = {
-  connections: new Map(),
-  fbxTree: {},
-  sceneGraph: new Group(),
-};
 
 // FBXTree holds a representation of the FBX data, returned by the TextParser ( FBX ASCII format)
 // and BinaryParser( FBX Binary format)

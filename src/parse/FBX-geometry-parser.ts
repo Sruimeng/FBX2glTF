@@ -27,7 +27,8 @@ import type {
 } from '../constants';
 import { generateTransform, getData, getEulerOrder } from './utils';
 import { NURBSCurve } from '../curves/NURBS-curve';
-import { global } from '../constants';
+import { BaseParser } from '../types/core/base-parser';
+import type { IParsingContext } from '../types/core/parser';
 
 interface GeoBufferInfo {
   buffer: number[],
@@ -56,7 +57,7 @@ interface GeoInfo {
   },
 }
 
-export class GeometryParser {
+export class GeometryParser extends BaseParser<any, any> {
   negativeMaterialIndices: boolean;
   modelInfo = {
     isPBR: true,
@@ -68,16 +69,17 @@ export class GeometryParser {
     vertices: 0,
   };
 
-  constructor () {
+  constructor (context: IParsingContext) {
+    super(context);
     this.negativeMaterialIndices = false;
   }
 
   // Parse nodes in FBXTree.Objects.Geometry
-  parse (deformers: Deformers) {
+  parse (deformers: Deformers, context: IParsingContext) {
     const geometryMap = new Map();
     const geoInfoMap = new Map();
-    const fbxTree = global.fbxTree;
-    const connections = global.connections;
+    const fbxTree = this.context.fbxTree;
+    const connections = this.context.connections;
 
     if (!fbxTree || !connections) {
       throw new Error('FBXTree or connections is not defined');
@@ -131,7 +133,7 @@ export class GeometryParser {
   ) {
     const skeletons = deformers.skeletons;
     const morphTargets: FBXMorphTarget[] = [];
-    const fbxTreeObjects = global.fbxTree.Objects;
+    const fbxTreeObjects = this.context.fbxTree.Objects;
 
     if (!fbxTreeObjects) {
       throw new Error('Objects is not defined in FBXTree');
@@ -785,7 +787,7 @@ export class GeometryParser {
     parentGeo.morphAttributes.position = [];
     // parentGeo.morphAttributes.normal = []; // not implemented
 
-    const fbxTree = global.fbxTree;
+    const fbxTree = this.context.fbxTree;
     const fbxGeometry = fbxTree.Objects?.Geometry;
 
     if (!fbxGeometry) {

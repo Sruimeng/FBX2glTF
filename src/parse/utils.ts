@@ -152,7 +152,7 @@ export function generateTransform (transformData: FBXTransformData) {
 
   lTransform = lGlobalT.clone().multiply(lGlobalRS);
 
-  // from global to local
+  // from context-based to local
   lTransform.premultiply(lParentGX.invert());
 
   return lTransform;

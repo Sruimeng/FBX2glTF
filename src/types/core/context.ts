@@ -9,8 +9,8 @@ import type { IFBXTree, GlobalFBXConnectionNode } from './parser';
  */
 export class ParsingContext implements IParsingContext {
   private readonly _fbxTree: IFBXTree;
-  private readonly _connections: Map<number, GlobalFBXConnectionNode>;
-  private readonly _sceneGraph: Group;
+  private _connections: Map<number, GlobalFBXConnectionNode>;
+  private _sceneGraph: Group;
   private readonly _loadingManager: LoadingManager;
   private readonly _wireframe?: boolean;
 
@@ -20,9 +20,9 @@ export class ParsingContext implements IParsingContext {
     loadingManager: LoadingManager,
     wireframe?: boolean
   ) {
-    // 冻结对象，防止意外修改
+    // 冻结FBX树，防止意外修改
     this._fbxTree = Object.freeze(fbxTree);
-    this._connections = Object.freeze(connections);
+    this._connections = connections;
     this._loadingManager = loadingManager;
     this._wireframe = wireframe;
 
@@ -34,6 +34,10 @@ export class ParsingContext implements IParsingContext {
   get fbxTree (): IFBXTree { return this._fbxTree; }
   get connections (): Map<number, GlobalFBXConnectionNode> { return this._connections; }
   get sceneGraph (): Group { return this._sceneGraph; }
+  
+  // Setters for properties that need to be modified
+  set connections (value: Map<number, GlobalFBXConnectionNode>) { this._connections = value; }
+  set sceneGraph (value: Group) { this._sceneGraph = value; }
   get loadingManager (): LoadingManager { return this._loadingManager; }
   get wireframe (): boolean | undefined { return this._wireframe; }
 

@@ -4,7 +4,6 @@ import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
 import { TextParser } from './parse/FBX-text-parser';
 import { ParsingContext } from './types/core/context';
-import { global } from './constants';
 
 /**
  * A loader for the FBX format.
@@ -113,7 +112,7 @@ export class FBXLoaderRefactored extends Loader<any> {
     // 2. 构建连接映射
     const connections = this.buildConnections(fbxTree);
 
-    // 3. 创建解析上下文 (替代 global)
+    // 3. 创建解析上下文 (替代 global state)
     this._parsingContext = new ParsingContext(
       fbxTree,
       connections,
@@ -126,19 +125,18 @@ export class FBXLoaderRefactored extends Loader<any> {
       .setPath(this.resourcePath || path)
       .setCrossOrigin(this.crossOrigin);
 
-    // 临时方案：将解析上下文设置到 global，供旧的 FBXTreeParser 使用
-    // TODO: 完全移除 global 对象后，这里需要重构
-    this.setGlobalFromContext();
-
-    return new FBXTreeParser(textureLoader, this.manager).parse();
+    return new FBXTreeParser(textureLoader, this.manager, this._parsingContext).parse(null, this._parsingContext);
   }
 
   /**
    * 解析 FBX 树结构
    */
   private parseFBXTree (FBXBuffer: ArrayBuffer | string): any {
+    // 先创建一个临时的上下文用于树解析
+    const tempContext = new ParsingContext({}, new Map(), this.manager, false);
+
     if (isFbxFormatBinary(FBXBuffer as ArrayBuffer)) {
-      return new BinaryParser().parse(FBXBuffer as ArrayBuffer);
+      return new BinaryParser(tempContext).parse(FBXBuffer as ArrayBuffer, tempContext);
     } else {
       const FBXText = convertArrayBufferToString(FBXBuffer as ArrayBuffer);
 
@@ -152,7 +150,7 @@ export class FBXLoaderRefactored extends Loader<any> {
         );
       }
 
-      return new TextParser().parse(FBXText);
+      return new TextParser(tempContext).parse(FBXText, tempContext);
     }
   }
 
@@ -172,18 +170,5 @@ export class FBXLoaderRefactored extends Loader<any> {
     }
 
     return connections;
-  }
-
-  /**
-   * 临时方法：将解析上下文设置到 global 对象
-   * TODO: 在完全重构后移除此方法
-   */
-  private setGlobalFromContext (): void {
-    if (!this._parsingContext) {return;}
-
-    // 将新的解析上下文数据设置到旧的 global 对象
-    global.fbxTree = this._parsingContext.fbxTree;
-    global.connections = this._parsingContext.connections;
-    global.sceneGraph = this._parsingContext.sceneGraph;
   }
 }
