@@ -15,7 +15,8 @@ export interface TextNode {
 }
 
 export interface TextNodeWithIndex extends TextNode {
-  // 不允许动态类型，只允许具体属性
+  // 动态属性（特殊允许）- 用于FBX解析的动态节点属性
+  [key: string]: string | number | boolean | string[] | number[] | object | TextNodeWithIndex | TextNodeWithIndex[] | undefined,
   userData?: Record<string, string | number | boolean | string[] | number[] | object>,
   attrValues?: Record<string, string | number | boolean | string[] | number[] | object>,
 }
@@ -25,4 +26,40 @@ export interface TextNodeWithMethods extends TextNodeWithIndex {
   setAttribute (key: string, value: string | number | boolean | string[] | number[] | object): void,
   getAttribute (key: string): string | number | boolean | string[] | number[] | object | undefined,
   hasAttribute (key: string): boolean,
+}
+
+// 新增类型定义
+export type PropertyArray = string | number[] | number | string[] | TextNodeWithIndex;
+
+export interface NodeAttributeValue {
+  flag?: string,
+  type?: string,
+  type2?: string,
+  value?: string | number | number[],
+}
+
+export interface ConnectionArray {
+  from: number,
+  to: number,
+  properties?: string[],
+}
+
+export interface SpecialPropertyValue {
+  flag: string,
+  type: string,
+  type2: string,
+  value: string | number | number[],
+}
+
+// 类型守卫函数
+export function isNumericString (value: string): value is `${number}` {
+  return /^-?\d*\.?\d+$/.test(value);
+}
+
+export function isConnectionValue (value: string): boolean {
+  return value.includes(',') && /^\d+,\d+/.test(value);
+}
+
+export function isArrayTerminated (value: string): boolean {
+  return value.endsWith(',');
 }

@@ -1,8 +1,7 @@
 import type { LoadingManager } from 'three';
 import { Group } from 'three';
 import type { IParsingContext } from './parser';
-import type { FBXConnectionNode, IFBXTree, FBXObjectsWithIndex } from '../nodes';
-import type { FBXAnimationCurveNode } from '../nodes/model-animation';
+import type { FBXConnectionNode, IFBXTree } from '../nodes';
 
 /**
  * FBX 解析上下文实现

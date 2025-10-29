@@ -2,7 +2,7 @@ import { FileLoader, Loader, LoaderUtils, TextureLoader } from 'three';
 import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary } from './util';
 import { BinaryParser } from './parse/FBX-binary-parser';
 import { FBXTreeParser } from './parse/FBX-tree-parser';
-import { TextParser } from './parse/FBX-text-parser';
+import { TextParser } from './parse/text';
 import { ParsingContext } from './types';
 
 /**
@@ -150,7 +150,7 @@ export class FBXLoaderRefactored extends Loader<any> {
         );
       }
 
-      return new TextParser(tempContext).parse(FBXText, tempContext);
+      return new TextParser(tempContext).parse(FBXText);
     }
   }
 
