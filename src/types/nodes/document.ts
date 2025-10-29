@@ -256,10 +256,3 @@ export interface FBXHeaderInfo {
   revision?: string,
   comment?: string,
 }
-
-export interface Global {
-  connections: Map<number, FBXConnectionNode>,
-  fbxTree: IFBXTree,
-  sceneGraph: Group,
-  wireframe?: boolean,
-}

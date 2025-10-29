@@ -35,7 +35,7 @@ export function parseSubNode (
 
       subNode.a = value;
     } else {
-      node[name] = value as FBXNodeProperty;
+      node[name] = value;
     }
   } else if (name === 'Connections' && subNode.name === 'C') {
     const array: string[] = [];

@@ -10,6 +10,44 @@ export interface GeoBufferInfo {
   referenceType: string,
 }
 
+export interface ModelInfo {
+  isPBR: boolean,
+  isTextured: boolean,
+  isUVMapped: boolean,
+  polygons: number,
+  quads: number,
+  triangles: number,
+  vertices: number,
+}
+
+export interface GeoBuffers {
+  colors: number[],
+  materialIndex: number[],
+  normal: number[],
+  positionCount: number,
+  uvs: number[][],
+  vertex: number[],
+  vertexWeights: number[],
+  weightsIndices: number[],
+}
+
+export interface GenFaceBuffers {
+  colors: number[],
+  materialIndex: number[],
+  normal: number[],
+  uvs: number[][],
+  vertex: number[],
+  vertexWeights: number[],
+  weightsIndices: number[],
+}
+
+export interface WeightEntry {
+  id: number,
+  weight: number,
+}
+
+export type WeightTable = Record<number, WeightEntry[]>;
+
 export interface GeoInfo {
   baseVertexPositions?: number[],
   color?: GeoBufferInfo,
@@ -26,14 +64,8 @@ export interface GeoInfo {
       weights: number[],
     }[],
   },
-  uv?: {
-    buffer: number[],
-    dataSize: number,
-    indices: number[],
-    mappingType: string,
-    referenceType: string,
-  }[],
+  uv?: GeoBufferInfo[],
   vertexIndices?: number[],
   vertexPositions?: number[],
-  weightTable?: Record<number, Array<{ id: number, weight: number }>>,
+  weightTable?: WeightTable,
 }

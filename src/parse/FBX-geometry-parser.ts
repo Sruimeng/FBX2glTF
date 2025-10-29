@@ -1,4 +1,4 @@
-import type { BufferAttribute, EulerOrder, Matrix4 } from 'three';
+import type { EulerOrder, Matrix4 } from 'three';
 import {
   BufferGeometry,
   Color,
@@ -15,7 +15,6 @@ import {
 import type {
   Deformers,
   FBXConnectionNode,
-  FBXEulerOrder,
   FBXGeometryNode,
   FBXLayerElementColor,
   FBXLayerElementNormal,
@@ -27,14 +26,18 @@ import type {
   IParsingContext,
   GeoBufferInfo,
   GeoInfo,
+  ModelInfo,
+  GeoBuffers,
+  GenFaceBuffers,
+  WeightTable,
 } from '../types';
 import { BaseParser } from '../types';
 import { generateTransform, getData, getEulerOrder } from './utils';
 import { NURBSCurve } from '../curves/NURBS-curve';
 
-export class GeometryParser extends BaseParser<any, any> {
+export class GeometryParser extends BaseParser<Deformers, { geoInfoMap: Map<number, ModelInfo>, geometryMap: Map<number, BufferGeometry> }> {
   negativeMaterialIndices: boolean;
-  modelInfo = {
+  modelInfo: ModelInfo = {
     isPBR: true,
     isTextured: false,
     isUVMapped: false,
@@ -50,9 +53,9 @@ export class GeometryParser extends BaseParser<any, any> {
   }
 
   // Parse nodes in FBXTree.Objects.Geometry
-  parse (deformers: Deformers, context: IParsingContext) {
-    const geometryMap = new Map();
-    const geoInfoMap = new Map();
+  parse (deformers: Deformers, _context: IParsingContext): { geoInfoMap: Map<number, ModelInfo>, geometryMap: Map<number, BufferGeometry> } {
+    const geometryMap = new Map<number, BufferGeometry>();
+    const geoInfoMap = new Map<number, ModelInfo>();
     const fbxTree = this.context.fbxTree;
     const connections = this.context.connections;
 
@@ -72,10 +75,13 @@ export class GeometryParser extends BaseParser<any, any> {
         if (!geoNodes[nodeID]) {continue;}
         const relationships = connections.get(parseInt(nodeID)) || { children: [], parents: [] };
         const result = this.parseGeometry(relationships, geoNodes[nodeID], deformers);
-        const { geometry, modelInfo } = result || {};
 
-        geometryMap.set(parseInt(nodeID), geometry);
-        geoInfoMap.set(parseInt(nodeID), modelInfo);
+        if (result) {
+          const { geometry, modelInfo } = result;
+
+          geometryMap.set(parseInt(nodeID), geometry);
+          geoInfoMap.set(parseInt(nodeID), modelInfo);
+        }
       }
     }
 
@@ -91,12 +97,23 @@ export class GeometryParser extends BaseParser<any, any> {
   }
 
   // Parse single node in FBXTree.Objects.Geometry
-  parseGeometry (relationships: FBXConnectionNode, geoNode: FBXGeometryNode, deformers: Deformers) {
+  parseGeometry (relationships: FBXConnectionNode, geoNode: FBXGeometryNode, deformers: Deformers): { geometry: BufferGeometry, modelInfo: ModelInfo } | undefined {
     switch (geoNode.attrType) {
       case 'Mesh':
         return this.parseMeshGeometry(relationships, geoNode, deformers);
       case 'NurbsCurve':
-        return this.parseNurbsGeometry(geoNode);
+        return this.parseNurbsGeometry(geoNode) || {
+          geometry: new BufferGeometry(),
+          modelInfo: {
+            isPBR: false,
+            isTextured: false,
+            isUVMapped: false,
+            polygons: 0,
+            quads: 0,
+            triangles: 0,
+            vertices: 0,
+          },
+        };
     }
   }
 
@@ -105,7 +122,7 @@ export class GeometryParser extends BaseParser<any, any> {
     relationships: FBXConnectionNode,
     geoNode: FBXGeometryNode,
     deformers: Deformers,
-  ) {
+  ): { geometry: BufferGeometry, modelInfo: ModelInfo } | undefined {
     const skeletons = deformers.skeletons;
     const morphTargets: FBXMorphTarget[] = [];
     const fbxTreeObjects = this.context.fbxTree.Objects;
@@ -155,23 +172,35 @@ export class GeometryParser extends BaseParser<any, any> {
       const value = modelNode.RotationOrder.value;
 
       if (typeof value === 'number') {
-        transformData.eulerOrder = getEulerOrder(
-          modelNode.RotationOrder.value as FBXEulerOrder,
-        ) as EulerOrder;
+        const eulerOrderString = getEulerOrder(value);
+
+        transformData.eulerOrder = eulerOrderString as EulerOrder;
       }
     }
     if ('InheritType' in modelNode) {
-      transformData.inheritType = parseInt(modelNode.InheritType.value as string);
+      transformData.inheritType = parseInt(String(modelNode.InheritType.value));
     }
 
     if ('GeometricTranslation' in modelNode) {
-      transformData.translation = modelNode.GeometricTranslation.value as number[];
+      const translation = modelNode.GeometricTranslation.value;
+
+      if (Array.isArray(translation)) {
+        transformData.translation = translation;
+      }
     }
     if ('GeometricRotation' in modelNode) {
-      transformData.rotation = modelNode.GeometricRotation.value as number[];
+      const rotation = modelNode.GeometricRotation.value;
+
+      if (Array.isArray(rotation)) {
+        transformData.rotation = rotation;
+      }
     }
     if ('GeometricScaling' in modelNode) {
-      transformData.scale = modelNode.GeometricScaling.value as number[];
+      const scale = modelNode.GeometricScaling.value;
+
+      if (Array.isArray(scale)) {
+        transformData.scale = scale;
+      }
     }
 
     const transform = generateTransform(transformData);
@@ -288,10 +317,11 @@ export class GeometryParser extends BaseParser<any, any> {
   parseGeoNode (geoNode: FBXGeometryNode, skeleton: FBXSkeleton | null): GeoInfo {
     const geoInfo: GeoInfo = {};
 
-    geoInfo.vertexPositions
-      = geoNode.Vertices !== undefined ? (geoNode.Vertices.a as number[]) : [];
-    geoInfo.vertexIndices
-      = geoNode.PolygonVertexIndex !== undefined ? (geoNode.PolygonVertexIndex.a as number[]) : [];
+    const vertices = geoNode.Vertices?.a;
+    const indices = geoNode.PolygonVertexIndex?.a;
+
+    geoInfo.vertexPositions = Array.isArray(vertices) ? vertices : [];
+    geoInfo.vertexIndices = Array.isArray(indices) ? indices : [];
 
     if (geoNode.LayerElementColor) {
       geoInfo.color = this.parseVertexColors(geoNode.LayerElementColor[0]);
@@ -304,7 +334,7 @@ export class GeometryParser extends BaseParser<any, any> {
     }
 
     if (geoNode.LayerElementNormal) {
-      geoInfo.normal = this.parseNormals(geoNode.LayerElementNormal[0] as FBXLayerElementNormal);
+      geoInfo.normal = this.parseNormals(geoNode.LayerElementNormal[0]);
     }
 
     if (geoNode.LayerElementUV) {
@@ -321,7 +351,7 @@ export class GeometryParser extends BaseParser<any, any> {
       }
     }
 
-    geoInfo.weightTable = {};
+    geoInfo.weightTable = {} as WeightTable;
 
     if (skeleton !== null) {
       geoInfo.skeleton = skeleton;
@@ -329,12 +359,12 @@ export class GeometryParser extends BaseParser<any, any> {
       skeleton.rawBones.forEach(function (rawBone, i) {
         // loop over the bone's vertex indices and weights
         rawBone.indices.forEach(function (index, j) {
-          if (geoInfo.weightTable && geoInfo.weightTable[index] === undefined) {
-            geoInfo.weightTable[index] = [];
+          if (geoInfo.weightTable![index] === undefined) {
+            geoInfo.weightTable![index] = [];
           }
 
           if (geoInfo.weightTable) {
-            (geoInfo.weightTable[index] as { id: number, weight: number }[]).push({
+            geoInfo.weightTable[index].push({
               id: i,
               weight: rawBone.weights[j],
             });
@@ -346,8 +376,8 @@ export class GeometryParser extends BaseParser<any, any> {
     return geoInfo;
   }
 
-  genBuffers (geoInfo: GeoInfo) {
-    const buffers = {
+  genBuffers (geoInfo: GeoInfo): GeoBuffers {
+    const buffers: GeoBuffers = {
       colors: [],
       materialIndex: [],
       normal: [],
@@ -392,18 +422,14 @@ export class GeometryParser extends BaseParser<any, any> {
       facePositionIndexes.push(vertexIndex * 3, vertexIndex * 3 + 1, vertexIndex * 3 + 2);
 
       if (geoInfo.color) {
-        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.color) as [
-          number,
-          number,
-          number,
-        ];
+        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.color);
 
         faceColors.push(data[0], data[1], data[2]);
       }
 
       if (geoInfo.skeleton && geoInfo.weightTable) {
         if (geoInfo.weightTable[vertexIndex] !== undefined) {
-          (geoInfo.weightTable[vertexIndex] as { id: number, weight: number }[]).forEach(
+          geoInfo.weightTable[vertexIndex].forEach(
             function (wt) {
               weights.push(wt.weight);
               weightIndices.push(wt.id);
@@ -456,11 +482,7 @@ export class GeometryParser extends BaseParser<any, any> {
       }
 
       if (geoInfo.normal) {
-        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.normal) as [
-          number,
-          number,
-          number,
-        ];
+        const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, geoInfo.normal);
 
         faceNormals.push(data[0], data[1], data[2]);
       }
@@ -481,10 +503,7 @@ export class GeometryParser extends BaseParser<any, any> {
 
       if (geoInfo.uv) {
         geoInfo.uv.forEach((uv, i) => {
-          const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, uv) as [
-            number,
-            number,
-          ];
+          const data = getData(polygonVertexIndex, polygonIndex, vertexIndex, uv);
 
           if (faceUVs[i] === undefined) {
             faceUVs[i] = [];
@@ -568,15 +587,7 @@ export class GeometryParser extends BaseParser<any, any> {
 
   // Generate data for a single face in a geometry. If the face is a quad then split it into 2 tris
   genFace (
-    buffers: {
-      colors: number[],
-      materialIndex: number[],
-      normal: number[],
-      uvs: number[][],
-      vertex: number[],
-      vertexWeights: number[],
-      weightsIndices: number[],
-    },
+    buffers: GenFaceBuffers,
     geoInfo: GeoInfo,
     facePositionIndexes: number[],
     materialIndex: number,
@@ -586,7 +597,7 @@ export class GeometryParser extends BaseParser<any, any> {
     faceWeights: number[],
     faceWeightIndices: number[],
     faceLength: number,
-  ) {
+  ): void {
     let triangles: number[][];
 
     if (faceLength > 3) {
@@ -802,16 +813,17 @@ export class GeometryParser extends BaseParser<any, any> {
     preTransform: Matrix4,
     name: string,
   ) {
-    const basePositions = parentGeoNode.Vertices !== undefined ? parentGeoNode.Vertices.a : [];
-    const baseIndices
-      = parentGeoNode.PolygonVertexIndex !== undefined ? parentGeoNode.PolygonVertexIndex.a : [];
+    const basePositionsArray = parentGeoNode.Vertices?.a;
+    const baseIndicesArray = parentGeoNode.PolygonVertexIndex?.a;
 
-    const morphPositionsSparse = (
-      morphGeoNode.Vertices !== undefined ? morphGeoNode.Vertices.a : []
-    ) as number[];
-    const morphIndices = (
-      morphGeoNode.Indexes !== undefined ? morphGeoNode.Indexes.a : []
-    ) as number[];
+    const basePositions = Array.isArray(basePositionsArray) ? basePositionsArray : [];
+    const baseIndices = Array.isArray(baseIndicesArray) ? baseIndicesArray : [];
+
+    const morphPositionsSparseArray = morphGeoNode.Vertices?.a;
+    const morphIndicesArray = morphGeoNode.Indexes?.a;
+
+    const morphPositionsSparse = Array.isArray(morphPositionsSparseArray) ? morphPositionsSparseArray : [];
+    const morphIndices = Array.isArray(morphIndicesArray) ? morphIndicesArray : [];
 
     const length = (parentGeo.attributes.position?.count) * 3;
     const morphPositions = new Float32Array(length);
@@ -826,8 +838,8 @@ export class GeometryParser extends BaseParser<any, any> {
 
     // TODO: add morph normal support
     const morphGeoInfo: GeoInfo = {
-      baseVertexPositions: basePositions as number[],
-      vertexIndices: baseIndices as number[],
+      baseVertexPositions: Array.isArray(basePositions) ? basePositions : [],
+      vertexIndices: Array.isArray(baseIndices) ? baseIndices : [],
       vertexPositions: Array.from(morphPositions),
     };
 
@@ -839,7 +851,7 @@ export class GeometryParser extends BaseParser<any, any> {
 
     positionAttribute.applyMatrix4(preTransform);
 
-    (parentGeo.morphAttributes.position as BufferAttribute[]).push(positionAttribute);
+    parentGeo.morphAttributes.position.push(positionAttribute);
   }
 
   // Parse normal from FBXTree.Objects.Geometry.LayerElementNormal if it exists
@@ -870,15 +882,14 @@ export class GeometryParser extends BaseParser<any, any> {
   parseUVs (UVNode: FBXLayerElementUV): GeoBufferInfo {
     const mappingType = UVNode.MappingInformationType;
     const referenceType = UVNode.ReferenceInformationType;
-    const buffer = UVNode.UV.a;
-    let indexBuffer: number[] = [];
+    const bufferArray = UVNode.UV.a;
+    const indexBufferArray = UVNode.UVIndex?.a;
 
-    if (referenceType === 'IndexToDirect') {
-      indexBuffer = UVNode.UVIndex.a as number[];
-    }
+    const buffer = Array.isArray(bufferArray) ? bufferArray : [];
+    const indexBuffer = Array.isArray(indexBufferArray) ? indexBufferArray : [];
 
     return {
-      buffer: buffer as number[],
+      buffer: buffer,
       dataSize: 2,
       indices: indexBuffer,
       mappingType: mappingType,
@@ -933,19 +944,19 @@ export class GeometryParser extends BaseParser<any, any> {
       };
     }
 
-    const materialIndexBuffer = MaterialNode.Materials.a as number[];
+    const materialIndexBuffer = MaterialNode.Materials.a || [];
 
     // Since materials are stored as indices, there's a bit of a mismatch between FBX and what
     // we expect.So we create an intermediate buffer that points to the index in the buffer,
     // for conforming with the other functions we've written for other data.
     const materialIndices: number[] = [];
 
-    for (let i = 0; i < materialIndexBuffer.length; ++i) {
+    for (let i = 0; i < (Array.isArray(materialIndexBuffer) ? materialIndexBuffer.length : 0); ++i) {
       materialIndices.push(i);
     }
 
     return {
-      buffer: materialIndexBuffer,
+      buffer: Array.isArray(materialIndexBuffer) ? materialIndexBuffer : [],
       dataSize: 1,
       indices: materialIndices,
       mappingType: mappingType,
@@ -954,7 +965,7 @@ export class GeometryParser extends BaseParser<any, any> {
   }
 
   // Generate a NurbGeometry from a node in FBXTree.Objects.Geometry
-  parseNurbsGeometry (geoNode: FBXGeometryNode) {
+  parseNurbsGeometry (geoNode: FBXGeometryNode): { geometry: BufferGeometry, modelInfo: ModelInfo } | undefined {
     const order = parseInt(geoNode.Order || '0');
 
     if (isNaN(order)) {
@@ -964,7 +975,7 @@ export class GeometryParser extends BaseParser<any, any> {
         geoNode.id,
       );
 
-      return { geometry: new BufferGeometry() };
+      return undefined;
     }
 
     const degree = order - 1;
@@ -994,7 +1005,15 @@ export class GeometryParser extends BaseParser<any, any> {
 
     return {
       geometry: new BufferGeometry().setFromPoints(points),
-      modelInfo: { polygons: 0, quads: 0, triangles: 0, vertices: points.length },
+      modelInfo: {
+        isPBR: false,
+        isTextured: false,
+        isUVMapped: false,
+        polygons: 0,
+        quads: 0,
+        triangles: 0,
+        vertices: points.length,
+      },
     };
   }
 }
