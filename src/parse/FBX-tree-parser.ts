@@ -42,17 +42,12 @@ import type {
   SceneInfo,
   RawConnection,
   VideoContent,
-  SafeMaterialValue,
-  ModelInfoMap,
-  GeometryMap,
-  MaterialMap,
-  ImageMap,
-  TextureMap,
-  Deformers,
-  SkeletonInfo,
-  BindMatrixMap,
-  ModelMap,
-  CompleteSceneParserOptions,
+  GeometryInfo,
+  GeometryGroup,
+  GeometryWithDeformer,
+  SceneParseResult,
+  ModelInfo,
+  Object3DWithID,
 } from '../types';
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
@@ -281,7 +276,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       return;
     }
 
-    (texture as unknown as { ID: number }).ID = textureNode.id;
+    (texture as any).ID = textureNode.id;
 
     texture.name = textureNode.attrName;
 
@@ -370,7 +365,11 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
     try {
       if ('loadAsync' in loader && typeof loader.loadAsync === 'function') {
-        texture = await loader.loadAsync(fileName) as Texture;
+        const loadedTexture = await loader.loadAsync(fileName);
+
+        if (loadedTexture && typeof loadedTexture === 'object' && 'isTexture' in loadedTexture) {
+          texture = loadedTexture as Texture;
+        }
       } else {
         console.warn('FBXLoader: Loader does not support async loading');
       }
@@ -698,7 +697,11 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       console.warn(
         'THREE.FBXLoader: layered textures are not supported in three.js. Discarding all but first layer.',
       );
-      textureID = (connections.get(id)?.children[0] as FBXConnectionReference).ID;
+      const firstChild = connections.get(id)?.children[0];
+
+      if (firstChild) {
+        textureID = firstChild.ID;
+      }
     }
 
     if (!textureID) {
@@ -868,7 +871,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
   }
 
   // create the main Group() to be returned by the loader
-  parseScene (option: FBXSceneParserOptions): any {
+  parseScene (option: FBXSceneParserOptions): SceneParseResult {
     const {
       deformers,
       geoInfoMap = new Map(),
@@ -897,7 +900,8 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       throw new Error('Model nodes are undefined');
     }
     modelMap.forEach(model => {
-      const modelID = (model as unknown as { ID: number }).ID;
+      const modelWithID = model as Object3DWithID;
+      const modelID = modelWithID.ID;
       const modelNode = modelNodes[modelID];
 
       this.setLookAtProperties(model, modelNode);
@@ -940,10 +944,12 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     // if all the models where already combined in a single group, just return that
     if (
       this.context.sceneGraph.children.length === 1
-      && (this.context.sceneGraph.children[0] as Group).isGroup
+      && this.context.sceneGraph.children[0].type === 'Group'
     ) {
-      (this.context.sceneGraph.children[0] as Group).animations = animations;
-      this.context.sceneGraph = this.context.sceneGraph.children[0] as Group;
+      const childGroup = this.context.sceneGraph.children[0] as Group;
+
+      childGroup.animations = animations;
+      this.context.sceneGraph = childGroup;
     }
 
     this.context.sceneGraph.animations = animations;
@@ -961,12 +967,12 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     skeletons: Record<string, FBXSkeleton>,
     geometryMap: Map<number, BufferGeometry>,
     materialMap: Map<number, MeshStandardMaterial>,
-    geoInfoMap: Map<number, any>,
+    geoInfoMap: Map<number, ModelInfo>,
   ) {
     const modelMap: Map<number, Object3D> = new Map();
     const fbxTree = this.context.fbxTree;
     const connections = this.context.connections;
-    const modelInfoMap: Record<string, any> = {};
+    const modelInfoMap: Record<string, ModelInfo> = {};
 
     if (!fbxTree || !fbxTree.Objects || !connections) {
       throw new Error('Global FBXTree or fbxTree.Objects or global connections is undefined');
@@ -1059,7 +1065,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
             bone.name = name ? PropertyBinding.sanitizeNodeName(name) : '';
             bone.userData.originalName = name;
-            (bone as unknown as { ID: number }).ID = id;
+            (bone as any).ID = id;
 
             skeleton.bones[i] = bone;
 
@@ -1341,12 +1347,12 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     relationships: FBXConnectionNode,
     geometryMap: Map<number, BufferGeometry>,
     materialMap: Map<number, MeshStandardMaterial>,
-    geoInfoMap: Map<number, any>,
+    geoInfoMap: Map<number, ModelInfo>,
   ) {
-    let model;
+    let model: Mesh | SkinnedMesh;
     let geometry: BufferGeometry | undefined;
-    let material = null;
-    let modelInfo: any = {
+    let material: MeshStandardMaterial | MeshStandardMaterial[] | null = null;
+    let modelInfo: GeometryInfo = {
       isPBR: false,
       isTextured: false,
       isUVMapped: false,
@@ -1365,7 +1371,11 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       }
 
       if (materialMap.has(child.ID)) {
-        materials.push(materialMap.get(child.ID) as MeshStandardMaterial);
+        const material = materialMap.get(child.ID);
+
+        if (material) {
+          materials.push(material);
+        }
       }
     });
 
@@ -1374,13 +1384,28 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     } else if (materials.length > 0) {
       material = materials[0];
     } else {
-      material = materialMap.get(this.defaultMaterialIndex);
-      materials.push(material as MeshStandardMaterial);
+      const defaultMaterial = materialMap.get(this.defaultMaterialIndex);
+
+      if (defaultMaterial) {
+        material = defaultMaterial;
+        materials.push(defaultMaterial);
+      }
     }
 
     if (material) {
-      modelInfo.isPBR = Boolean((material as MeshStandardMaterial)?.metalnessMap) && Boolean((material as MeshStandardMaterial)?.roughnessMap);
-      modelInfo.isTextured = Boolean(material.map);
+      if (Array.isArray(material)) {
+        // 如果是材质数组，检查第一个材质
+        const firstMaterial = material[0];
+
+        if (firstMaterial) {
+          modelInfo.isPBR = Boolean(firstMaterial.metalnessMap) && Boolean(firstMaterial.roughnessMap);
+          modelInfo.isTextured = Boolean(firstMaterial.map);
+        }
+      } else {
+        // 单个材质
+        modelInfo.isPBR = Boolean(material.metalnessMap) && Boolean(material.roughnessMap);
+        modelInfo.isTextured = Boolean(material.map);
+      }
       modelInfo.isUVMapped = Boolean(geometry?.attributes.uv);
     }
 
@@ -1401,7 +1426,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       let needsDefaultMaterial = false;
 
       for (let i = 0, il = geometry.groups.length; i < il; i++) {
-        const group = geometry.groups[i] as { count: number, materialIndex: number, start: number };
+        const group = geometry.groups[i] as GeometryGroup;
         const materialIndex = group.materialIndex;
 
         if (materialIndex == null || materialIndex < 0 || materialIndex >= materials.length) {
@@ -1411,15 +1436,21 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       }
 
       if (needsDefaultMaterial) {
-        materials.push(materialMap.get(this.defaultMaterialIndex) as MeshStandardMaterial);
+        const defaultMaterial = materialMap.get(this.defaultMaterialIndex);
+
+        if (defaultMaterial) {
+          materials.push(defaultMaterial);
+        }
       }
     }
 
-    if ((geometry as unknown as { FBX_Deformer: string }).FBX_Deformer) {
-      model = new SkinnedMesh(geometry, material);
-      model.normalizeSkinWeights();
+    if ((geometry as GeometryWithDeformer).FBX_Deformer) {
+      const skinnedMesh = new SkinnedMesh(geometry, material || undefined);
+
+      skinnedMesh.normalizeSkinWeights();
+      model = skinnedMesh;
     } else {
-      model = new Mesh(geometry, material);
+      model = new Mesh(geometry, material || undefined);
     }
 
     // 更新场景统计信息
@@ -1472,7 +1503,11 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     const transformData: UserDataTransform = {};
 
     if ('InheritType' in modelNode) {
-      transformData.inheritType = parseInt(modelNode.InheritType.value as string);
+      const inheritTypeValue = this.extractMaterialValue(modelNode.InheritType);
+
+      if (typeof inheritTypeValue === 'string' || typeof inheritTypeValue === 'number') {
+        transformData.inheritType = parseInt(String(inheritTypeValue));
+      }
     }
 
     if ('RotationOrder' in modelNode) {
@@ -1488,82 +1523,111 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
     if ('Lcl_Translation' in modelNode) {
       // 如果scale需要从100调整为1，position也需要相应调整
-      const translation = modelNode.Lcl_Translation.value as [number, number, number];
+      const translationArray = this.extractNumberArray(modelNode.Lcl_Translation.value);
 
-      let scaleAdjustmentFactor = 1;
+      if (translationArray && translationArray.length >= 3) {
+        let scaleAdjustmentFactor = 1;
 
-      if ('Lcl_Scaling' in modelNode) {
-        const scale = modelNode.Lcl_Scaling.value as [number, number, number];
-        const scaleX = scale[0];
-        const scaleY = scale[1];
-        const scaleZ = scale[2];
+        if ('Lcl_Scaling' in modelNode) {
+          const scaleArray = this.extractNumberArray(modelNode.Lcl_Scaling.value);
 
-        if (scaleX === 100 || scaleY === 100 || scaleZ === 100) {
-          scaleAdjustmentFactor = 100;
+          if (scaleArray && scaleArray.length >= 3) {
+            const scaleX = scaleArray[0];
+            const scaleY = scaleArray[1];
+            const scaleZ = scaleArray[2];
+
+            if (scaleX === 100 || scaleY === 100 || scaleZ === 100) {
+              scaleAdjustmentFactor = 100;
+            }
+          }
         }
-      }
 
-      transformData.translation = [
-        translation[0] / scaleAdjustmentFactor,
-        translation[1] / scaleAdjustmentFactor,
-        translation[2] / scaleAdjustmentFactor,
-      ];
+        transformData.translation = [
+          translationArray[0] / scaleAdjustmentFactor,
+          translationArray[1] / scaleAdjustmentFactor,
+          translationArray[2] / scaleAdjustmentFactor,
+        ];
+      }
     }
 
     if ('PreRotation' in modelNode) {
-      // transformData.preRotation = modelNode.PreRotation.value;
-      const value = modelNode.PreRotation.value as [number, number, number];
+      const valueArray = this.extractNumberArray(modelNode.PreRotation.value);
 
-      transformData.preRotation = [
-        Number(value[0].toFixed(4)),
-        Number(value[1].toFixed(4)),
-        Number(value[2].toFixed(4)),
-      ];
+      if (valueArray && valueArray.length >= 3) {
+        transformData.preRotation = [
+          Number(valueArray[0].toFixed(4)),
+          Number(valueArray[1].toFixed(4)),
+          Number(valueArray[2].toFixed(4)),
+        ];
+      }
     }
+
     if ('Lcl_Rotation' in modelNode) {
-      // transformData.rotation = modelNode.Lcl_Rotation.value;
-      const value = modelNode.Lcl_Rotation.value as [number, number, number];
+      const valueArray = this.extractNumberArray(modelNode.Lcl_Rotation.value);
 
-      transformData.rotation = [
-        Number(value[0].toFixed(4)),
-        Number(value[1].toFixed(4)),
-        Number(value[2].toFixed(4)),
-      ];
+      if (valueArray && valueArray.length >= 3) {
+        transformData.rotation = [
+          Number(valueArray[0].toFixed(4)),
+          Number(valueArray[1].toFixed(4)),
+          Number(valueArray[2].toFixed(4)),
+        ];
+      }
     }
-    if ('PostRotation' in modelNode) {
-      // transformData.postRotation = modelNode.PostRotation.value;
-      const value = modelNode.PostRotation.value as [number, number, number];
 
-      transformData.postRotation = [
-        Number(value[0].toFixed(4)),
-        Number(value[1].toFixed(4)),
-        Number(value[2].toFixed(4)),
-      ];
+    if ('PostRotation' in modelNode) {
+      const valueArray = this.extractNumberArray(modelNode.PostRotation.value);
+
+      if (valueArray && valueArray.length >= 3) {
+        transformData.postRotation = [
+          Number(valueArray[0].toFixed(4)),
+          Number(valueArray[1].toFixed(4)),
+          Number(valueArray[2].toFixed(4)),
+        ];
+      }
     }
 
     if ('Lcl_Scaling' in modelNode) {
-      // transformData.scale = modelNode.Lcl_Scaling.value;
-      const scale = modelNode.Lcl_Scaling.value as [number, number, number];
+      const scaleArray = this.extractNumberArray(modelNode.Lcl_Scaling.value);
 
-      transformData.scale = [
-        scale[0] === 100 ? 1 : scale[0],
-        scale[1] === 100 ? 1 : scale[1],
-        scale[2] === 100 ? 1 : scale[2],
-      ];
+      if (scaleArray && scaleArray.length >= 3) {
+        transformData.scale = [
+          scaleArray[0] === 100 ? 1 : scaleArray[0],
+          scaleArray[1] === 100 ? 1 : scaleArray[1],
+          scaleArray[2] === 100 ? 1 : scaleArray[2],
+        ];
+      }
     }
 
     if ('ScalingOffset' in modelNode) {
-      transformData.scalingOffset = modelNode.ScalingOffset.value as [number, number, number];
+      const scalingOffsetArray = this.extractNumberArray(modelNode.ScalingOffset.value);
+
+      if (scalingOffsetArray) {
+        transformData.scalingOffset = scalingOffsetArray as [number, number, number];
+      }
     }
+
     if ('ScalingPivot' in modelNode) {
-      transformData.scalingPivot = modelNode.ScalingPivot.value as [number, number, number];
+      const scalingPivotArray = this.extractNumberArray(modelNode.ScalingPivot.value);
+
+      if (scalingPivotArray) {
+        transformData.scalingPivot = scalingPivotArray as [number, number, number];
+      }
     }
 
     if ('RotationOffset' in modelNode) {
-      transformData.rotationOffset = modelNode.RotationOffset.value as [number, number, number];
+      const rotationOffsetArray = this.extractNumberArray(modelNode.RotationOffset.value);
+
+      if (rotationOffsetArray) {
+        transformData.rotationOffset = rotationOffsetArray as [number, number, number];
+      }
     }
+
     if ('RotationPivot' in modelNode) {
-      transformData.rotationPivot = modelNode.RotationPivot.value as [number, number, number];
+      const rotationPivotArray = this.extractNumberArray(modelNode.RotationPivot.value);
+
+      if (rotationPivotArray) {
+        transformData.rotationPivot = rotationPivotArray as [number, number, number];
+      }
     }
 
     model.userData.transformData = transformData;
@@ -1577,7 +1641,8 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       throw new Error('Global connections or FBX tree is undefined');
     }
     if ('LookAtProperty' in modelNode) {
-      const children = connections.get((model as unknown as { ID: number }).ID)?.children ?? [];
+      const modelWithID = model as Object3DWithID;
+      const children = connections.get(modelWithID.ID)?.children ?? [];
 
       children.forEach(child => {
         if (child.relationship === 'LookAtProperty') {
@@ -1589,40 +1654,44 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
           const lookAtTarget = modelNode[child.ID];
 
           if ('Lcl_Translation' in lookAtTarget) {
-            let pos = lookAtTarget.Lcl_Translation.value as [number, number, number];
+            const posArray = this.extractNumberArray(lookAtTarget.Lcl_Translation.value);
 
-            let scaleAdjustmentFactor = 1;
+            if (posArray && posArray.length >= 3) {
+              let scaleAdjustmentFactor = 1;
 
-            if ('Lcl_Scaling' in lookAtTarget) {
-              const scale = lookAtTarget.Lcl_Scaling.value as [number, number, number];
-              const scaleX = scale[0];
-              const scaleY = scale[1];
-              const scaleZ = scale[2];
+              if ('Lcl_Scaling' in lookAtTarget) {
+                const scaleArray = this.extractNumberArray(lookAtTarget.Lcl_Scaling.value);
 
-              if (scaleX === 100 || scaleY === 100 || scaleZ === 100) {
-                scaleAdjustmentFactor = 100;
+                if (scaleArray && scaleArray.length >= 3) {
+                  const scaleX = scaleArray[0];
+                  const scaleY = scaleArray[1];
+                  const scaleZ = scaleArray[2];
+
+                  if (scaleX === 100 || scaleY === 100 || scaleZ === 100) {
+                    scaleAdjustmentFactor = 100;
+                  }
+                }
               }
-            }
 
-            // 调整position以保持一致性
-            pos = [
-              pos[0] / scaleAdjustmentFactor,
-              pos[1] / scaleAdjustmentFactor,
-              pos[2] / scaleAdjustmentFactor,
-            ];
+              // 调整position以保持一致性
+              const pos = [
+                posArray[0] / scaleAdjustmentFactor,
+                posArray[1] / scaleAdjustmentFactor,
+                posArray[2] / scaleAdjustmentFactor,
+              ];
 
-            // DirectionalLight, SpotLight
-            if ((model as unknown as { target: number }).target !== undefined) {
-              (model as unknown as { target: { position: Vector3 } }).target.position.fromArray(
-                pos,
-              );
-              const sceneGraph = this.context.sceneGraph;
+              // DirectionalLight, SpotLight
+              const modelAny = model as any;
 
-              sceneGraph.add((model as unknown as { target: Object3D }).target);
-            } else {
-              // Cameras and other Object3Ds
+              if (modelAny.target !== undefined) {
+                modelAny.target.position.fromArray(pos);
+                const sceneGraph = this.context.sceneGraph;
 
-              model.lookAt(new Vector3().fromArray(pos));
+                sceneGraph.add(modelAny.target);
+              } else {
+                // Cameras and other Object3Ds
+                model.lookAt(new Vector3().fromArray(pos));
+              }
             }
           }
         }
@@ -1631,7 +1700,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
   }
 
   bindSkeleton (
-    skeletons: Record<number, FBXSkeleton>,
+    skeletons: Record<string, FBXSkeleton>,
     geometryMap: Map<number, BufferGeometry>,
     modelMap: Map<number, Object3D>,
   ) {
@@ -1656,9 +1725,13 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
           geoRelationships.parents.forEach(geoConnParent => {
             if (modelMap.has(geoConnParent.ID)) {
-              const model = modelMap.get(geoConnParent.ID) as SkinnedMesh;
+              const model = modelMap.get(geoConnParent.ID);
 
-              model.bind(new Skeleton(skeleton.bones), bindMatrices[geoConnParent.ID]);
+              if (model && model.type === 'SkinnedMesh') {
+                const skinnedMesh = model as SkinnedMesh;
+
+                skinnedMesh.bind(new Skeleton(skeleton.bones), bindMatrices[geoConnParent.ID]);
+              }
             }
           });
         }
@@ -1718,15 +1791,18 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       if ('AmbientColor' in fbxTree.GlobalSettings) {
         // Parse ambient color - if it's not set to black (default), create an ambient light
 
-        const ambientColor = fbxTree.GlobalSettings.AmbientColor.value as [number, number, number];
-        const r = ambientColor[0];
-        const g = ambientColor[1];
-        const b = ambientColor[2];
+        const ambientColorArray = this.extractNumberArray(fbxTree.GlobalSettings.AmbientColor.value);
 
-        if (r !== 0 || g !== 0 || b !== 0) {
-          const color = new Color().setRGB(r, g, b, SRGBColorSpace);
+        if (ambientColorArray && ambientColorArray.length >= 3) {
+          const r = ambientColorArray[0];
+          const g = ambientColorArray[1];
+          const b = ambientColorArray[2];
 
-          this.context.sceneGraph.add(new AmbientLight(color, 1));
+          if (r !== 0 || g !== 0 || b !== 0) {
+            const color = new Color().setRGB(r, g, b);
+
+            this.context.sceneGraph.add(new AmbientLight(color, 1));
+          }
         }
       }
 

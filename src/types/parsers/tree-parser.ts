@@ -12,29 +12,80 @@ import type {
   Object3D,
   LoadingManager,
   TextureLoader,
+  Vector3,
 } from 'three';
 import type {
-  IParsingContext,
   IParser,
 } from '../core/parser';
 import type {
-  FBXConnectionNode,
-  FBXConnectionReference,
-} from '../nodes/connection';
-import type {
-  FBXVideoNode,
-  FBXTextureNode,
-  FBXMaterialNode,
-  FBXModelNode,
-  FBXMeshNode,
-  FBXLightNodeAttribute,
   Deformers,
 } from '../nodes';
 import type {
   FBXSceneParserOptions,
-  FBXMeshStandardMaterialParameters,
 } from './scene-parser';
 import type { ModelInfo } from './geometry-parser';
+
+/**
+ * 具有ID的Three.js对象接口
+ */
+export interface Object3DWithID extends Object3D {
+  ID: number,
+}
+
+/**
+ * 具有目标的对象接口
+ */
+export interface ObjectWithTarget {
+  target: Object3D,
+}
+
+/**
+ * 具有位置的目标对象接口
+ */
+export interface TargetWithPosition {
+  target: {
+    position: Vector3,
+  },
+}
+
+/**
+ * 几何体信息接口
+ */
+export interface GeometryInfo {
+  isPBR: boolean,
+  isTextured: boolean,
+  isUVMapped: boolean,
+  polygons: number,
+  quads: number,
+  triangles: number,
+  vertices: number,
+}
+
+/**
+ * 几何体组信息接口
+ */
+export interface GeometryGroup {
+  count: number,
+  materialIndex: number,
+  start: number,
+}
+
+/**
+ * 具有FBX变形器的几何体接口
+ */
+export interface GeometryWithDeformer extends BufferGeometry {
+  FBX_Deformer: string,
+}
+
+/**
+ * 场景解析结果接口
+ */
+export interface SceneParseResult {
+  animations: AnimationClip[],
+  modelInfo: Record<string, ModelInfo>,
+  scene: Group,
+  sceneInfo: SceneInfo,
+}
 
 /**
  * FBXTree 解析器输入类型
