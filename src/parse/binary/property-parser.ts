@@ -9,16 +9,16 @@ import { BinaryReader } from './binary-reader';
 /**
  * FBX 属性值类型联合
  */
-export type FBXPropertyValue = 
-  | boolean 
-  | number 
-  | string 
-  | ArrayBuffer 
-  | boolean[] 
-  | number[] 
-  | Float32Array 
-  | Float64Array 
-  | Int32Array 
+export type FBXPropertyValue =
+  | boolean
+  | number
+  | string
+  | ArrayBuffer
+  | boolean[]
+  | number[]
+  | Float32Array
+  | Float64Array
+  | Int32Array
   | BigInt64Array;
 
 /**
@@ -44,7 +44,7 @@ export function parseProperty (reader: BinaryReader): FBXPropertyValue {
     case 'R':
       length = reader.getUint32();
 
-      return reader.getArrayBuffer(length);
+      return reader.getArrayBuffer(length) as ArrayBuffer;
     case 'S':
       length = reader.getUint32();
 
@@ -78,7 +78,7 @@ export function parseProperty (reader: BinaryReader): FBXPropertyValue {
       }
 
       const data = fflate.unzlibSync(new Uint8Array(reader.getArrayBuffer(compressedLength)), {});
-      const reader2 = new BinaryReader(data.buffer);
+      const reader2 = new BinaryReader(data.buffer as ArrayBuffer);
 
       switch (type) {
         case 'b':

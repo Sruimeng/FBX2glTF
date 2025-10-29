@@ -184,8 +184,8 @@ export class BinaryReader {
     return a;
   }
 
-  getArrayBuffer (size: number): ArrayBuffer {
-    const value = this.dv.buffer.slice(this.offset, this.offset + size);
+  getArrayBuffer (size: number): ArrayBuffer | SharedArrayBuffer {
+    const value = this.dv.buffer.slice(this.offset, this.offset + size) ;
 
     this.offset += size;
 

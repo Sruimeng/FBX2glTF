@@ -28,22 +28,23 @@ export function parseSubNode (
   // special case: child node is single property
   if (subNode.singleProperty === true && subNode.propertyList && subNode.propertyList.length > 0) {
     const value = subNode.propertyList[0];
+    const name = subNode.name as keyof FBXTreeNode;
 
     if (Array.isArray(value)) {
-      (node as FBXTree)[subNode.name] = subNode;
+      node[name] = subNode;
 
       subNode.a = value;
     } else {
-      (node as FBXTree)[subNode.name] = value as FBXNodeProperty;
+      node[name] = value as FBXNodeProperty;
     }
   } else if (name === 'Connections' && subNode.name === 'C') {
-    const array: FBXConnectionNode[] = [];
-    const propertyDef = subNode.propertyList as FBXConnectionProperty;
+    const array: string[] = [];
+    const propertyDef = Array.isArray(subNode.propertyList) ? subNode.propertyList : [];
 
     propertyDef.forEach((property, index) => {
       // first Connection is FBX type (OO, OP, etc.). We'll discard these
       if (index !== 0) {
-        array.push(property as FBXConnectionNode);
+        array.push(property);
       }
     });
 
@@ -53,7 +54,7 @@ export function parseSubNode (
       tree.connections = [];
     }
 
-    tree.connections.push(array as FBXConnectionNode);
+    tree.connections.push(array);
   } else if (subNode.name === 'Properties70') {
     const keys = Object.keys(subNode) as Array<keyof FBXTreeNode>;
 
