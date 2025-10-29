@@ -35,16 +35,35 @@ import {
   Vector3,
 } from 'three';
 import { BaseParser, type IParsingContext, type FBXConnectionNode, type FBXConnectionReference, type FBXLightNodeAttribute, type FBXMaterialNode, type FBXMeshNode, type FBXModelNode, type FBXMorphTarget, type FBXRawTargets, type FBXSkeleton, type FBXTextureNode, type FBXVideoNode, type IFBXPropertyValue, type RawBone, type UserDataTransform, type FBXMeshStandardMaterialParameters, type FBXSceneParserOptions } from '../types';
+import type {
+  IFBXTreeParser,
+  FBXTreeParserInput,
+  FBXTreeParserResult,
+  SceneInfo,
+  RawConnection,
+  VideoContent,
+  SafeMaterialValue,
+  ModelInfoMap,
+  GeometryMap,
+  MaterialMap,
+  ImageMap,
+  TextureMap,
+  Deformers,
+  SkeletonInfo,
+  BindMatrixMap,
+  ModelMap,
+  CompleteSceneParserOptions,
+} from '../types';
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './geometry';
 
 // Parse the FBXTree object returned by the BinaryParser or TextParser and return a Group
-export class FBXTreeParser extends BaseParser<any, any> {
+export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTreeParserResult>> implements IFBXTreeParser {
   textureLoader: TextureLoader;
   manager: LoadingManager;
   defaultMaterialIndex = -1;
-  private sceneInfo: any = {
+  private sceneInfo: SceneInfo = {
     isPBR: true,
     isTextured: true,
     isUVMapped: true,
@@ -61,7 +80,7 @@ export class FBXTreeParser extends BaseParser<any, any> {
     this.manager = manager;
   }
 
-  async parse (_input: any, context: IParsingContext): Promise<any> {
+  async parse (_input: FBXTreeParserInput, _context: IParsingContext): Promise<FBXTreeParserResult> {
     this.context.connections = this.parseConnections();
 
     const images = this.parseImages();
@@ -92,7 +111,7 @@ export class FBXTreeParser extends BaseParser<any, any> {
       }
       const rawConnections = fbxTree.Connections?.connections || [];
 
-      rawConnections.forEach((rawConnection: any) => {
+      rawConnections.forEach((rawConnection: RawConnection) => {
         const fromID = rawConnection[0];
         const toID = rawConnection[1];
         const relationship = rawConnection[2];
@@ -147,9 +166,9 @@ export class FBXTreeParser extends BaseParser<any, any> {
 
         // raw image data is in videoNode.Content
         if ('Content' in videoNode) {
-          const arrayBufferContent
-            = videoNode.Content instanceof ArrayBuffer && videoNode.Content.byteLength > 0;
-          const base64Content = typeof videoNode.Content === 'string' && videoNode.Content !== '';
+          const content = videoNode.Content as VideoContent;
+          const arrayBufferContent = content instanceof ArrayBuffer && content.byteLength > 0;
+          const base64Content = typeof content === 'string' && content !== '';
 
           if (arrayBufferContent || base64Content) {
             const image = this.parseImage(videoNodes[nodeID]);
@@ -175,7 +194,7 @@ export class FBXTreeParser extends BaseParser<any, any> {
 
   // Parse embedded image data in context.fbxTree.Video.Content
   parseImage (videoNode: FBXVideoNode) {
-    const content = videoNode.Content;
+    const content = videoNode.Content as VideoContent;
     const fileName = videoNode.RelativeFilename || videoNode.Filename;
     const extension = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase();
 
@@ -279,17 +298,21 @@ export class FBXTreeParser extends BaseParser<any, any> {
     texture.wrapT = valueV === 0 ? RepeatWrapping : ClampToEdgeWrapping;
 
     if ('Scaling' in textureNode) {
-      const values = textureNode.Scaling.value as number[];
+      const values = this.extractNumberArray(textureNode.Scaling.value);
 
-      texture.repeat.x = values[0];
-      texture.repeat.y = values[1];
+      if (values && values.length >= 2) {
+        texture.repeat.x = values[0];
+        texture.repeat.y = values[1];
+      }
     }
 
     if ('Translation' in textureNode) {
-      const values = textureNode.Translation.value as number[];
+      const values = this.extractNumberArray(textureNode.Translation.value);
 
-      texture.offset.x = values[0];
-      texture.offset.y = values[1];
+      if (values && values.length >= 2) {
+        texture.offset.x = values[0];
+        texture.offset.y = values[1];
+      }
     }
 
     return texture;
@@ -318,7 +341,13 @@ export class FBXTreeParser extends BaseParser<any, any> {
     if (!connections) {
       throw new Error('Global connections are undefined');
     }
-    const children = connections.get(textureNode.id)?.children as FBXConnectionReference[];
+    const children = connections.get(textureNode.id)?.children;
+
+    if (!children || children.length === 0) {
+      console.warn('FBXLoader: No children found for texture node');
+
+      return new Texture();
+    }
     const child = children[0];
 
     let fileName;
@@ -340,7 +369,11 @@ export class FBXTreeParser extends BaseParser<any, any> {
     let texture;
 
     try {
-      texture = await (loader as TextureLoader).loadAsync(fileName);
+      if ('loadAsync' in loader && typeof loader.loadAsync === 'function') {
+        texture = await loader.loadAsync(fileName) as Texture;
+      } else {
+        console.warn('FBXLoader: Loader does not support async loading');
+      }
     } catch (error) {
       console.warn('FBXLoader: Error loading texture', fileName, error);
     }
@@ -444,7 +477,11 @@ export class FBXTreeParser extends BaseParser<any, any> {
     }
 
     if (materialNode.BumpFactor) {
-      parameters.bumpScale = materialNode.BumpFactor.value;
+      const bumpScale = this.extractMaterialValue(materialNode.BumpFactor);
+
+      if (typeof bumpScale === 'number') {
+        parameters.bumpScale = bumpScale;
+      }
     }
 
     // if (materialNode.Diffuse) {
@@ -466,28 +503,46 @@ export class FBXTreeParser extends BaseParser<any, any> {
     parameters.color = new Color();
 
     if (materialNode.DisplacementFactor) {
-      parameters.displacementScale = materialNode.DisplacementFactor.value as number;
+      const displacementScale = this.extractMaterialValue(materialNode.DisplacementFactor);
+
+      if (typeof displacementScale === 'number') {
+        parameters.displacementScale = displacementScale;
+      }
     }
 
     if (materialNode.Emissive) {
-      parameters.emissive = ColorManagement.toWorkingColorSpace(
-        new Color().fromArray(materialNode.Emissive.value),
-        SRGBColorSpace,
-      );
+      const emissiveArray = this.extractMaterialArray(materialNode.Emissive);
+
+      if (emissiveArray && emissiveArray.length >= 3) {
+        parameters.emissive = ColorManagement.toWorkingColorSpace(
+          new Color().fromArray(emissiveArray),
+          SRGBColorSpace,
+        );
+      }
     } else if (
       materialNode.EmissiveColor
       && (materialNode.EmissiveColor.type === 'Color'
         || materialNode.EmissiveColor.type === 'ColorRGB')
     ) {
       // The blender exporter exports emissive color here instead of in materialNode.Emissive
-      parameters.emissive = ColorManagement.toWorkingColorSpace(
-        new Color().fromArray(materialNode.EmissiveColor.value),
-        SRGBColorSpace,
-      );
+      const emissiveColorArray = this.extractMaterialArray(materialNode.EmissiveColor);
+
+      if (emissiveColorArray && emissiveColorArray.length >= 3) {
+        parameters.emissive = ColorManagement.toWorkingColorSpace(
+          new Color().fromArray(emissiveColorArray),
+          SRGBColorSpace,
+        );
+      }
     }
 
     if (materialNode.EmissiveFactor) {
-      parameters.emissiveIntensity = parseFloat(materialNode.EmissiveFactor.value);
+      const emissiveFactor = this.extractMaterialValue(materialNode.EmissiveFactor);
+
+      if (typeof emissiveFactor === 'string') {
+        parameters.emissiveIntensity = parseFloat(emissiveFactor);
+      } else if (typeof emissiveFactor === 'number') {
+        parameters.emissiveIntensity = emissiveFactor;
+      }
     }
 
     // the transparency handling is implemented based on Blender/Unity's approach: https://github.com/sobotka/blender-addons/blob/7d80f2f97161fc8e353a657b179b9aa1f8e5280b/io_scene_fbx/import_fbx.py#L1444-L1459
@@ -1631,20 +1686,20 @@ export class FBXTreeParser extends BaseParser<any, any> {
 
           if (Array.isArray(poseNodes)) {
             poseNodes.forEach(poseNode => {
-              bindMatrices[(poseNode as FBXMeshNode).Node || 0] = new Matrix4().fromArray(
-                (poseNode as FBXMeshNode)?.Matrix?.a
-                ?? ((poseNode as unknown as FBXMeshNode[])[0]).Matrix?.a
-                ?? [],
-              );
+              const nodeId = this.extractNodeId(poseNode);
+              const matrixArray = this.extractMatrixArray(poseNode);
+
+              bindMatrices[nodeId || 0] = new Matrix4().fromArray(matrixArray);
             });
           } else {
-            const node = poseNodes.Node;
+            const node = this.extractNodeId(poseNodes);
+            const matrixArray = this.extractMatrixArray(poseNodes);
 
             if (!node) {
               throw new Error('THREE.FBXLoader: No node found for poseNode.');
             }
 
-            bindMatrices[node] = new Matrix4().fromArray(poseNodes?.Matrix?.a ?? []);
+            bindMatrices[node] = new Matrix4().fromArray(matrixArray);
           }
         }
       }
@@ -1679,5 +1734,92 @@ export class FBXTreeParser extends BaseParser<any, any> {
         this.context.sceneGraph.userData.unitScaleFactor = fbxTree.GlobalSettings.UnitScaleFactor.value;
       }
     }
+  }
+
+  /**
+   * 类型安全地提取数字数组
+   */
+  private extractNumberArray (value: unknown): number[] | null {
+    if (Array.isArray(value) && value.every(item => typeof item === 'number')) {
+      return value as number[];
+    }
+    if (value && typeof value === 'object' && 'a' in value) {
+      const arrayValue = (value as { a: unknown }).a;
+
+      if (Array.isArray(arrayValue) && arrayValue.every(item => typeof item === 'number')) {
+        return arrayValue as number[];
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 类型安全地提取节点ID
+   */
+  private extractNodeId (poseNode: unknown): number | null {
+    if (poseNode && typeof poseNode === 'object') {
+      if ('Node' in poseNode && typeof (poseNode as { Node: unknown }).Node === 'number') {
+        return (poseNode as { Node: number }).Node;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 类型安全地提取矩阵数组
+   */
+  private extractMatrixArray (poseNode: unknown): number[] {
+    if (poseNode && typeof poseNode === 'object') {
+      if ('Matrix' in poseNode && (poseNode as { Matrix: { a: unknown } }).Matrix.a) {
+        const matrixA = (poseNode as { Matrix: { a: unknown } }).Matrix.a;
+
+        if (Array.isArray(matrixA) && matrixA.every(item => typeof item === 'number')) {
+          return matrixA as number[];
+        }
+      }
+    }
+
+    return [];
+  }
+
+  /**
+   * 类型安全地提取material参数值
+   */
+  private extractMaterialValue (param: unknown): number | string | null {
+    if (param === null || param === undefined) {
+      return null;
+    }
+    if (typeof param === 'object' && 'value' in param) {
+      const value = (param as { value: unknown }).value;
+
+      if (typeof value === 'number' || typeof value === 'string') {
+        return value;
+      }
+      if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'number') {
+        return value[0];
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * 类型安全地提取material数组值
+   */
+  private extractMaterialArray (param: unknown): number[] | null {
+    if (param === null || param === undefined) {
+      return null;
+    }
+    if (typeof param === 'object' && 'value' in param) {
+      const value = (param as { value: unknown }).value;
+
+      if (Array.isArray(value) && value.every(item => typeof item === 'number')) {
+        return value as number[];
+      }
+    }
+
+    return null;
   }
 }
