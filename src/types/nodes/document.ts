@@ -204,6 +204,7 @@ export interface IFBXTreeWithIndex extends IFBXTree {
 }
 
 export class FBXTree implements IFBXTreeWithIndex {
+  // 动态属性（特殊允许）
   [key: string]: unknown;
   FBXHeaderExtension?: FBXHeaderExtension;
   FileId?: FBXTypedProperty;

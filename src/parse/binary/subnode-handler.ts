@@ -3,7 +3,16 @@
  * 负责处理各种特殊类型的子节点
  */
 
-import type { FBXConnectionNode, FBXTree, FBXTreeNode } from '../../types';
+import type { FBXConnectionNode, FBXTree, FBXTreeNode, FBXTypedProperty } from '../../types';
+import type { FBXProperty } from '../../types/nodes/base-property';
+import type { FBXPoseNode } from '../../types/nodes/model-animation';
+
+// 严格的属性类型
+type FBXPropertyList = [string, string, string, boolean, number, number, number];
+type FBXConnectionProperty = [string, number, number | string];
+
+// 允许的节点属性类型
+type FBXNodeProperty = string | number | boolean | FBXTreeNode | FBXTreeNode[] | FBXProperty | FBXTypedProperty;
 
 /**
  * 解析子节点
@@ -11,47 +20,56 @@ import type { FBXConnectionNode, FBXTree, FBXTreeNode } from '../../types';
  * @param node 父节点
  * @param subNode 子节点
  */
-export function parseSubNode (name: string, node: FBXTree | FBXTreeNode, subNode: any): void {
+export function parseSubNode (
+  name: string,
+  node: FBXTree | FBXTreeNode,
+  subNode: FBXTreeNode
+): void {
   // special case: child node is single property
   if (subNode.singleProperty === true && subNode.propertyList && subNode.propertyList.length > 0) {
     const value = subNode.propertyList[0];
 
     if (Array.isArray(value)) {
-      node[subNode.name as string] = subNode;
+      (node as FBXTree)[subNode.name] = subNode;
 
       subNode.a = value;
     } else {
-      node[subNode.name as string] = value;
+      (node as FBXTree)[subNode.name] = value as FBXNodeProperty;
     }
   } else if (name === 'Connections' && subNode.name === 'C') {
     const array: FBXConnectionNode[] = [];
-    const propertyDef = subNode.propertyList as [string, number, number | string];
+    const propertyDef = subNode.propertyList as FBXConnectionProperty;
 
-    propertyDef.forEach(property => {
+    propertyDef.forEach((property, index) => {
       // first Connection is FBX type (OO, OP, etc.). We'll discard these
-      if (propertyDef.indexOf(property) !== 0) {
-        array.push(property as unknown as FBXConnectionNode);
+      if (index !== 0) {
+        array.push(property as FBXConnectionNode);
       }
     });
 
-    if ((node as any).connections === undefined) {
-      (node as any).connections = [];
+    const tree = node as FBXTree;
+
+    if (tree.connections === undefined) {
+      tree.connections = [];
     }
 
-    (node as any).connections.push(array as unknown as FBXConnectionNode);
+    tree.connections.push(array as FBXConnectionNode);
   } else if (subNode.name === 'Properties70') {
-    const keys = Object.keys(subNode);
+    const keys = Object.keys(subNode) as Array<keyof FBXTreeNode>;
 
     keys.forEach(function (key) {
-      (node as Record<string, unknown>)[key] = (subNode as Record<string, unknown>)[key];
+      const typedNode = node as Record<string, FBXNodeProperty>;
+      const typedSubNode = subNode as Record<string, FBXNodeProperty>;
+
+      typedNode[key] = typedSubNode[key];
     });
   } else if (name === 'Properties70' && subNode.name === 'P') {
-    const propertyList = subNode.propertyList as [string, string, string, boolean, number, number, number];
+    const propertyList = subNode.propertyList as FBXPropertyList;
     let innerPropName = propertyList[0];
     let innerPropType1 = propertyList[1];
     const innerPropType2 = propertyList[2];
     const innerPropFlag = propertyList[3];
-    let innerPropValue: any;
+    let innerPropValue: string | number | number[];
 
     if (innerPropName.indexOf('Lcl ') === 0) {
       innerPropName = innerPropName.replace('Lcl ', 'Lcl_');
@@ -77,28 +95,40 @@ export function parseSubNode (name: string, node: FBXTree | FBXTreeNode, subNode
     }
 
     // this will be copied to parent, see above
-    node[innerPropName] = {
+    (node as Record<string, FBXTypedProperty>)[innerPropName] = {
       flag: innerPropFlag,
       type: innerPropType1,
       type2: innerPropType2,
       value: innerPropValue,
     };
-  } else if (node[subNode.name as string] === undefined) {
+  } else if ((node as FBXTree)[subNode.name] === undefined) {
     if (typeof subNode.id === 'number' && subNode.name) {
-      node[subNode.name] = {};
-      ((node as Record<string, unknown>)[subNode.name] as Record<number, unknown>)[subNode.id] = subNode;
+      const tree = node as FBXTree;
+
+      tree[subNode.name] = {};
+      ((tree[subNode.name] as Record<number, FBXTreeNode>))[subNode.id] = subNode;
     } else {
-      node[subNode.name as string] = subNode;
+      (node as FBXTree)[subNode.name] = subNode as FBXNodeProperty;
     }
   } else {
     if (subNode.name === 'PoseNode') {
-      if (!Array.isArray(node[subNode.name])) {
-        (node as any)[subNode.name] = [node[subNode.name]];
+      const poseNodeKey = subNode.name as keyof FBXTree;
+      const currentPoseNode = (node as FBXTree)[poseNodeKey] as FBXPoseNode | FBXPoseNode[] | undefined;
+
+      if (!Array.isArray(currentPoseNode)) {
+        (node as FBXTree)[poseNodeKey] = currentPoseNode ? [currentPoseNode] : [];
       }
 
-      ((node as Record<string, unknown>)[subNode.name] as unknown[]).push(subNode);
-    } else if (subNode.name && ((node as Record<string, unknown>)[subNode.name] as Record<number, unknown>)[subNode.id as number] === undefined) {
-      ((node as Record<string, unknown>)[subNode.name] as Record<number, unknown>)[subNode.id as number] = subNode;
+      const poseArray = (node as FBXTree)[poseNodeKey] as FBXPoseNode[];
+
+      poseArray.push(subNode as FBXPoseNode);
+    } else if (subNode.name && subNode.id !== undefined) {
+      const treeNode = node as FBXTree;
+      const existingNode = (treeNode[subNode.name] as Record<number, FBXTreeNode>);
+
+      if (existingNode && existingNode[subNode.id] === undefined) {
+        existingNode[subNode.id] = subNode;
+      }
     }
   }
 }
