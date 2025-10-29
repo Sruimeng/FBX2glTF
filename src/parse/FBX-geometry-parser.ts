@@ -52,6 +52,35 @@ export class GeometryParser extends BaseParser<Deformers, { geoInfoMap: Map<numb
     this.negativeMaterialIndices = false;
   }
 
+  /**
+   * 安全地转换字符串为 EulerOrder
+   */
+  private convertToEulerOrder (orderString: string): EulerOrder | undefined {
+    const validEulerOrders: EulerOrder[] = ['XYZ', 'YZX', 'ZXY', 'XZY', 'YXZ', 'ZYX'];
+
+    return validEulerOrders.find(order => order === orderString);
+  }
+
+  /**
+   * 安全地设置 FBX Deformer
+   */
+  private setFBXDeformer (geometry: BufferGeometry, skeleton: FBXSkeleton): void {
+    // 使用 Object.defineProperty 来安全地添加属性
+    Object.defineProperty(geometry, 'FBX_Deformer', {
+      value: skeleton,
+      writable: true,
+      enumerable: false,
+      configurable: true,
+    });
+  }
+
+  /**
+   * 创建权重表
+   */
+  private createWeightTable (): WeightTable {
+    return {};
+  }
+
   // Parse nodes in FBXTree.Objects.Geometry
   parse (deformers: Deformers, _context: IParsingContext): { geoInfoMap: Map<number, ModelInfo>, geometryMap: Map<number, BufferGeometry> } {
     const geometryMap = new Map<number, BufferGeometry>();
@@ -174,7 +203,8 @@ export class GeometryParser extends BaseParser<Deformers, { geoInfoMap: Map<numb
       if (typeof value === 'number') {
         const eulerOrderString = getEulerOrder(value);
 
-        transformData.eulerOrder = eulerOrderString as EulerOrder;
+        // 安全地转换为 EulerOrder
+        transformData.eulerOrder = this.convertToEulerOrder(eulerOrderString);
       }
     }
     if ('InheritType' in modelNode) {
@@ -252,7 +282,7 @@ export class GeometryParser extends BaseParser<Deformers, { geoInfoMap: Map<numb
       geometry.setAttribute('skinWeight', new Float32BufferAttribute(buffers.vertexWeights, 4));
 
       // used later to bind the skeleton to the model
-      (geometry as BufferGeometry & { FBX_Deformer?: FBXSkeleton }).FBX_Deformer = skeleton;
+      this.setFBXDeformer(geometry, skeleton);
     }
 
     if (buffers.normal.length > 0) {
@@ -267,11 +297,13 @@ export class GeometryParser extends BaseParser<Deformers, { geoInfoMap: Map<numb
       geometry.computeVertexNormals();
     }
 
-    buffers.uvs.forEach(function (_, i) {
+    buffers.uvs.forEach(function (uvArray, i) {
       const name = i === 0 ? 'uv' : `uv${i}`;
-      const uv = buffers.uvs[i] as unknown as number[];
 
-      geometry.setAttribute(name, new Float32BufferAttribute(uv, 2));
+      // 确保 uvArray 是数字数组
+      if (Array.isArray(uvArray) && uvArray.length > 0) {
+        geometry.setAttribute(name, new Float32BufferAttribute(uvArray, 2));
+      }
     });
 
     if (geoInfo.material && geoInfo.material.mappingType !== 'AllSame') {
@@ -290,11 +322,7 @@ export class GeometryParser extends BaseParser<Deformers, { geoInfoMap: Map<numb
 
       // the loop above doesn't add the last group, do that here.
       if (geometry.groups.length > 0) {
-        const lastGroup = geometry.groups[geometry.groups.length - 1] as {
-          count: number,
-          materialIndex: number,
-          start: number,
-        };
+        const lastGroup = geometry.groups[geometry.groups.length - 1];
         const lastIndex = lastGroup.start + lastGroup.count;
 
         if (lastIndex !== buffers.materialIndex.length) {
@@ -351,7 +379,7 @@ export class GeometryParser extends BaseParser<Deformers, { geoInfoMap: Map<numb
       }
     }
 
-    geoInfo.weightTable = {} as WeightTable;
+    geoInfo.weightTable = this.createWeightTable();
 
     if (skeleton !== null) {
       geoInfo.skeleton = skeleton;

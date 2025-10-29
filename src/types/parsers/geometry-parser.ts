@@ -2,6 +2,9 @@
  * FBX 几何相关类型
  */
 
+import type { BufferGeometry } from 'three';
+import type { FBXSkeleton } from '../nodes';
+
 export interface GeoBufferInfo {
   buffer: number[],
   dataSize: number,
@@ -47,6 +50,11 @@ export interface WeightEntry {
 }
 
 export type WeightTable = Record<number, WeightEntry[]>;
+
+// 扩展 BufferGeometry 以支持 FBX 特定属性
+export interface FBXBufferGeometry extends BufferGeometry {
+  FBX_Deformer?: FBXSkeleton,
+}
 
 export interface GeoInfo {
   baseVertexPositions?: number[],
