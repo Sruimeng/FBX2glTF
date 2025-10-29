@@ -3,11 +3,11 @@ import type {
   EulerOrder,
   LoadingManager,
   TextureLoader,
-} from 'three';
+
+  Texture } from 'three';
 import {
   AmbientLight,
   Bone,
-  ClampToEdgeWrapping,
   Color,
   ColorManagement,
   DirectionalLight,
@@ -26,15 +26,13 @@ import {
   PerspectiveCamera,
   PointLight,
   PropertyBinding,
-  RepeatWrapping,
   Skeleton,
   SkinnedMesh,
   SpotLight,
   SRGBColorSpace,
-  Texture,
   Vector3,
 } from 'three';
-import { BaseParser, type IParsingContext, type FBXConnectionNode, type FBXConnectionReference, type FBXLightNodeAttribute, type FBXMaterialNode, type FBXMeshNode, type FBXModelNode, type FBXMorphTarget, type FBXRawTargets, type FBXSkeleton, type FBXTextureNode, type IFBXPropertyValue, type RawBone, type UserDataTransform, type FBXMeshStandardMaterialParameters, type FBXSceneParserOptions } from '../types';
+import { BaseParser, type IParsingContext, type FBXConnectionNode, type FBXConnectionReference, type FBXLightNodeAttribute, type FBXMaterialNode, type FBXMeshNode, type FBXModelNode, type FBXMorphTarget, type FBXRawTargets, type FBXSkeleton, type IFBXPropertyValue, type RawBone, type UserDataTransform, type FBXMeshStandardMaterialParameters, type FBXSceneParserOptions } from '../types';
 import type {
   IFBXTreeParser,
   FBXTreeParserInput,
@@ -47,15 +45,13 @@ import type {
   Object3DWithID,
   BoneWithID,
 } from '../types';
-import type {
-  GeometryInfo } from '../types/parsers/type-guards';
+import type { GeometryInfo } from '../types/parsers/type-guards';
 import {
   extractNumberArray,
   extractMaterialValue,
   extractMaterialArray,
   extractNodeId,
   extractMatrixArray,
-  setObjectID,
   hasTarget,
 } from '../types/parsers/type-guards';
 import { generateTransform, getEulerOrder } from './utils';
@@ -63,6 +59,7 @@ import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './geometry';
 import { parseConnections } from './tree/connections';
 import { parseImages } from './tree/image-parser';
+import { parseTextures } from './tree/texture-parser';
 
 // Parse the FBXTree object returned by the BinaryParser or TextParser and return a Group
 export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTreeParserResult>> implements IFBXTreeParser {
@@ -91,7 +88,13 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
     const images = parseImages(this.context.fbxTree);
 
-    const textures = await this.parseTextures(images);
+    const textures = await parseTextures(
+      this.context.fbxTree,
+      this.context.connections,
+      images,
+      this.manager,
+      this.textureLoader
+    );
     const materialMap = this.parseMaterials(textures);
     const deformers = this.parseDeformers();
     const { geoInfoMap, geometryMap } = new GeometryParser(this.context).parse(deformers, this.context);
@@ -102,145 +105,6 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       geometryMap,
       materialMap,
     });
-  }
-
-  // Parse nodes in context.fbxTree.Objects.Texture
-  // These contain details such as UV scaling, cropping, rotation etc and are connected
-  // to images in context.fbxTree.Objects.Video
-  async parseTextures (images: Record<string, string>) {
-    const textureMap = new Map();
-
-    if (!this.context.fbxTree.Objects) {
-      throw new Error('FBXTree Objects is undefined');
-    }
-
-    if ('Texture' in this.context.fbxTree.Objects) {
-      const textureNodes = this.context.fbxTree.Objects.Texture;
-
-      for (const nodeID in textureNodes) {
-        const texture = await this.parseTexture(textureNodes[nodeID], images);
-
-        if (!texture) {continue;}
-        textureMap.set(parseInt(nodeID), texture);
-      }
-    }
-
-    return textureMap;
-  }
-
-  // Parse individual node in context.fbxTree.Objects.Texture
-  async parseTexture (textureNode: FBXTextureNode, images: Record<string, string>) {
-    const texture = await this.loadTexture(textureNode, images);
-
-    if (!texture) {
-      return;
-    }
-
-    setObjectID(texture, textureNode.id);
-
-    texture.name = textureNode.attrName;
-
-    const wrapModeU = textureNode.WrapModeU;
-    const wrapModeV = textureNode.WrapModeV;
-
-    const valueU = wrapModeU !== undefined ? wrapModeU.value : 0;
-    const valueV = wrapModeV !== undefined ? wrapModeV.value : 0;
-
-    // http://download.autodesk.com/us/fbx/SDKdocs/FBX_SDK_Help/files/fbxsdkref/class_k_fbx_texture.html#889640e63e2e681259ea81061b85143a
-    // 0: repeat(default), 1: clamp
-
-    texture.wrapS = valueU === 0 ? RepeatWrapping : ClampToEdgeWrapping;
-    texture.wrapT = valueV === 0 ? RepeatWrapping : ClampToEdgeWrapping;
-
-    if ('Scaling' in textureNode) {
-      const values = extractNumberArray(textureNode.Scaling.value);
-
-      if (values && values.length >= 2) {
-        texture.repeat.x = values[0];
-        texture.repeat.y = values[1];
-      }
-    }
-
-    if ('Translation' in textureNode) {
-      const values = extractNumberArray(textureNode.Translation.value);
-
-      if (values && values.length >= 2) {
-        texture.offset.x = values[0];
-        texture.offset.y = values[1];
-      }
-    }
-
-    return texture;
-  }
-
-  // load a texture specified as a blob or data URI, or via an external URL using TextureLoader
-  async loadTexture (
-    textureNode: FBXTextureNode,
-    images: Record<string, string>,
-  ): Promise<Texture | undefined> {
-    const extension = (textureNode.FileName.split('.').pop() || '').toLowerCase();
-
-    let loader = this.manager.getHandler(`.${extension}`);
-
-    if (loader === null) {
-      loader = this.textureLoader;
-    }
-
-    const loaderPath = loader.path;
-
-    if (!loaderPath) {
-      loader.setPath(this.textureLoader.path);
-    }
-    const connections = this.context.connections;
-
-    if (!connections) {
-      throw new Error('Global connections are undefined');
-    }
-    const children = connections.get(textureNode.id)?.children;
-
-    if (!children || children.length === 0) {
-      console.warn('FBXLoader: No children found for texture node');
-
-      return new Texture();
-    }
-    const child = children[0];
-
-    let fileName;
-
-    if (child !== undefined && images[child.ID] !== undefined) {
-      fileName = images[child.ID];
-
-      if (fileName.indexOf('blob:') === 0 || fileName.indexOf('data:') === 0) {
-        loader.setPath('');
-      }
-    }
-
-    if (fileName === undefined) {
-      console.warn('FBXLoader: Undefined filename, creating placeholder texture.');
-
-      return new Texture();
-    }
-
-    let texture;
-
-    try {
-      if ('loadAsync' in loader && typeof loader.loadAsync === 'function') {
-        const loadedTexture = await loader.loadAsync(fileName);
-
-        if (loadedTexture && typeof loadedTexture === 'object' && 'isTexture' in loadedTexture) {
-          texture = loadedTexture as Texture;
-        }
-      } else {
-        console.warn('FBXLoader: Loader does not support async loading');
-      }
-    } catch (error) {
-      console.warn('FBXLoader: Error loading texture', fileName, error);
-    }
-
-    // revert to initial path
-    loader.setPath(loaderPath);
-
-    return texture;
   }
 
   // Parse nodes in context.fbxTree.Objects.Material
