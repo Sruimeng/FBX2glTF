@@ -42,13 +42,21 @@ import type {
   SceneInfo,
   RawConnection,
   VideoContent,
-  GeometryInfo,
   GeometryGroup,
   GeometryWithDeformer,
   SceneParseResult,
   ModelInfo,
   Object3DWithID,
 } from '../types';
+import type {
+  GeometryInfo } from '../types/parsers/type-guards';
+import {
+  extractNumberArray,
+  extractMaterialValue,
+  extractMaterialArray,
+  extractNodeId,
+  extractMatrixArray,
+} from '../types/parsers/type-guards';
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './geometry';
@@ -293,7 +301,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     texture.wrapT = valueV === 0 ? RepeatWrapping : ClampToEdgeWrapping;
 
     if ('Scaling' in textureNode) {
-      const values = this.extractNumberArray(textureNode.Scaling.value);
+      const values = extractNumberArray(textureNode.Scaling.value);
 
       if (values && values.length >= 2) {
         texture.repeat.x = values[0];
@@ -302,7 +310,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if ('Translation' in textureNode) {
-      const values = this.extractNumberArray(textureNode.Translation.value);
+      const values = extractNumberArray(textureNode.Translation.value);
 
       if (values && values.length >= 2) {
         texture.offset.x = values[0];
@@ -476,7 +484,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if (materialNode.BumpFactor) {
-      const bumpScale = this.extractMaterialValue(materialNode.BumpFactor);
+      const bumpScale = extractMaterialValue(materialNode.BumpFactor);
 
       if (typeof bumpScale === 'number') {
         parameters.bumpScale = bumpScale;
@@ -502,7 +510,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     parameters.color = new Color();
 
     if (materialNode.DisplacementFactor) {
-      const displacementScale = this.extractMaterialValue(materialNode.DisplacementFactor);
+      const displacementScale = extractMaterialValue(materialNode.DisplacementFactor);
 
       if (typeof displacementScale === 'number') {
         parameters.displacementScale = displacementScale;
@@ -510,7 +518,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if (materialNode.Emissive) {
-      const emissiveArray = this.extractMaterialArray(materialNode.Emissive);
+      const emissiveArray = extractMaterialArray(materialNode.Emissive);
 
       if (emissiveArray && emissiveArray.length >= 3) {
         parameters.emissive = ColorManagement.toWorkingColorSpace(
@@ -524,7 +532,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
         || materialNode.EmissiveColor.type === 'ColorRGB')
     ) {
       // The blender exporter exports emissive color here instead of in materialNode.Emissive
-      const emissiveColorArray = this.extractMaterialArray(materialNode.EmissiveColor);
+      const emissiveColorArray = extractMaterialArray(materialNode.EmissiveColor);
 
       if (emissiveColorArray && emissiveColorArray.length >= 3) {
         parameters.emissive = ColorManagement.toWorkingColorSpace(
@@ -535,7 +543,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if (materialNode.EmissiveFactor) {
-      const emissiveFactor = this.extractMaterialValue(materialNode.EmissiveFactor);
+      const emissiveFactor = extractMaterialValue(materialNode.EmissiveFactor);
 
       if (typeof emissiveFactor === 'string') {
         parameters.emissiveIntensity = parseFloat(emissiveFactor);
@@ -1503,7 +1511,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     const transformData: UserDataTransform = {};
 
     if ('InheritType' in modelNode) {
-      const inheritTypeValue = this.extractMaterialValue(modelNode.InheritType);
+      const inheritTypeValue = extractMaterialValue(modelNode.InheritType);
 
       if (typeof inheritTypeValue === 'string' || typeof inheritTypeValue === 'number') {
         transformData.inheritType = parseInt(String(inheritTypeValue));
@@ -1523,13 +1531,13 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
     if ('Lcl_Translation' in modelNode) {
       // 如果scale需要从100调整为1，position也需要相应调整
-      const translationArray = this.extractNumberArray(modelNode.Lcl_Translation.value);
+      const translationArray = extractNumberArray(modelNode.Lcl_Translation.value);
 
       if (translationArray && translationArray.length >= 3) {
         let scaleAdjustmentFactor = 1;
 
         if ('Lcl_Scaling' in modelNode) {
-          const scaleArray = this.extractNumberArray(modelNode.Lcl_Scaling.value);
+          const scaleArray = extractNumberArray(modelNode.Lcl_Scaling.value);
 
           if (scaleArray && scaleArray.length >= 3) {
             const scaleX = scaleArray[0];
@@ -1551,7 +1559,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if ('PreRotation' in modelNode) {
-      const valueArray = this.extractNumberArray(modelNode.PreRotation.value);
+      const valueArray = extractNumberArray(modelNode.PreRotation.value);
 
       if (valueArray && valueArray.length >= 3) {
         transformData.preRotation = [
@@ -1563,7 +1571,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if ('Lcl_Rotation' in modelNode) {
-      const valueArray = this.extractNumberArray(modelNode.Lcl_Rotation.value);
+      const valueArray = extractNumberArray(modelNode.Lcl_Rotation.value);
 
       if (valueArray && valueArray.length >= 3) {
         transformData.rotation = [
@@ -1575,7 +1583,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if ('PostRotation' in modelNode) {
-      const valueArray = this.extractNumberArray(modelNode.PostRotation.value);
+      const valueArray = extractNumberArray(modelNode.PostRotation.value);
 
       if (valueArray && valueArray.length >= 3) {
         transformData.postRotation = [
@@ -1587,7 +1595,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if ('Lcl_Scaling' in modelNode) {
-      const scaleArray = this.extractNumberArray(modelNode.Lcl_Scaling.value);
+      const scaleArray = extractNumberArray(modelNode.Lcl_Scaling.value);
 
       if (scaleArray && scaleArray.length >= 3) {
         transformData.scale = [
@@ -1599,7 +1607,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if ('ScalingOffset' in modelNode) {
-      const scalingOffsetArray = this.extractNumberArray(modelNode.ScalingOffset.value);
+      const scalingOffsetArray = extractNumberArray(modelNode.ScalingOffset.value);
 
       if (scalingOffsetArray) {
         transformData.scalingOffset = scalingOffsetArray as [number, number, number];
@@ -1607,7 +1615,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if ('ScalingPivot' in modelNode) {
-      const scalingPivotArray = this.extractNumberArray(modelNode.ScalingPivot.value);
+      const scalingPivotArray = extractNumberArray(modelNode.ScalingPivot.value);
 
       if (scalingPivotArray) {
         transformData.scalingPivot = scalingPivotArray as [number, number, number];
@@ -1615,7 +1623,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if ('RotationOffset' in modelNode) {
-      const rotationOffsetArray = this.extractNumberArray(modelNode.RotationOffset.value);
+      const rotationOffsetArray = extractNumberArray(modelNode.RotationOffset.value);
 
       if (rotationOffsetArray) {
         transformData.rotationOffset = rotationOffsetArray as [number, number, number];
@@ -1623,7 +1631,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
 
     if ('RotationPivot' in modelNode) {
-      const rotationPivotArray = this.extractNumberArray(modelNode.RotationPivot.value);
+      const rotationPivotArray = extractNumberArray(modelNode.RotationPivot.value);
 
       if (rotationPivotArray) {
         transformData.rotationPivot = rotationPivotArray as [number, number, number];
@@ -1654,13 +1662,13 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
           const lookAtTarget = modelNode[child.ID];
 
           if ('Lcl_Translation' in lookAtTarget) {
-            const posArray = this.extractNumberArray(lookAtTarget.Lcl_Translation.value);
+            const posArray = extractNumberArray(lookAtTarget.Lcl_Translation.value);
 
             if (posArray && posArray.length >= 3) {
               let scaleAdjustmentFactor = 1;
 
               if ('Lcl_Scaling' in lookAtTarget) {
-                const scaleArray = this.extractNumberArray(lookAtTarget.Lcl_Scaling.value);
+                const scaleArray = extractNumberArray(lookAtTarget.Lcl_Scaling.value);
 
                 if (scaleArray && scaleArray.length >= 3) {
                   const scaleX = scaleArray[0];
@@ -1759,14 +1767,14 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
           if (Array.isArray(poseNodes)) {
             poseNodes.forEach(poseNode => {
-              const nodeId = this.extractNodeId(poseNode);
-              const matrixArray = this.extractMatrixArray(poseNode);
+              const nodeId = extractNodeId(poseNode);
+              const matrixArray = extractMatrixArray(poseNode);
 
               bindMatrices[nodeId || 0] = new Matrix4().fromArray(matrixArray);
             });
           } else {
-            const node = this.extractNodeId(poseNodes);
-            const matrixArray = this.extractMatrixArray(poseNodes);
+            const node = extractNodeId(poseNodes);
+            const matrixArray = extractMatrixArray(poseNodes);
 
             if (!node) {
               throw new Error('THREE.FBXLoader: No node found for poseNode.');
@@ -1791,7 +1799,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       if ('AmbientColor' in fbxTree.GlobalSettings) {
         // Parse ambient color - if it's not set to black (default), create an ambient light
 
-        const ambientColorArray = this.extractNumberArray(fbxTree.GlobalSettings.AmbientColor.value);
+        const ambientColorArray = extractNumberArray(fbxTree.GlobalSettings.AmbientColor.value);
 
         if (ambientColorArray && ambientColorArray.length >= 3) {
           const r = ambientColorArray[0];
@@ -1812,90 +1820,4 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
     }
   }
 
-  /**
-   * 类型安全地提取数字数组
-   */
-  private extractNumberArray (value: unknown): number[] | null {
-    if (Array.isArray(value) && value.every(item => typeof item === 'number')) {
-      return value as number[];
-    }
-    if (value && typeof value === 'object' && 'a' in value) {
-      const arrayValue = (value as { a: unknown }).a;
-
-      if (Array.isArray(arrayValue) && arrayValue.every(item => typeof item === 'number')) {
-        return arrayValue as number[];
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * 类型安全地提取节点ID
-   */
-  private extractNodeId (poseNode: unknown): number | null {
-    if (poseNode && typeof poseNode === 'object') {
-      if ('Node' in poseNode && typeof (poseNode as { Node: unknown }).Node === 'number') {
-        return (poseNode as { Node: number }).Node;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * 类型安全地提取矩阵数组
-   */
-  private extractMatrixArray (poseNode: unknown): number[] {
-    if (poseNode && typeof poseNode === 'object') {
-      if ('Matrix' in poseNode && (poseNode as { Matrix: { a: unknown } }).Matrix.a) {
-        const matrixA = (poseNode as { Matrix: { a: unknown } }).Matrix.a;
-
-        if (Array.isArray(matrixA) && matrixA.every(item => typeof item === 'number')) {
-          return matrixA as number[];
-        }
-      }
-    }
-
-    return [];
-  }
-
-  /**
-   * 类型安全地提取material参数值
-   */
-  private extractMaterialValue (param: unknown): number | string | null {
-    if (param === null || param === undefined) {
-      return null;
-    }
-    if (typeof param === 'object' && 'value' in param) {
-      const value = (param as { value: unknown }).value;
-
-      if (typeof value === 'number' || typeof value === 'string') {
-        return value;
-      }
-      if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'number') {
-        return value[0];
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * 类型安全地提取material数组值
-   */
-  private extractMaterialArray (param: unknown): number[] | null {
-    if (param === null || param === undefined) {
-      return null;
-    }
-    if (typeof param === 'object' && 'value' in param) {
-      const value = (param as { value: unknown }).value;
-
-      if (Array.isArray(value) && value.every(item => typeof item === 'number')) {
-        return value as number[];
-      }
-    }
-
-    return null;
-  }
 }

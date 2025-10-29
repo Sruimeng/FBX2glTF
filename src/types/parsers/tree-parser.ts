@@ -23,7 +23,7 @@ import type {
 import type {
   FBXSceneParserOptions,
 } from './scene-parser';
-import type { ModelInfo } from './geometry-parser';
+import type { ModelInfo } from './type-guards';
 
 /**
  * 具有ID的Three.js对象接口
@@ -49,32 +49,12 @@ export interface TargetWithPosition {
 }
 
 /**
- * 几何体信息接口
- */
-export interface GeometryInfo {
-  isPBR: boolean,
-  isTextured: boolean,
-  isUVMapped: boolean,
-  polygons: number,
-  quads: number,
-  triangles: number,
-  vertices: number,
-}
-
-/**
  * 几何体组信息接口
  */
 export interface GeometryGroup {
   count: number,
   materialIndex: number,
   start: number,
-}
-
-/**
- * 具有FBX变形器的几何体接口
- */
-export interface GeometryWithDeformer extends BufferGeometry {
-  FBX_Deformer: string,
 }
 
 /**

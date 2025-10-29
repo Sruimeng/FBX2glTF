@@ -13,16 +13,6 @@ export interface GeoBufferInfo {
   referenceType: string,
 }
 
-export interface ModelInfo {
-  isPBR: boolean,
-  isTextured: boolean,
-  isUVMapped: boolean,
-  polygons: number,
-  quads: number,
-  triangles: number,
-  vertices: number,
-}
-
 export interface GeoBuffers {
   colors: number[],
   materialIndex: number[],

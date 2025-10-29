@@ -6,3 +6,4 @@ export * from './geometry-parser';
 export * from './scene-parser';
 export * from './text-parser';
 export * from './tree-parser';
+export * from './type-guards';

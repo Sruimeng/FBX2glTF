@@ -50,16 +50,3 @@ export interface SpecialPropertyValue {
   type2: string,
   value: string | number | number[],
 }
-
-// 类型守卫函数
-export function isNumericString (value: string): value is `${number}` {
-  return /^-?\d*\.?\d+$/.test(value);
-}
-
-export function isConnectionValue (value: string): boolean {
-  return value.includes(',') && /^\d+,\d+/.test(value);
-}
-
-export function isArrayTerminated (value: string): boolean {
-  return value.endsWith(',');
-}
