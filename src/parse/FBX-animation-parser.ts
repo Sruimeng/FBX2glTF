@@ -3,7 +3,7 @@
  */
 
 import type { AnimationClip } from 'three';
-import type { IParsingContext } from '../types';
+import type { AnimationNode, IParsingContext } from '../types';
 import { BaseParser } from '../types';
 import type { RawClip } from '../types';
 
@@ -79,7 +79,7 @@ export class AnimationParser extends BaseParser<null, AnimationClip[]> {
    * @param rawClip 原始动画片段
    * @returns Three.js 动画片段
    */
-  private addClip (rawClip: { layer: any, name: string }): AnimationClip {
+  private addClip (rawClip: { layer: AnimationNode[], name: string }): AnimationClip {
     return addClip(rawClip.layer, this.context);
   }
 }

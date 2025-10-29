@@ -41,7 +41,6 @@ import type {
   FBXTreeParserResult,
   SceneInfo,
   RawConnection,
-  VideoContent,
   GeometryGroup,
   GeometryWithDeformer,
   SceneParseResult,
@@ -172,7 +171,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
         // raw image data is in videoNode.Content
         if ('Content' in videoNode) {
-          const content = videoNode.Content as VideoContent;
+          const content = videoNode.Content;
           const arrayBufferContent = content instanceof ArrayBuffer && content.byteLength > 0;
           const base64Content = typeof content === 'string' && content !== '';
 
@@ -200,7 +199,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
   // Parse embedded image data in context.fbxTree.Video.Content
   parseImage (videoNode: FBXVideoNode) {
-    const content = videoNode.Content as VideoContent;
+    const content = videoNode.Content;
     const fileName = videoNode.RelativeFilename || videoNode.Filename;
     const extension = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase();
 
