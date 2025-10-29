@@ -220,15 +220,20 @@ export class FBXTree implements IFBXTreeWithIndex {
   connections?: FBXConnectionNode[];
   userData?: Record<string, string | number | boolean | object>;
 
-  add (key: string, val: string | number | boolean | object) {
+  add (key: string, val: string | number | boolean | object | any) {
     if (!this.userData) {
       this.userData = {};
     }
     this[key] = val;
   }
 
+  // 设置动态属性的方法（类型安全）
+  setProperty (key: string, val: unknown): void {
+    this[key] = val;
+  }
+
   // 获取动态属性的方法
-  getProperty (key: string): string | number | boolean | object | undefined | unknown {
+  getProperty (key: string): unknown {
     return this[key];
   }
 
