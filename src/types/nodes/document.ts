@@ -204,6 +204,7 @@ export interface IFBXTreeWithIndex extends IFBXTree {
 }
 
 export class FBXTree implements IFBXTreeWithIndex {
+  [key: string]: unknown;
   FBXHeaderExtension?: FBXHeaderExtension;
   FileId?: FBXTypedProperty;
   CreationTime?: FBXTypedProperty;
@@ -226,7 +227,7 @@ export class FBXTree implements IFBXTreeWithIndex {
   }
 
   // 获取动态属性的方法
-  getProperty (key: string): string | number | boolean | object | undefined {
+  getProperty (key: string): string | number | boolean | object | undefined | unknown {
     return this[key];
   }
 
