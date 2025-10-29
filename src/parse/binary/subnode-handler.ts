@@ -9,7 +9,6 @@ import type { FBXPoseNode } from '../../types/nodes/model-animation';
 
 // 严格的属性类型
 type FBXPropertyList = [string, string, string, boolean, number, number, number];
-type FBXConnectionProperty = [string, number, number | string];
 
 // 允许的节点属性类型
 type FBXNodeProperty = string | number | boolean | FBXTreeNode | FBXTreeNode[] | FBXProperty | FBXTypedProperty;
@@ -54,7 +53,7 @@ export function parseSubNode (
       tree.connections = [];
     }
 
-    tree.connections.push(array);
+    tree.connections.push(array as unknown as FBXConnectionNode);
   } else if (subNode.name === 'Properties70') {
     const keys = Object.keys(subNode) as Array<keyof FBXTreeNode>;
 
@@ -97,19 +96,19 @@ export function parseSubNode (
 
     // this will be copied to parent, see above
     (node as Record<string, FBXTypedProperty>)[innerPropName] = {
-      flag: innerPropFlag,
+      flag: innerPropFlag as unknown as string,
       type: innerPropType1,
       type2: innerPropType2,
       value: innerPropValue,
     };
-  } else if ((node as FBXTree)[subNode.name] === undefined) {
+  } else if ((node as FBXTree)[subNode.name as string] === undefined) {
     if (typeof subNode.id === 'number' && subNode.name) {
       const tree = node as FBXTree;
 
       tree[subNode.name] = {};
       ((tree[subNode.name] as Record<number, FBXTreeNode>))[subNode.id] = subNode;
     } else {
-      (node as FBXTree)[subNode.name] = subNode as FBXNodeProperty;
+      (node as FBXTree)[subNode.name as string] = subNode as FBXNodeProperty;
     }
   } else {
     if (subNode.name === 'PoseNode') {
