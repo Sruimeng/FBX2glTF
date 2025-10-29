@@ -47,6 +47,7 @@ import type {
   SceneParseResult,
   ModelInfo,
   Object3DWithID,
+  BoneWithID,
 } from '../types';
 import type {
   GeometryInfo } from '../types/parsers/type-guards';
@@ -56,6 +57,8 @@ import {
   extractMaterialArray,
   extractNodeId,
   extractMatrixArray,
+  setObjectID,
+  hasTarget,
 } from '../types/parsers/type-guards';
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
@@ -284,7 +287,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       return;
     }
 
-    (texture as any).ID = textureNode.id;
+    setObjectID(texture, textureNode.id);
 
     texture.name = textureNode.attrName;
 
@@ -1037,7 +1040,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
         model.name = node.attrName ? PropertyBinding.sanitizeNodeName(node.attrName) : '';
         model.userData.originalName = node.attrName;
 
-        (model as unknown as { ID: number }).ID = id;
+        (model as Object3DWithID).ID = id;
       }
 
       if (model === null) {
@@ -1073,7 +1076,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
 
             bone.name = name ? PropertyBinding.sanitizeNodeName(name) : '';
             bone.userData.originalName = name;
-            (bone as any).ID = id;
+            (bone as BoneWithID).ID = id;
 
             skeleton.bones[i] = bone;
 
@@ -1689,13 +1692,11 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
               ];
 
               // DirectionalLight, SpotLight
-              const modelAny = model as any;
-
-              if (modelAny.target !== undefined) {
-                modelAny.target.position.fromArray(pos);
+              if (hasTarget(model)) {
+                model.target.position.fromArray(pos);
                 const sceneGraph = this.context.sceneGraph;
 
-                sceneGraph.add(modelAny.target);
+                sceneGraph.add(model.target);
               } else {
                 // Cameras and other Object3Ds
                 model.lookAt(new Vector3().fromArray(pos));

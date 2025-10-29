@@ -3,7 +3,7 @@
  * 统一的类型守卫和安全的值提取方法
  */
 
-import type { BufferGeometry } from 'three';
+import type { BufferGeometry, Object3D } from 'three';
 
 /**
  * 几何体信息接口
@@ -304,4 +304,21 @@ export function safeGetProperty <T> (obj: unknown, property: string, defaultValu
   }
 
   return defaultValue;
+}
+
+/**
+ * 安全地为对象设置ID属性
+ */
+export function setObjectID <T> (obj: T, id: number): T & { ID: number } {
+
+  (obj as T & { ID: number }).ID = id;
+
+  return obj as T & { ID: number };
+}
+
+/**
+ * 安全地检查对象是否有target属性
+ */
+export function hasTarget (obj: unknown): obj is { target: Object3D } {
+  return obj != null && typeof obj === 'object' && 'target' in obj;
 }

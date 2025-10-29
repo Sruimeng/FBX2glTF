@@ -2,6 +2,7 @@
  * FBX 纹理相关类型
  */
 
+import type { VideoContent } from '../parsers';
 import type { FBXTypedProperty } from './base-property';
 
 export interface FBXTextureNode {
@@ -36,7 +37,7 @@ export interface FBXTextureNode {
 export interface FBXVideoNode {
   attrName: string,
   attrType: string,
-  Content: ArrayBuffer,
+  Content: VideoContent,
   Filename: string,
   flag: string,
   id: number,

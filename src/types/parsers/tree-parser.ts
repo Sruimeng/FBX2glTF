@@ -13,6 +13,7 @@ import type {
   LoadingManager,
   TextureLoader,
   Vector3,
+  Bone,
 } from 'three';
 import type {
   IParser,
@@ -30,6 +31,28 @@ import type { ModelInfo } from './type-guards';
  */
 export interface Object3DWithID extends Object3D {
   ID: number,
+}
+
+/**
+ * 具有ID的Texture接口
+ */
+export interface TextureWithID extends Texture {
+  ID: number,
+}
+
+/**
+ * 具有ID的Bone接口
+ */
+export interface BoneWithID extends Bone {
+  ID: number,
+}
+
+/**
+ * 具有ID和target的对象接口
+ */
+export interface ObjectWithIDAndTarget extends Object3D {
+  ID: number,
+  target: Object3D,
 }
 
 /**
