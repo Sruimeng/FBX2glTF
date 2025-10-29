@@ -40,7 +40,6 @@ import type {
   FBXTreeParserInput,
   FBXTreeParserResult,
   SceneInfo,
-  RawConnection,
   GeometryGroup,
   GeometryWithDeformer,
   SceneParseResult,
@@ -62,6 +61,7 @@ import {
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './geometry';
+import { parseConnections } from './tree/connections';
 
 // Parse the FBXTree object returned by the BinaryParser or TextParser and return a Group
 export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTreeParserResult>> implements IFBXTreeParser {
@@ -86,7 +86,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
   }
 
   async parse (_input: FBXTreeParserInput, _context: IParsingContext): Promise<FBXTreeParserResult> {
-    this.context.connections = this.parseConnections();
+    this.context.connections = parseConnections(this.context.fbxTree);
 
     const images = this.parseImages();
 
@@ -101,51 +101,6 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       geometryMap,
       materialMap,
     });
-  }
-
-  // Parses context.fbxTree.Connections which holds parent-child connections between objects (e.g. material -> texture, model->geometry )
-  // and details the connection type
-  parseConnections () {
-    const connectionMap = new Map();
-
-    const fbxTree = this.context.fbxTree;
-
-    if ('Connections' in fbxTree) {
-      if (!fbxTree.Connections) {
-        throw new Error('FBXLoader');
-      }
-      const rawConnections = fbxTree.Connections?.connections || [];
-
-      rawConnections.forEach((rawConnection: RawConnection) => {
-        const fromID = rawConnection[0];
-        const toID = rawConnection[1];
-        const relationship = rawConnection[2];
-
-        if (!connectionMap.has(fromID)) {
-          connectionMap.set(fromID, {
-            children: [],
-            parents: [],
-          });
-        }
-
-        const parentRelationship = { ID: toID, relationship: relationship };
-
-        connectionMap.get(fromID).parents.push(parentRelationship);
-
-        if (!connectionMap.has(toID)) {
-          connectionMap.set(toID, {
-            children: [],
-            parents: [],
-          });
-        }
-
-        const childRelationship = { ID: fromID, relationship: relationship };
-
-        connectionMap.get(toID).children.push(childRelationship);
-      });
-    }
-
-    return connectionMap;
   }
 
   // Parse context.fbxTree.Objects.Video for embedded image data
