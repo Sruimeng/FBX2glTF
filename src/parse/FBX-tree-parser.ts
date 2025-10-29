@@ -34,7 +34,7 @@ import {
   Texture,
   Vector3,
 } from 'three';
-import { BaseParser, type IParsingContext, type FBXConnectionNode, type FBXConnectionReference, type FBXLightNodeAttribute, type FBXMaterialNode, type FBXMeshNode, type FBXModelNode, type FBXMorphTarget, type FBXRawTargets, type FBXSkeleton, type FBXTextureNode, type FBXVideoNode, type IFBXPropertyValue, type RawBone, type UserDataTransform, type FBXMeshStandardMaterialParameters, type FBXSceneParserOptions } from '../types';
+import { BaseParser, type IParsingContext, type FBXConnectionNode, type FBXConnectionReference, type FBXLightNodeAttribute, type FBXMaterialNode, type FBXMeshNode, type FBXModelNode, type FBXMorphTarget, type FBXRawTargets, type FBXSkeleton, type FBXTextureNode, type IFBXPropertyValue, type RawBone, type UserDataTransform, type FBXMeshStandardMaterialParameters, type FBXSceneParserOptions } from '../types';
 import type {
   IFBXTreeParser,
   FBXTreeParserInput,
@@ -62,6 +62,7 @@ import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
 import { GeometryParser } from './geometry';
 import { parseConnections } from './tree/connections';
+import { parseImages } from './tree/image-parser';
 
 // Parse the FBXTree object returned by the BinaryParser or TextParser and return a Group
 export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTreeParserResult>> implements IFBXTreeParser {
@@ -88,7 +89,7 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
   async parse (_input: FBXTreeParserInput, _context: IParsingContext): Promise<FBXTreeParserResult> {
     this.context.connections = parseConnections(this.context.fbxTree);
 
-    const images = this.parseImages();
+    const images = parseImages(this.context.fbxTree);
 
     const textures = await this.parseTextures(images);
     const materialMap = this.parseMaterials(textures);
@@ -101,112 +102,6 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       geometryMap,
       materialMap,
     });
-  }
-
-  // Parse context.fbxTree.Objects.Video for embedded image data
-  // These images are connected to textures in context.fbxTree.Objects.Textures
-  // via context.fbxTree.Connections.
-  parseImages () {
-    const images: Record<number, string> = {};
-    const blobs: Record<string, string | undefined> = {};
-
-    if (!this.context.fbxTree.Objects) {
-      throw new Error('FBXTree.Objects is undefined');
-    }
-
-    if ('Video' in this.context.fbxTree.Objects) {
-      const videoNodes = this.context.fbxTree.Objects.Video;
-
-      for (const nodeID in videoNodes) {
-        const videoNode = videoNodes[nodeID];
-
-        const id = parseInt(nodeID);
-
-        images[id] = videoNode.RelativeFilename || videoNode.Filename;
-
-        // raw image data is in videoNode.Content
-        if ('Content' in videoNode) {
-          const content = videoNode.Content;
-          const arrayBufferContent = content instanceof ArrayBuffer && content.byteLength > 0;
-          const base64Content = typeof content === 'string' && content !== '';
-
-          if (arrayBufferContent || base64Content) {
-            const image = this.parseImage(videoNodes[nodeID]);
-
-            blobs[videoNode.RelativeFilename || videoNode.Filename] = image;
-          }
-        }
-      }
-    }
-
-    for (const id in images) {
-      const filename = images[id];
-
-      if (blobs[filename] !== undefined) {
-        images[id] = blobs[filename]!;
-      } else {
-        images[id] = images[id]?.split('\\').pop() || images[id] || '';
-      }
-    }
-
-    return images;
-  }
-
-  // Parse embedded image data in context.fbxTree.Video.Content
-  parseImage (videoNode: FBXVideoNode) {
-    const content = videoNode.Content;
-    const fileName = videoNode.RelativeFilename || videoNode.Filename;
-    const extension = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase();
-
-    let type;
-
-    switch (extension) {
-      case 'bmp':
-        type = 'image/bmp';
-
-        break;
-      case 'jpg':
-      case 'jpeg':
-        type = 'image/jpeg';
-
-        break;
-      case 'png':
-        type = 'image/png';
-
-        break;
-      case 'webp':
-        type = 'image/webp';
-
-        break;
-      case 'tif':
-        type = 'image/tiff';
-
-        break;
-      case 'tga':
-        if (this.manager.getHandler('.tga') === null) {
-          console.warn('FBXLoader: TGA loader not found, skipping ', fileName);
-        }
-
-        type = 'image/tga';
-
-        break;
-      default:
-        console.warn('FBXLoader: Image type "' + extension + '" is not supported.');
-
-        return;
-    }
-
-    if (typeof content === 'string') {
-      // ASCII format
-
-      return 'data:' + type + ';base64,' + content;
-    } else {
-      // Binary Format
-
-      const array = new Uint8Array(content);
-
-      return window.URL.createObjectURL(new Blob([array], { type: type }));
-    }
   }
 
   // Parse nodes in context.fbxTree.Objects.Texture
