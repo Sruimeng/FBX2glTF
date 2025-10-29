@@ -3,16 +3,13 @@ import type {
   EulerOrder,
   LoadingManager,
   TextureLoader,
-
-  Texture } from 'three';
+  MeshStandardMaterial } from 'three';
 import {
   AmbientLight,
   Bone,
   Color,
   ColorManagement,
   DirectionalLight,
-  DoubleSide,
-  EquirectangularReflectionMapping,
   Group,
   Line,
   LineBasicMaterial,
@@ -20,8 +17,6 @@ import {
   MathUtils,
   Matrix4,
   Mesh,
-  MeshPhysicalMaterial,
-  MeshStandardMaterial,
   Object3D,
   PerspectiveCamera,
   PointLight,
@@ -32,7 +27,7 @@ import {
   SRGBColorSpace,
   Vector3,
 } from 'three';
-import { BaseParser, type IParsingContext, type FBXConnectionNode, type FBXConnectionReference, type FBXLightNodeAttribute, type FBXMaterialNode, type FBXMeshNode, type FBXModelNode, type FBXMorphTarget, type FBXRawTargets, type FBXSkeleton, type IFBXPropertyValue, type RawBone, type UserDataTransform, type FBXMeshStandardMaterialParameters, type FBXSceneParserOptions } from '../types';
+import { BaseParser, type IParsingContext, type FBXConnectionNode, type FBXConnectionReference, type FBXLightNodeAttribute, type FBXMeshNode, type FBXModelNode, type FBXMorphTarget, type FBXRawTargets, type FBXSkeleton, type RawBone, type UserDataTransform, type FBXSceneParserOptions } from '../types';
 import type {
   IFBXTreeParser,
   FBXTreeParserInput,
@@ -47,11 +42,10 @@ import type {
 } from '../types';
 import type { GeometryInfo } from '../types/parsers/type-guards';
 import {
-  extractNumberArray,
-  extractMaterialValue,
-  extractMaterialArray,
   extractNodeId,
   extractMatrixArray,
+  extractNumberArray,
+  extractMaterialValue,
   hasTarget,
 } from '../types/parsers/type-guards';
 import { generateTransform, getEulerOrder } from './utils';
@@ -60,6 +54,7 @@ import { GeometryParser } from './geometry';
 import { parseConnections } from './tree/connections';
 import { parseImages } from './tree/image-parser';
 import { parseTextures } from './tree/texture-parser';
+import { parseMaterials } from './tree/material-parser';
 
 // Parse the FBXTree object returned by the BinaryParser or TextParser and return a Group
 export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTreeParserResult>> implements IFBXTreeParser {
@@ -95,7 +90,12 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       this.manager,
       this.textureLoader
     );
-    const materialMap = this.parseMaterials(textures);
+    const materialMap = parseMaterials(
+      this.context.fbxTree,
+      this.context.connections,
+      textures,
+      this.defaultMaterialIndex
+    );
     const deformers = this.parseDeformers();
     const { geoInfoMap, geometryMap } = new GeometryParser(this.context).parse(deformers, this.context);
 
@@ -105,334 +105,6 @@ export class FBXTreeParser extends BaseParser<FBXTreeParserInput, Promise<FBXTre
       geometryMap,
       materialMap,
     });
-  }
-
-  // Parse nodes in context.fbxTree.Objects.Material
-  parseMaterials (textureMap: Map<number, Texture>) {
-    const materialMap = new Map();
-    const fbxTree = this.context.fbxTree;
-
-    if (!fbxTree || !fbxTree.Objects) {
-      throw new Error('Global FBXTree or fbxTree.Objects is undefined');
-    }
-
-    if ('Material' in fbxTree.Objects) {
-      const materialNodes = fbxTree.Objects.Material as Record<string, FBXMaterialNode>;
-
-      for (const nodeID in materialNodes) {
-        const material = this.parseMaterial(materialNodes[nodeID], textureMap);
-
-        if (material instanceof MeshStandardMaterial) {
-          material.flatShading = true;
-          material.roughness = 1;
-        }
-        if (material !== null) {
-          materialMap.set(parseInt(nodeID), material);
-        }
-      }
-    } else {
-      const material = new MeshStandardMaterial();
-
-      materialMap.set(this.defaultMaterialIndex, material);
-    }
-
-    return materialMap;
-  }
-
-  // Parse single node in context.fbxTree.Objects.Material
-  // Materials are connected to texture maps in context.fbxTree.Objects.Textures
-  // FBX format currently only supports Lambert and Phong shading models
-  parseMaterial (materialNode: FBXMaterialNode, textureMap: Map<number, Texture>) {
-    const ID = materialNode.id;
-    const name = materialNode.attrName;
-    let type: string | IFBXPropertyValue<string> = materialNode.ShadingModel;
-
-    // Case where FBX wraps shading model in property object.
-    if (typeof type === 'object') {
-      type = type.value;
-    }
-
-    // Ignore unused materials which don't have any connections.
-    if (!this.context.connections.has(ID)) {
-      return null;
-    }
-
-    const parameters = this.parseParameters(materialNode, textureMap, ID);
-
-    let material;
-
-    switch (type.toLowerCase()) {
-      case 'phong':
-        material = new MeshStandardMaterial({ metalness: 0, roughness: 0.5, side: DoubleSide });
-
-        break;
-      case 'lambert':
-        material = new MeshPhysicalMaterial();
-
-        break;
-      default:
-        console.warn(
-          'THREE.FBXLoader: unknown material type "%s". Defaulting to MeshStandardMaterial.',
-          type,
-        );
-        material = new MeshStandardMaterial({ metalness: 0, roughness: 0.5, side: DoubleSide });
-
-        break;
-    }
-    if (parameters.map) {
-      material.setValues(parameters);
-    } else {
-      material = new MeshStandardMaterial();
-    }
-    material.name = name;
-
-    return material;
-  }
-
-  // Parse FBX material and return parameters suitable for a three.js material
-  // Also parse the texture map and return any textures associated with the material
-  parseParameters (materialNode: FBXMaterialNode, textureMap: Map<number, Texture>, ID: number) {
-    const parameters: FBXMeshStandardMaterialParameters = {};
-    const connections = this.context.connections;
-
-    if (!connections) {
-      throw new Error('Global connections is undefined');
-    }
-
-    if (materialNode.BumpFactor) {
-      const bumpScale = extractMaterialValue(materialNode.BumpFactor);
-
-      if (typeof bumpScale === 'number') {
-        parameters.bumpScale = bumpScale;
-      }
-    }
-
-    // if (materialNode.Diffuse) {
-    //   parameters.color = ColorManagement.toWorkingColorSpace(
-    //     new Color().fromArray(materialNode.Diffuse.value),
-    //     SRGBColorSpace,
-    //   );
-    // } else if (
-    //   materialNode.DiffuseColor &&
-    //   (materialNode.DiffuseColor.type === 'Color' || materialNode.DiffuseColor.type === 'ColorRGB')
-    // ) {
-    //   // The blender exporter exports diffuse here instead of in materialNode.Diffuse
-    //   parameters.color = ColorManagement.toWorkingColorSpace(
-    //     new Color().fromArray(materialNode.DiffuseColor.value),
-    //     SRGBColorSpace,
-    //   );
-    // }
-    // tripo 默认修改成白色
-    parameters.color = new Color();
-
-    if (materialNode.DisplacementFactor) {
-      const displacementScale = extractMaterialValue(materialNode.DisplacementFactor);
-
-      if (typeof displacementScale === 'number') {
-        parameters.displacementScale = displacementScale;
-      }
-    }
-
-    if (materialNode.Emissive) {
-      const emissiveArray = extractMaterialArray(materialNode.Emissive);
-
-      if (emissiveArray && emissiveArray.length >= 3) {
-        parameters.emissive = ColorManagement.toWorkingColorSpace(
-          new Color().fromArray(emissiveArray),
-          SRGBColorSpace,
-        );
-      }
-    } else if (
-      materialNode.EmissiveColor
-      && (materialNode.EmissiveColor.type === 'Color'
-        || materialNode.EmissiveColor.type === 'ColorRGB')
-    ) {
-      // The blender exporter exports emissive color here instead of in materialNode.Emissive
-      const emissiveColorArray = extractMaterialArray(materialNode.EmissiveColor);
-
-      if (emissiveColorArray && emissiveColorArray.length >= 3) {
-        parameters.emissive = ColorManagement.toWorkingColorSpace(
-          new Color().fromArray(emissiveColorArray),
-          SRGBColorSpace,
-        );
-      }
-    }
-
-    if (materialNode.EmissiveFactor) {
-      const emissiveFactor = extractMaterialValue(materialNode.EmissiveFactor);
-
-      if (typeof emissiveFactor === 'string') {
-        parameters.emissiveIntensity = parseFloat(emissiveFactor);
-      } else if (typeof emissiveFactor === 'number') {
-        parameters.emissiveIntensity = emissiveFactor;
-      }
-    }
-
-    // the transparency handling is implemented based on Blender/Unity's approach: https://github.com/sobotka/blender-addons/blob/7d80f2f97161fc8e353a657b179b9aa1f8e5280b/io_scene_fbx/import_fbx.py#L1444-L1459
-
-    parameters.opacity
-      = 1 - (materialNode.TransparencyFactor ? parseFloat(materialNode.TransparencyFactor.value) : 0);
-
-    if (parameters.opacity === 1 || parameters.opacity === 0) {
-      parameters.opacity = materialNode.Opacity ? parseFloat(materialNode.Opacity.value) : 1;
-
-      if (parameters.opacity === null) {
-        parameters.opacity
-          = 1
-            - (materialNode.TransparentColor
-              ? parseFloat(materialNode.TransparentColor.value[0])
-              : 0);
-      }
-    }
-
-    if (parameters.opacity < 1.0) {
-      parameters.transparent = true;
-    }
-
-    if (materialNode.ReflectionFactor) {
-      parameters.reflectivity = materialNode.ReflectionFactor.value;
-    }
-
-    if (materialNode.Shininess) {
-      parameters.roughness = 1 / materialNode.Shininess.value;
-    }
-
-    if (materialNode.Specular) {
-      // 将specular颜色转换为metalness值
-      // 可以使用颜色的平均值或亮度作为金属度
-      const specularColor = new Color().fromArray(materialNode.Specular.value);
-
-      // 使用RGB平均值作为金属度
-      parameters.metalness = (specularColor.r + specularColor.g + specularColor.b) / 3;
-      // 限制metalness在0-1范围内
-      parameters.metalness = Math.max(0, Math.min(1, parameters.metalness));
-    } else if (materialNode.SpecularColor && materialNode.SpecularColor.type === 'Color') {
-      // The blender exporter exports specular color here instead of in materialNode.Specular
-      const specularColor = new Color().fromArray(materialNode.SpecularColor.value);
-
-      // 使用RGB平均值作为金属度
-      parameters.metalness = (specularColor.r + specularColor.g + specularColor.b) / 3;
-      // 限制metalness在0-1范围内
-      parameters.metalness = Math.max(0, Math.min(1, parameters.metalness));
-    }
-
-    connections.get(ID)?.children.forEach(child => {
-      if (!(typeof child.ID === 'number')) {
-        throw new Error('THREE.FBXLoader: Invalid child ID type');
-      }
-      const type = child.relationship;
-
-      switch (type) {
-        case 'Bump':
-          parameters.bumpMap = this.getTexture(textureMap, child.ID);
-
-          break;
-        case 'ShininessExponent':
-          parameters.roughnessMap = this.getTexture(textureMap, child.ID);
-
-          break;
-        case 'ReflectionFactor':
-          parameters.metalnessMap = this.getTexture(textureMap, child.ID);
-
-          break;
-        case 'Maya|TEX_ao_map':
-          parameters.aoMap = this.getTexture(textureMap, child.ID);
-
-          break;
-        case 'DiffuseColor':
-        case 'Maya|TEX_color_map':
-          parameters.map = this.getTexture(textureMap, child.ID);
-          if (parameters.map !== undefined) {
-            parameters.map.colorSpace = SRGBColorSpace;
-          }
-
-          break;
-        case 'DisplacementColor':
-          parameters.displacementMap = this.getTexture(textureMap, child.ID);
-
-          break;
-        case 'EmissiveColor':
-          parameters.emissiveMap = this.getTexture(textureMap, child.ID);
-          if (parameters.emissiveMap !== undefined) {
-            parameters.emissiveMap.colorSpace = SRGBColorSpace;
-          }
-
-          break;
-        case 'NormalMap':
-        case 'Maya|TEX_normal_map':
-          parameters.normalMap = this.getTexture(textureMap, child.ID);
-
-          break;
-        case 'ReflectionColor':
-          parameters.envMap = this.getTexture(textureMap, child.ID);
-          if (parameters.envMap !== undefined) {
-            parameters.envMap.mapping = EquirectangularReflectionMapping;
-            parameters.envMap.colorSpace = SRGBColorSpace;
-          }
-
-          break;
-        case 'SpecularColor':
-          parameters.specularMap = this.getTexture(textureMap, child.ID);
-          if (parameters.specularMap !== undefined) {
-            parameters.specularMap.colorSpace = SRGBColorSpace;
-          }
-          if (parameters.specularMap !== undefined) {
-            parameters.specularMap.colorSpace = SRGBColorSpace;
-          }
-
-          break;
-        case 'TransparentColor':
-        case 'TransparencyFactor':
-          parameters.alphaMap = this.getTexture(textureMap, child.ID);
-          parameters.transparent = true;
-
-          break;
-        case 'AmbientColor':
-        case 'SpecularFactor': // AKA specularLevel
-        case 'VectorDisplacementColor': // NOTE: Seems to be a copy of DisplacementColor
-        default:
-          console.warn(
-            'THREE.FBXLoader: %s map is not supported in three.js, skipping texture.',
-            type,
-          );
-
-          break;
-      }
-    });
-
-    if (!parameters.map) {
-      parameters.color.setHex(0x8f95ad);
-    }
-
-    return parameters;
-  }
-
-  // get a texture from the textureMap for use by a material.
-  getTexture (textureMap: Map<number, Texture>, id: number) {
-    const objects = this.context.fbxTree.Objects;
-    const connections = this.context.connections;
-    let textureID: number | undefined = id;
-
-    if (!objects || !connections) {
-      throw new Error('No objects found in fbxTree.');
-    }
-    // if the texture is a layered texture, just use the first layer and issue a warning
-    if ('LayeredTexture' in objects && id in (objects.LayeredTexture || {})) {
-      console.warn(
-        'THREE.FBXLoader: layered textures are not supported in three.js. Discarding all but first layer.',
-      );
-      const firstChild = connections.get(id)?.children[0];
-
-      if (firstChild) {
-        textureID = firstChild.ID;
-      }
-    }
-
-    if (!textureID) {
-      throw new Error('THREE.FBXLoader: No valid texture ID found.');
-    }
-
-    return textureMap.get(textureID);
   }
 
   // Parse nodes in context.fbxTree.Objects.Deformer
