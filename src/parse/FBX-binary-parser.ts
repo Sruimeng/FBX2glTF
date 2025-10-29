@@ -47,6 +47,11 @@ export class BinaryParser extends BaseParser<ArrayBuffer, IFBXTree> {
       }
     }
 
-    return allNodes as IFBXTree;
+    // 验证返回值是否实现了 IFBXTree 接口
+    if (typeof allNodes.add === 'function' && typeof allNodes.getProperty === 'function') {
+      return allNodes;
+    } else {
+      throw new Error('FBXTree does not implement IFBXTree interface');
+    }
   }
 }

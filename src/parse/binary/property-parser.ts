@@ -7,11 +7,26 @@ import * as fflate from 'fflate';
 import { BinaryReader } from './binary-reader';
 
 /**
+ * FBX 属性值类型联合
+ */
+export type FBXPropertyValue = 
+  | boolean 
+  | number 
+  | string 
+  | ArrayBuffer 
+  | boolean[] 
+  | number[] 
+  | Float32Array 
+  | Float64Array 
+  | Int32Array 
+  | BigInt64Array;
+
+/**
  * 解析属性
  * @param reader 二进制读取器
  * @returns 解析后的属性值
  */
-export function parseProperty (reader: BinaryReader): any {
+export function parseProperty (reader: BinaryReader): FBXPropertyValue {
   const type = reader.getString(1);
   let length: number;
 

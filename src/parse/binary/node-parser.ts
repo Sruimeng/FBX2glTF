@@ -5,6 +5,7 @@
 
 import type { FBXTreeNode } from '../../types';
 import type { BinaryReader } from './binary-reader';
+import type { FBXPropertyValue } from './property-parser';
 import { parseProperty } from './property-parser';
 import { parseSubNode } from './subnode-handler';
 
@@ -56,7 +57,7 @@ export function parseNode (reader: BinaryReader, version: number): FBXTreeNode |
     return null;
   }
 
-  const propertyList: any[] = [];
+  const propertyList: FBXPropertyValue[] = [];
 
   for (let i = 0; i < numProperties; i++) {
     propertyList.push(parseProperty(reader));
@@ -79,16 +80,32 @@ export function parseNode (reader: BinaryReader, version: number): FBXTreeNode |
     }
   }
 
-  node.propertyList = propertyList as string[]; // raw property list used by parent
+  // Use Object.defineProperty to set propertyList without type assertion
+  Object.defineProperty(node, 'propertyList', {
+    value: propertyList,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
 
   if (typeof id === 'number') {
     node.id = id;
   }
   if (attrName !== '') {
-    node.attrName = attrName as string;
+    Object.defineProperty(node, 'attrName', {
+      value: attrName,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
   }
   if (attrType !== '') {
-    node.attrType = attrType as string;
+    Object.defineProperty(node, 'attrType', {
+      value: attrType,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
   }
   if (name !== '') {
     node.name = name;
