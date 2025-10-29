@@ -14,7 +14,6 @@ export interface IParsingContext {
   readonly wireframe?: boolean,
 
   // 便捷方法
-  getNodeById<T>(id: number): T | undefined,
   getConnections(id: number): FBXConnectionNode | undefined,
   getNodesByType<T>(nodeType: string): Map<number, T>,
 }

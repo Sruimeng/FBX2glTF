@@ -4,6 +4,7 @@
 
 import type { MeshStandardMaterialParameters, Texture, MeshPhongMaterial, BufferGeometry, MeshStandardMaterial, LineBasicMaterial } from 'three';
 import type { FBXMorphTarget, FBXSkeleton } from '../nodes';
+import type { ModelInfo } from '../parsers/geometry-parser';
 
 export interface FBXMeshStandardMaterialParameters extends MeshStandardMaterialParameters {
   reflectivity?: number,
@@ -15,7 +16,7 @@ export interface FBXSceneParserOptions {
     morphTargets: Record<string, FBXMorphTarget>,
     skeletons: Record<string, FBXSkeleton>,
   },
-  geoInfoMap?: Map<number, BufferGeometry>,
+  geoInfoMap?: Map<number, ModelInfo>,
   geometryMap?: Map<number, BufferGeometry>,
   materialMap?: Map<number, MeshPhongMaterial | MeshStandardMaterial | LineBasicMaterial>,
 }

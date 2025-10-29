@@ -37,7 +37,7 @@ import {
 import { BaseParser, type IParsingContext, type FBXConnectionNode, type FBXConnectionReference, type FBXLightNodeAttribute, type FBXMaterialNode, type FBXMeshNode, type FBXModelNode, type FBXMorphTarget, type FBXRawTargets, type FBXSkeleton, type FBXTextureNode, type FBXVideoNode, type IFBXPropertyValue, type RawBone, type UserDataTransform, type FBXMeshStandardMaterialParameters, type FBXSceneParserOptions } from '../types';
 import { generateTransform, getEulerOrder } from './utils';
 import { AnimationParser } from './FBX-animation-parser';
-import { GeometryParser } from './FBX-geometry-parser';
+import { GeometryParser } from './geometry';
 
 // Parse the FBXTree object returned by the BinaryParser or TextParser and return a Group
 export class FBXTreeParser extends BaseParser<any, any> {

@@ -42,16 +42,6 @@ export class ParsingContext implements IParsingContext {
   get loadingManager (): LoadingManager { return this._loadingManager; }
   get wireframe (): boolean | undefined { return this._wireframe; }
 
-  // 便捷方法
-  /**
-   * 根据 ID 获取 FBX 节点
-   */
-  getNodeById<T = FBXAnimationCurveNode>(id: number): T | undefined {
-    const objects = this._fbxTree.Objects as FBXObjectsWithIndex;
-
-    return objects?.[id] as T;
-  }
-
   /**
    * 获取指定 ID 的连接关系
    */

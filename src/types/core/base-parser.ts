@@ -61,13 +61,6 @@ export abstract class BaseParser<TInput, TOutput> implements IParser<TInput, TOu
   protected get wireframe () { return this.context.wireframe; }
 
   /**
-   * 便捷方法：根据ID获取节点
-   */
-  protected getNodeById<T = FBXAnimationCurveNode>(id: number): T | undefined {
-    return this.context.getNodeById<T>(id);
-  }
-
-  /**
    * 便捷方法：获取节点连接
    */
   protected getConnections (id: number): FBXConnectionNode | undefined {
