@@ -15,6 +15,10 @@ export function createDocument ({ options }: { options?: DocumentBuilderOptions 
 
   document.getRoot().setDefaultScene(scene);
 
+  // Ensure a default Buffer exists for Accessor.setArray resource allocation
+  // glTF-Transform v4 requires at least one Buffer on the Document.
+  document.createBuffer('default');
+
   // Additional configuration will be added incrementally in subsequent phases
   return document;
 }

@@ -1,5 +1,5 @@
 import type { IParsingContext } from '../types';
-import type { Document } from '@gltf-transform/core';
+import type { Document, Node } from '@gltf-transform/core';
 import { Matrix4, Vector3, Quaternion } from 'three';
 import { createDocument } from './document-builder.js';
 
@@ -14,6 +14,8 @@ export class GLBParsingContext {
   readonly base: IParsingContext;
   readonly document: Document;
   readonly options: GLBParsingOptions;
+  // FBX Model ID -> glTF Node mapping for mesh attachment
+  readonly modelNodeMap: Map<number, Node> = new Map();
 
   // Only expose math classes from three.js
   readonly math = { Matrix4, Vector3, Quaternion };
@@ -30,4 +32,5 @@ export class GLBParsingContext {
 
   getConnections (id: number) { return this.base.getConnections(id); }
   getNodesByType<T> (nodeType: string) { return this.base.getNodesByType<T>(nodeType); }
+  getNodeByModelID (id: number) { return this.modelNodeMap.get(id); }
 }

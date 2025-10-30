@@ -4,13 +4,16 @@ import { AnimationMixer, Clock, AmbientLight, DirectionalLight } from 'three';
 import { ACESFilmicToneMapping, EquirectangularReflectionMapping, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { FBXLoaderRefactored } from '../../src/FBXLoaderRefactored';
+import { convertFBXToGLB } from '../../src/glb';
 
 let camera: PerspectiveCamera, scene: Scene, renderer: WebGLRenderer;
 let mixer: AnimationMixer;
 let clock: Clock;
 const animationActions: AnimationAction[] = [];
 let currentFBXModel: Group | null = null;
+let currentGLBModel: Group | null = null;
 
 // 模型配置
 const MODEL_CONFIG = {
@@ -552,6 +555,13 @@ function loadFBXModel (modelName: string = currentModelName) {
       console.log('已清理当前模型');
     }
 
+    // 清理当前 GLB 模型
+    if (currentGLBModel) {
+      scene.remove(currentGLBModel);
+      currentGLBModel = null;
+      console.log('已清理当前 GLB 模型');
+    }
+
     // 更新 UI 状态
     if ((window as any).updateLoadingStatus) {
       (window as any).updateLoadingStatus('正在加载模型...');
@@ -689,6 +699,9 @@ function loadFBXModel (modelName: string = currentModelName) {
         (window as any).updateLoadingStatus(`模型加载完成: ${modelConfig.name}`);
       }
 
+      // FBX -> GLB 转换并加载展示
+      void convertAndLoadGLB(loader);
+
       render();
     },
     // 加载进度回调
@@ -723,6 +736,45 @@ function loadFBXModel (modelName: string = currentModelName) {
     console.error('错误堆栈:', error instanceof Error ? error.stack : 'No stack trace');
     // 创建默认几何体作为占位符
     createDefaultGeometry();
+  }
+}
+
+async function convertAndLoadGLB (loader: FBXLoaderRefactored) {
+  try {
+    const context = loader.context;
+
+    if (!context) {
+      console.warn('未获取到解析上下文，跳过 GLB 转换');
+
+      return;
+    }
+
+    (window as any).updateLoadingStatus?.('正在转换为 GLB...');
+
+    const { glb } = await convertFBXToGLB(context, { embedImages: true });
+    const blob = new Blob([glb], { type: 'model/gltf-binary' });
+    const url = URL.createObjectURL(blob);
+
+    const gltfLoader = new GLTFLoader();
+
+    gltfLoader.load(url, gltf => {
+      const gltfScene = gltf.scene;
+
+      gltfScene.position.set(2, 0, 0);
+      gltfScene.name = 'GLBConvertedScene';
+
+      scene.add(gltfScene);
+      currentGLBModel = gltfScene;
+
+      (window as any).updateLoadingStatus?.('GLB 加载成功');
+      render();
+    }, undefined, err => {
+      console.error('GLB 加载失败:', err);
+      (window as any).updateLoadingStatus?.('GLB 加载失败', true);
+    });
+  } catch (e) {
+    console.error('FBX->GLB 转换失败:', e);
+    (window as any).updateLoadingStatus?.('GLB 转换失败', true);
   }
 }
 
