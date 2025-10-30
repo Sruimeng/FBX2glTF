@@ -1,15 +1,15 @@
 import type { LoadingManager, Texture, TextureLoader } from 'three';
 import { RepeatWrapping, ClampToEdgeWrapping, Texture as ThreeTexture } from 'three';
-import type { FBXTextureNode, FBXConnectionNode } from '../../types';
+import type { FBXTextureNode, FBXConnectionNode, IFBXTree } from '../../types';
 import { extractNumberArray, setObjectID } from '../../types';
 
 // Parse nodes in context.fbxTree.Objects.Texture
 // These contain details such as UV scaling, cropping, rotation etc and are connected
 // to images in context.fbxTree.Objects.Video
 export async function parseTextures (
-  fbxTree: any,
+  fbxTree: IFBXTree,
   connections: Map<number, FBXConnectionNode>,
-  images: Record<string, string>,
+  images: Record<number, string>,
   manager: LoadingManager,
   textureLoader: TextureLoader
 ): Promise<Map<number, Texture>> {
@@ -42,7 +42,7 @@ export async function parseTextures (
 // Parse individual node in context.fbxTree.Objects.Texture
 export async function parseTexture (
   textureNode: FBXTextureNode,
-  images: Record<string, string>,
+  images: Record<number, string>,
   connections: Map<number, FBXConnectionNode>,
   manager: LoadingManager,
   textureLoader: TextureLoader
@@ -93,7 +93,7 @@ export async function parseTexture (
 // load a texture specified as a blob or data URI, or via an external URL using TextureLoader
 export async function loadTexture (
   textureNode: FBXTextureNode,
-  images: Record<string, string>,
+  images: Record<number, string>,
   connections: Map<number, FBXConnectionNode>,
   manager: LoadingManager,
   textureLoader: TextureLoader

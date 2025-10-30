@@ -1,11 +1,11 @@
 import type { LineBasicMaterial } from 'three';
 import { Color, ColorManagement, DoubleSide, EquirectangularReflectionMapping, SRGBColorSpace, MeshStandardMaterial, MeshPhysicalMaterial, type Texture } from 'three';
-import type { FBXMaterialNode, FBXConnectionNode, IFBXPropertyValue, FBXMeshStandardMaterialParameters } from '../../types';
+import type { FBXMaterialNode, FBXConnectionNode, IFBXPropertyValue, FBXMeshStandardMaterialParameters, IFBXTree } from '../../types';
 import { extractMaterialValue, extractMaterialArray } from '../../types/parsers/type-guards';
 
 // Parse nodes in context.fbxTree.Objects.Material
 export function parseMaterials (
-  fbxTree: any,
+  fbxTree: IFBXTree,
   connections: Map<number, FBXConnectionNode>,
   textureMap: Map<number, Texture>,
   defaultMaterialIndex: number
@@ -20,7 +20,7 @@ export function parseMaterials (
     const materialNodes = fbxTree.Objects.Material as Record<string, FBXMaterialNode>;
 
     for (const nodeID in materialNodes) {
-      const material = parseMaterial(materialNodes[nodeID], textureMap, connections);
+      const material = parseMaterial(materialNodes[nodeID], textureMap, connections, fbxTree);
 
       if (material instanceof MeshStandardMaterial) {
         material.flatShading = true;
@@ -45,7 +45,8 @@ export function parseMaterials (
 export function parseMaterial (
   materialNode: FBXMaterialNode,
   textureMap: Map<number, Texture>,
-  connections: Map<number, FBXConnectionNode>
+  connections: Map<number, FBXConnectionNode>,
+  fbxTree: IFBXTree
 ): MeshStandardMaterial | MeshPhysicalMaterial | LineBasicMaterial | null {
   const ID = materialNode.id;
   const name = materialNode.attrName;
@@ -61,7 +62,7 @@ export function parseMaterial (
     return null;
   }
 
-  const parameters = parseParameters(materialNode, textureMap, ID, connections, null);
+  const parameters = parseParameters(materialNode, textureMap, ID, connections, fbxTree);
 
   let material;
 
@@ -100,7 +101,7 @@ export function parseParameters (
   textureMap: Map<number, Texture>,
   ID: number,
   connections: Map<number, FBXConnectionNode>,
-  fbxTree: any
+  fbxTree: IFBXTree
 ): FBXMeshStandardMaterialParameters {
   const parameters: FBXMeshStandardMaterialParameters = {};
 
@@ -270,9 +271,6 @@ export function parseParameters (
         if (parameters.specularMap !== undefined) {
           parameters.specularMap.colorSpace = SRGBColorSpace;
         }
-        if (parameters.specularMap !== undefined) {
-          parameters.specularMap.colorSpace = SRGBColorSpace;
-        }
 
         break;
       case 'TransparentColor':
@@ -305,7 +303,7 @@ export function parseParameters (
 export function getTexture (
   textureMap: Map<number, Texture>,
   id: number,
-  fbxTree: any,
+  fbxTree: IFBXTree,
   connections: Map<number, FBXConnectionNode>
 ): Texture | undefined {
   const objects = fbxTree.Objects;
