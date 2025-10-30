@@ -1,11 +1,9 @@
 import { FileLoader, Loader, LoaderUtils, TextureLoader } from 'three';
 import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary } from './util';
 import { BinaryParser } from './parse/FBX-binary-parser';
-import { FBXTreeParser } from './parse/FBX-tree-parser';
-import { TextParser } from './parse/FBX-text-parser';
-import {
-  global,
-} from './constants';
+import { FBXTreeParser } from './parse/tree';
+import { TextParser } from './parse/text';
+import { ParsingContext } from './types';
 
 /**
  * A loader for the FBX format.
@@ -33,6 +31,14 @@ import {
  */
 export class FBXLoaderRefactored extends Loader<any> {
   result?: any;
+  private _parsingContext?: ParsingContext;
+
+  /**
+   * 获取当前解析上下文
+   */
+  get context (): ParsingContext | undefined {
+    return this._parsingContext;
+  }
   /**
    * Constructs a new FBX loader.
    *
@@ -99,9 +105,38 @@ export class FBXLoaderRefactored extends Loader<any> {
    * @param {string} path - The URL base path.
    * @return {Group} An object representing the parsed asset.
    */
-  parse (FBXBuffer: ArrayBuffer | string, path: string) {
+  async parse (FBXBuffer: ArrayBuffer | string, path: string): Promise<any> {
+    // 1. 解析 FBX 树结构
+    const fbxTree = this.parseFBXTree(FBXBuffer);
+
+    // 2. 构建连接映射
+    const connections = this.buildConnections(fbxTree);
+
+    // 3. 创建解析上下文 (替代 global state)
+    this._parsingContext = new ParsingContext(
+      fbxTree,
+      connections,
+      this.manager,
+      false // wireframe 默认 false
+    );
+
+    // 4. 使用 FBXTreeParser 进行解析 (后续会被 SceneParser 替代)
+    const textureLoader = new TextureLoader(this.manager)
+      .setPath(this.resourcePath || path)
+      .setCrossOrigin(this.crossOrigin);
+
+    return new FBXTreeParser(textureLoader, this.manager, this._parsingContext).parse({ null: null }, this._parsingContext);
+  }
+
+  /**
+   * 解析 FBX 树结构
+   */
+  private parseFBXTree (FBXBuffer: ArrayBuffer | string): any {
+    // 先创建一个临时的上下文用于树解析
+    const tempContext = new ParsingContext({}, new Map(), this.manager, false);
+
     if (isFbxFormatBinary(FBXBuffer as ArrayBuffer)) {
-      global.fbxTree = new BinaryParser().parse(FBXBuffer as ArrayBuffer);
+      return new BinaryParser(tempContext).parse(FBXBuffer as ArrayBuffer, tempContext);
     } else {
       const FBXText = convertArrayBufferToString(FBXBuffer as ArrayBuffer);
 
@@ -115,12 +150,25 @@ export class FBXLoaderRefactored extends Loader<any> {
         );
       }
 
-      global.fbxTree = new TextParser().parse(FBXText);
+      return new TextParser(tempContext).parse(FBXText);
     }
-    const textureLoader = new TextureLoader(this.manager)
-      .setPath(this.resourcePath || path)
-      .setCrossOrigin(this.crossOrigin);
+  }
 
-    return new FBXTreeParser(textureLoader, this.manager).parse();
+  /**
+   * 构建连接映射
+   */
+  private buildConnections (fbxTree: any): Map<number, any> {
+    const connections = new Map<number, any>();
+
+    if (fbxTree.Connections?.connections) {
+      fbxTree.Connections.connections.forEach(([child, parent, connectionType]: [number, number, string]) => {
+        connections.set(child, {
+          children: [],
+          parents: [{ ID: parent, connectionType }],
+        });
+      });
+    }
+
+    return connections;
   }
 }
