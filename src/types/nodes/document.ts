@@ -220,7 +220,7 @@ export class FBXTree implements IFBXTreeWithIndex {
   connections?: FBXConnectionNode[];
   userData?: Record<string, string | number | boolean | object>;
 
-  add (key: string, val: string | number | boolean | object | any) {
+  add (key: string, val: string | number | boolean | object) {
     if (!this.userData) {
       this.userData = {};
     }

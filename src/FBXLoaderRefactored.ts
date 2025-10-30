@@ -1,7 +1,7 @@
 import { FileLoader, Loader, LoaderUtils, TextureLoader } from 'three';
 import { convertArrayBufferToString, getFbxVersion, isFbxFormatASCII, isFbxFormatBinary } from './util';
 import { BinaryParser } from './parse/FBX-binary-parser';
-import { FBXTreeParser } from './parse/FBX-tree-parser';
+import { FBXTreeParser } from './parse/tree';
 import { TextParser } from './parse/text';
 import { ParsingContext } from './types';
 

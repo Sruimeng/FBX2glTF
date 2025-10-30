@@ -3,7 +3,7 @@ import type { RawConnection, FBXConnectionNode, IFBXTree } from '../../types';
 // Parse context.fbxTree.Connections which holds parent-child connections between objects (e.g. material -> texture, model->geometry )
 // and details the connection type
 export function parseConnections (fbxTree: IFBXTree): Map<number, FBXConnectionNode> {
-  const connectionMap = new Map();
+  const connectionMap: Map<number, FBXConnectionNode> = new Map();
 
   if ('Connections' in fbxTree) {
     if (!fbxTree.Connections) {
@@ -25,7 +25,7 @@ export function parseConnections (fbxTree: IFBXTree): Map<number, FBXConnectionN
 
       const parentRelationship = { ID: toID, relationship: relationship };
 
-      connectionMap.get(fromID).parents.push(parentRelationship);
+      connectionMap.get(fromID)!.parents.push(parentRelationship);
 
       if (!connectionMap.has(toID)) {
         connectionMap.set(toID, {
@@ -36,7 +36,7 @@ export function parseConnections (fbxTree: IFBXTree): Map<number, FBXConnectionN
 
       const childRelationship = { ID: fromID, relationship: relationship };
 
-      connectionMap.get(toID).children.push(childRelationship);
+      connectionMap.get(toID)!.children.push(childRelationship);
     });
   }
 

@@ -3,7 +3,7 @@
  */
 
 import type { MeshStandardMaterialParameters, Texture, MeshPhongMaterial, BufferGeometry, MeshStandardMaterial, LineBasicMaterial } from 'three';
-import type { FBXMorphTarget, FBXSkeleton } from '../nodes';
+import type { Deformers } from '../nodes';
 import type { ModelInfo } from './type-guards';
 
 export interface FBXMeshStandardMaterialParameters extends MeshStandardMaterialParameters {
@@ -12,10 +12,7 @@ export interface FBXMeshStandardMaterialParameters extends MeshStandardMaterialP
 }
 
 export interface FBXSceneParserOptions {
-  deformers: {
-    morphTargets: Record<string, FBXMorphTarget>,
-    skeletons: Record<string, FBXSkeleton>,
-  },
+  deformers: Deformers,
   geoInfoMap?: Map<number, ModelInfo>,
   geometryMap?: Map<number, BufferGeometry>,
   materialMap?: Map<number, MeshPhongMaterial | MeshStandardMaterial | LineBasicMaterial>,
