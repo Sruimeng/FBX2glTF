@@ -211,6 +211,42 @@ new GLTFLoader().load(url, (gltf) => scene.add(gltf.scene));
 - 新增 `src/glb` 模块独立消费 `ParsingContext`。
 - 如需把 `IParsingContext.sceneGraph: Group` 改为 `Document`，采用联合/泛型方式降低影响；或新增 `GLBParsingContext` 并在 GLB 路径中使用。
 
+## 渐进迁移（src/parse → src/glb）
+
+本项目采用“渐进式”迁移策略，将 `src/parse` 中的解析结果逐步映射到 glTF `Document`，避免一次性重写全部逻辑：
+
+- 先打通“数学-only”的节点层级映射：从 `FBXTree`/`connections` 提取层级与 TRS 变换，使用 three.js 数学计算，写入 glTF `Node`。
+- 其次引入网格数据：重用 `src/parse/geometry/*` 的几何管线（顶点属性/索引/组），在 `src/glb/mesh-mapper.ts` 生成 `Mesh/Primitive/Accessor`。
+- 逐步接入材质与纹理：从 `src/parse/tree/material-parser.ts`、`texture-parser.ts` 读取解析结果，映射到 PBR 与 `KHR_texture_transform`。
+- 后续增量加入骨骼/动画/相机/灯光：分别对应 `skin-converter.ts`、`animation-converter.ts`、`camera-converter.ts`、`light-converter.ts`。
+
+该路线的关键是“复用解析、替换输出”：解析仍来自 `src/parse`，输出由 `src/glb` 统一写入 glTF `Document`，从而减少对既有 three.js 渲染路径的侵入。
+
+## 非 Mesh three.js 代码替代策略
+
+在 GLB 导出路径中，逐步替代对 three.js 非网格能力的直接依赖，改为 glTF 原生或扩展能力：
+
+- 变换：保留 three.js 数学计算，但最终写入 glTF `Node.setTranslation/Rotation/Scale`。
+- 灯光：替代 three.js 直接灯光对象，使用 `KHR_lights_punctual` 扩展并与 `Node` 关联。
+- 相机：写入 glTF `Camera`，与 `Node` 绑定，避免在导出路径构造 three.js 相机对象。
+- 骨骼与蒙皮：用 three.js 计算 `inverseBindMatrices`，但输出为 glTF `Skin` 与 `Accessor`。
+- 动画：将位置/旋转/缩放/权重曲线映射为 glTF `channels/samplers`，旋转统一四元数。
+
+以上替换策略保证渲染路径（three.js Group）继续工作，同时 GLB 导出路径不依赖非必要的 three.js 运行时对象。
+
+## 构建预览与静态资源
+
+为确保 Demo 在生产预览中稳定加载静态资源（FBX/贴图/GLB）：
+
+- 使用 `vite.config.js` 设置 `publicDir: demo/assets`，构建时自动复制到 `dist/assets`。
+- 额外提供 `scripts/copy-assets.js`，在 `vite build` 完成后复制 `demo/assets` → `dist/assets`，避免某些 CI/预览环境遗漏。
+- Demo 中的资源路径统一使用绝对路径：`/assets/models/fbx/<name>.fbx`，兼容开发与预览服务器。
+
+已知问题与排查建议：
+
+- 若预览环境报 `TypeError: ... translationService ...` 或出现形如 `academia-*.js` 的第三方脚本错误，通常为浏览器扩展/外部脚本注入所致，并非本仓库代码。请在隐私模式或禁用扩展后重试，或在 DevTools Sources 中定位非本仓库的脚本来源。
+- 资源 404：检查 `dist/assets` 是否包含目标文件，或确认 `publicDir`/复制脚本已生效。
+
 ## 测试与验证
 
 1. 类型/风格：`pnpm check:ts` 与 `pnpm lint` 全量通过。
@@ -245,4 +281,3 @@ new GLTFLoader().load(url, (gltf) => scene.add(gltf.scene));
 ---
 
 如需我开始第一步代码脚手架（`src/glb/` 基础文件与类型定义），请在审核通过后确认。我会在不影响现有解析/渲染的前提下，按本文档进行实现。 
-
